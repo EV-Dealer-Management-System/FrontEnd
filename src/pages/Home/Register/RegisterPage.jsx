@@ -48,14 +48,15 @@ function RegisterPage() {
     }, 1500);
   };
 
+  
   const onFinishFailed = (errorInfo) => {
     console.log('Failed:', errorInfo);
     message.error("Vui lòng kiểm tra lại thông tin!");
   };
 
-  const handleSocialRegister = (type) => {
-    message.info(`Đăng ký với ${type} đang được phát triển!`);
-  };
+  // const handleSocialRegister = (type) => {
+  //   message.info(`Đăng ký với ${type} đang được phát triển!`);
+  // };
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden py-6 sm:py-12">
@@ -188,7 +189,7 @@ function RegisterPage() {
           <Divider className="!my-2">
             <span className="text-gray-400 text-sm px-4 bg-white">hoặc</span>
           </Divider>
-
+{/* 
           <div className="space-y-4">
             <Button
               size="large"
@@ -208,7 +209,8 @@ function RegisterPage() {
             >
               Đăng ký với Facebook
             </Button>
-          </div>
+          </div> */}
+
 
           <div className="text-center text-gray-500 text-sm">
             Đã có tài khoản?{" "}

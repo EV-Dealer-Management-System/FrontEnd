@@ -67,6 +67,7 @@ function LoginPage() {
               onChange={handleChange}
               className="hover:border-blue-400 focus:border-blue-500"
             />
+            
             <Button
               type="primary"
               size="large"
@@ -110,6 +111,7 @@ function LoginPage() {
             >
               Đăng ký ngay
             </a>
+            
           </div>
         </div>
       </Card>
