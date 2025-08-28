@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Input, Button, Card, Typography, Divider, message } from "antd";
+import { Typography, Avatar, Space, message } from "antd";
 import { login } from "../../../App/Home/Login/Login";
 import {
   GoogleOutlined,
@@ -7,27 +7,39 @@ import {
   UserOutlined,
   LockOutlined,
 } from "@ant-design/icons";
-const { Title } = Typography;
+import {
+  LoginForm,
+  ProFormText,
+  ProFormCheckbox,
+  ProCard,
+  PageContainer,
+} from "@ant-design/pro-components";
+
+const { Title, Text } = Typography;
+
 function LoginPage() {
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ username: "", password: "" });
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
 
-  const handleLogin = async () => {
-    if (!form.username || !form.password) {
+  const handleLogin = async (values) => {
+    const { username, password } = values;
+    if (!username || !password) {
       message.error("Vui lòng nhập đầy đủ thông tin!");
       return;
     }
-    const response = await login(form.username, form.password);   
-    console.log(response);
-    setLoading(true);
-    setTimeout(() => {
+
+    try {
+      setLoading(true);
+      const response = await login(username, password);
+      // keep the existing console log for debugging
+      console.log(response);
+      message.success(`Chào mừng ${username}! Đăng nhập thành công!`);
+      // TODO: redirect after successful login (handled elsewhere in the app)
+    } catch (err) {
+      console.error(err);
+      message.error(err?.message || "Đăng nhập thất bại. Vui lòng thử lại.");
+    } finally {
       setLoading(false);
-      message.success(`Chào mừng ${form.username}! Đăng nhập thành công!`);
-    }, 1500);
+    }
   };
 
   const handleSocialLogin = (type) => {
@@ -35,86 +47,125 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-4">
-      <Card className="w-full max-w-md bg-white/90 backdrop-blur shadow-xl rounded-xl border-0">
-        <div className="flex flex-col gap-6 p-6">
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
-              <UserOutlined className="text-2xl text-white" />
-            </div>
-            <Title level={2} className="!m-0 !text-xl !font-bold">
-              Chào mừng trở lại!
+    <PageContainer>
+      <div
+        style={{
+          maxWidth: "480px",
+          margin: "0 auto",
+          padding: "24px",
+          marginTop: "40px",
+        }}
+      >
+        <ProCard bordered={false} className="login-card">
+          <div style={{ textAlign: "center", marginBottom: "24px" }}>
+            <Avatar
+              size={72}
+              style={{
+                background: "linear-gradient(90deg,#1677ff,#722ed1)",
+                marginBottom: "16px",
+              }}
+              icon={<UserOutlined style={{ color: "#fff", fontSize: 28 }} />}
+            />
+            <Title level={3} style={{ margin: 0 }}>
+              Chào mừng trở lại
             </Title>
+            <Text type="secondary">Đăng nhập để tiếp tục sử dụng hệ thống</Text>
           </div>
 
-          <div className="space-y-4">
-            <Input
+          <LoginForm
+            onFinish={handleLogin}
+            submitter={{
+              searchConfig: { submitText: "Đăng nhập" },
+              submitButtonProps: { size: "large", loading },
+            }}
+            initialValues={{ autoLogin: true }}
+          >
+            <ProFormText
               name="username"
-              size="large"
-              prefix={<UserOutlined className="text-gray-400" />}
-              placeholder="Tên đăng nhập"
-              value={form.username}
-              onChange={handleChange}
-              className="hover:border-blue-400 focus:border-blue-500"
+              fieldProps={{ size: "large", prefix: <UserOutlined /> }}
+              placeholder="Tên đăng nhập hoặc email"
+              rules={[
+                { required: true, message: "Vui lòng nhập tên đăng nhập!" },
+              ]}
             />
-            <Input.Password
+
+            <ProFormText.Password
               name="password"
-              size="large"
-              prefix={<LockOutlined className="text-gray-400" />}
+              fieldProps={{ size: "large", prefix: <LockOutlined /> }}
               placeholder="Mật khẩu"
-              value={form.password}
-              onChange={handleChange}
-              className="hover:border-blue-400 focus:border-blue-500"
+              rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
             />
-            
-            <Button
-              type="primary"
-              size="large"
-              block
-              loading={loading}
-              onClick={handleLogin}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 border-0 shadow hover:opacity-90"
-            >
-              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
-            </Button>
+
+            <div className="flex items-center justify-between">
+              <ProFormCheckbox noStyle name="autoLogin">
+                Ghi nhớ đăng nhập
+              </ProFormCheckbox>
+              <a href="/reset-password" className="text-blue-600">
+                Quên mật khẩu?
+              </a>
+            </div>
+          </LoginForm>
+
+          <div style={{ marginTop: "24px" }}>
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <div style={{ textAlign: "center", color: "#8c8c8c" }}>
+                Hoặc tiếp tục với
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: "24px",
+                  marginTop: "16px",
+                }}
+              >
+                <Avatar
+                  className="social-button"
+                  style={{
+                    backgroundColor: "#fff",
+                    cursor: "pointer",
+                    border: "1px solid #d9d9d9",
+                  }}
+                  icon={
+                    <img
+                      src="https://www.google.com/images/branding/googleg/1x/googleg_standard_color_128dp.png"
+                      alt="Google"
+                      style={{ width: "18px", height: "18px" }}
+                    />
+                  }
+                  onClick={() => handleSocialLogin("Google")}
+                />
+                <Avatar
+                  className="social-button"
+                  style={{
+                    backgroundColor: "#1877f2",
+                    cursor: "pointer",
+                  }}
+                  icon={
+                    <FacebookOutlined style={{ fontSize: 20, color: "#fff" }} />
+                  }
+                  onClick={() => handleSocialLogin("Facebook")}
+                />
+              </div>
+            </Space>
           </div>
 
-          <Divider plain>hoặc</Divider>
-
-          <div className="space-y-3">
-            <Button
-              size="large"
-              block
-              icon={<GoogleOutlined />}
-              onClick={() => handleSocialLogin("Google")}
-              className="border hover:border-blue-400 hover:text-blue-600"
-            >
-              Đăng nhập với Google
-            </Button>
-            <Button
-              size="large"
-              block
-              icon={<FacebookOutlined />}
-              onClick={() => handleSocialLogin("Facebook")}
-              className="bg-[#1877f2] text-white border-0 hover:bg-[#166fe5]"
-            >
-              Đăng nhập với Facebook
-            </Button>
-          </div>
-
-          <div className="text-center text-gray-500 text-sm">
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: "24px",
+              fontSize: "14px",
+              color: "#8c8c8c",
+            }}
+          >
             Chưa có tài khoản?{" "}
-            <a
-              href="/register"
-              className="text-blue-500 hover:text-blue-600 font-medium"
-            >
+            <a href="/register" style={{ color: "#1677ff", fontWeight: 500 }}>
               Đăng ký ngay
             </a>
-            
           </div>
-        </div>
-      </Card>
-    </div>
+        </ProCard>
+      </div>
+    </PageContainer>
   );
 }
 
