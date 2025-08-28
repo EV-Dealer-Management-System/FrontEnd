@@ -1,29 +1,28 @@
 import { useState } from "react";
 import { Input, Button, Card, Typography, Divider, message } from "antd";
+import { login } from "../../../App/Home/Login/Login";
 import {
   GoogleOutlined,
   FacebookOutlined,
   UserOutlined,
   LockOutlined,
 } from "@ant-design/icons";
-
 const { Title } = Typography;
-
 function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ username: "", password: "" });
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!form.username || !form.password) {
       message.error("Vui lòng nhập đầy đủ thông tin!");
       return;
     }
-
+    const response = await login(form.username, form.password);   
+    console.log(response);
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
