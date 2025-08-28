@@ -43,8 +43,8 @@ function RegisterPage() {
     // Simulating registration process
     setTimeout(() => {
       setLoading(false);
-      message.success("Đăng ký thành công! Vui lòng đăng nhập.");
-      navigate('/login');
+      message.success("Đăng ký thành công! Vui lòng xác thực email.");
+      navigate('/mailconfirm'); // Chuyển hướng sang trang xác thực email
     }, 1500);
   };
 
@@ -53,7 +53,7 @@ function RegisterPage() {
     console.log('Failed:', errorInfo);
     message.error("Vui lòng kiểm tra lại thông tin!");
   };
-
+  
   // const handleSocialRegister = (type) => {
   //   message.info(`Đăng ký với ${type} đang được phát triển!`);
   // };
