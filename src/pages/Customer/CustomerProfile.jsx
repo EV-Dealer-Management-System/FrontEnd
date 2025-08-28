@@ -68,6 +68,8 @@ function CustomerProfile() {
             borderRadius: 14,
             border: "1px solid #e5e7eb",
             boxShadow: "0 10px 20px -10px rgba(2,6,23,0.15)",
+            maxWidth: 720,
+            margin: "0 auto",
           }}
           headStyle={{
             borderBottom: "1px solid #f1f5f9",
@@ -78,6 +80,7 @@ function CustomerProfile() {
           {isEditing ? (
             <Form
               layout="vertical"
+              style={{ maxWidth: 640, margin: "0 auto" }}
               initialValues={{
                 ...profileEdit,
                 date: profileEdit.date
@@ -106,14 +109,15 @@ function CustomerProfile() {
                   },
                 ]}
               >
-                <Input />
+                <Input.TextArea autoSize={{ minRows: 1, maxRows: 2 }} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }} />
               </Form.Item>
               <Form.Item
                 label="Ngày Sinh"
                 name="date"
+                style={{ textAlign: "left" }}
                 rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
               >
-                <DatePicker format={format} disabledDate={disableDate} />
+                <DatePicker format={format} disabledDate={disableDate} style={{ width: "100%" }} />
               </Form.Item>
               <Form.Item
                 label="Email"
@@ -126,7 +130,7 @@ function CustomerProfile() {
                   },
                 ]}
               >
-                <Input />
+                <Input.TextArea autoSize={{ minRows: 1, maxRows: 2 }} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }} />
               </Form.Item>
               <Form.Item
                 label="Số điện thoại"
@@ -139,10 +143,10 @@ function CustomerProfile() {
                   },
                 ]}
               >
-                <Input />
+                <Input.TextArea autoSize={{ minRows: 1, maxRows: 2 }} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }} />
               </Form.Item>
               <Form.Item label="Địa chỉ" name="address">
-                <Input.TextArea rows={2} />
+                <Input.TextArea rows={2} autoSize={{ minRows: 2, maxRows: 4 }} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }} />
               </Form.Item>
               <div style={{ display: "flex", gap: 8 }}>
                 <Button type="primary" htmlType="submit">
