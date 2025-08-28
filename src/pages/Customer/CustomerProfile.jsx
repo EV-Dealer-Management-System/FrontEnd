@@ -35,128 +35,161 @@ function CustomerProfile() {
   if (!profile) return <div>Loading...</div>;
 
   return (
-    <div className="card">
-      <Card
-        title="Thông tin cá nhân"
-        style={{ maxWidth: 1000, margin: "auto" }}
-      >
-        {isEditing ? (
-          <Form
-            layout="vertical"
-            initialValues={{
-              ...profileEdit,
-              date: profileEdit.date
-                ? dayjs(profileEdit.date, "YYYY-MM-DD")
-                : null,
-            }}
-            onFinish={(values) => {
-              const formattedValues = {
-                ...values,
-                date: values.date ? values.date.format("YYYY-MM-DD") : "",
-              };
-              setProfile(formattedValues);
-              setIsEditing(false);
-              alert("Cập nhật thông tin thành công!");
-            }}
-          >
-            <Form.Item
-              label="Họ và tên"
-              name="name"
-              rules={[
-                {
-                  required: true,
-                  min: 3,
-                  max: 50,
-                  message: "Họ và Tên phải lớn hơn 3 ký tự và nhỏ hơn 50 ký tự",
-                },
-              ]}
+    <div
+      style={{
+        width: "100vw",
+        marginLeft: "calc(50% - 50vw)",
+        marginRight: "calc(50% - 50vw)",
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #f0f7ff 0%, #ffffff 60%)",
+        padding: "32px 16px",
+        boxSizing: "border-box",
+      }}
+    >
+      <div style={{ maxWidth: 1040, margin: "0 auto" }}>
+        <h1
+          style={{
+            margin: 0,
+            marginBottom: 16,
+            fontSize: 28,
+            fontWeight: 700,
+            color: "#0f172a",
+            letterSpacing: 0.2,
+          }}
+        >
+          Thông tin khách hàng
+        </h1>
+        <p style={{ marginTop: 0, marginBottom: 16, color: "#475569" }}>
+          Cập nhật và quản lý hồ sơ của bạn.
+        </p>
+        <Card
+          title="Thông tin cá nhân"
+          style={{
+            borderRadius: 14,
+            border: "1px solid #e5e7eb",
+            boxShadow: "0 10px 20px -10px rgba(2,6,23,0.15)",
+          }}
+          headStyle={{
+            borderBottom: "1px solid #f1f5f9",
+            fontWeight: 600,
+          }}
+          bodyStyle={{ padding: 20 }}
+        >
+          {isEditing ? (
+            <Form
+              layout="vertical"
+              initialValues={{
+                ...profileEdit,
+                date: profileEdit.date
+                  ? dayjs(profileEdit.date, "YYYY-MM-DD")
+                  : null,
+              }}
+              onFinish={(values) => {
+                const formattedValues = {
+                  ...values,
+                  date: values.date ? values.date.format("YYYY-MM-DD") : "",
+                };
+                setProfile(formattedValues);
+                setIsEditing(false);
+                alert("Cập nhật thông tin thành công!");
+              }}
             >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              label="Ngày Sinh"
-              name="date"
-              rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
-            >
-              <DatePicker format={format} disabledDate={disableDate} />
-            </Form.Item>
-            <Form.Item
-              label="Email"
-              name="email"
-              rules={[
-                {
-                  required: true,
-                  type: "email",
-                  message: "Sai định dạng email",
-                },
-              ]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              label="Số điện thoại"
-              name="phone"
-              rules={[
-                {
-                  required: true,
-                  pattern: /^[0-9]{10,11}$/,
-                  message: "Số điện thoại không hợp lệ",
-                },
-              ]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item label="Địa chỉ" name="address">
-              <Input.TextArea rows={2} />
-            </Form.Item>
-            <Button type="primary" htmlType="submit">
-              Lưu
-            </Button>
-            <Button
-              style={{ marginLeft: 8 }}
-              onClick={() => setIsEditing(false)}
-            >
-              Hủy
-            </Button>
-          </Form>
-        ) : (
-          <>
-            <Descriptions column={1} bordered size="middle">
-              <Descriptions.Item label="Họ và tên">
-                {profile.name}
-              </Descriptions.Item>
-              <Descriptions.Item label="Ngày Sinh">
-                {profile.date}
-              </Descriptions.Item>
-              <Descriptions.Item label="Email">
-                {profile.email}
-              </Descriptions.Item>
-              <Descriptions.Item label="Số điện thoại">
-                {profile.phone}
-              </Descriptions.Item>
-              <Descriptions.Item label="Địa chỉ">
-                {profile.address}
-              </Descriptions.Item>
-            </Descriptions>
-            <div style={{ marginTop: 16, textAlign: "right" }}>
-              <Button
-                onClick={() => {
-                  setProfileEdit(profile);
-                  form.setFieldsValue({
-                    ...profile,
-                    date: profile.date
-                      ? dayjs(profile.date, "YYYY-MM-DD")
-                      : null,
-                  });
-                  setIsEditing(true);
-                }}
+              <Form.Item
+                label="Họ và tên"
+                name="name"
+                rules={[
+                  {
+                    required: true,
+                    min: 3,
+                    max: 50,
+                    message: "Họ và Tên phải lớn hơn 3 ký tự và nhỏ hơn 50 ký tự",
+                  },
+                ]}
               >
-                Chỉnh sửa
-              </Button>
-            </div>
-          </>
-        )}
-      </Card>
+                <Input />
+              </Form.Item>
+              <Form.Item
+                label="Ngày Sinh"
+                name="date"
+                rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
+              >
+                <DatePicker format={format} disabledDate={disableDate} />
+              </Form.Item>
+              <Form.Item
+                label="Email"
+                name="email"
+                rules={[
+                  {
+                    required: true,
+                    type: "email",
+                    message: "Sai định dạng email",
+                  },
+                ]}
+              >
+                <Input />
+              </Form.Item>
+              <Form.Item
+                label="Số điện thoại"
+                name="phone"
+                rules={[
+                  {
+                    required: true,
+                    pattern: /^[0-9]{10,11}$/,
+                    message: "Số điện thoại không hợp lệ",
+                  },
+                ]}
+              >
+                <Input />
+              </Form.Item>
+              <Form.Item label="Địa chỉ" name="address">
+                <Input.TextArea rows={2} />
+              </Form.Item>
+              <div style={{ display: "flex", gap: 8 }}>
+                <Button type="primary" htmlType="submit">
+                  Lưu
+                </Button>
+                <Button onClick={() => setIsEditing(false)}>Hủy</Button>
+              </div>
+            </Form>
+          ) : (
+            <>
+              <Descriptions column={1} bordered size="middle">
+                <Descriptions.Item label="Họ và tên">
+                  {profile.name}
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày Sinh">
+                  {profile.date}
+                </Descriptions.Item>
+                <Descriptions.Item label="Email">
+                  {profile.email}
+                </Descriptions.Item>
+                <Descriptions.Item label="Số điện thoại">
+                  {profile.phone}
+                </Descriptions.Item>
+                <Descriptions.Item label="Địa chỉ">
+                  {profile.address}
+                </Descriptions.Item>
+              </Descriptions>
+              <div style={{ marginTop: 16, textAlign: "right" }}>
+                <Button
+                  onClick={() => {
+                    setProfileEdit(profile);
+                    form.setFieldsValue({
+                      ...profile,
+                      date: profile.date
+                        ? dayjs(profile.date, "YYYY-MM-DD")
+                        : null,
+                    });
+                    setIsEditing(true);
+                  }}
+                >
+                  Chỉnh sửa
+                </Button>
+              </div>
+            </>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }
