@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Typography, Avatar, Space, message } from "antd";
+import { Typography, Avatar, Space, message, notification } from "antd";
+import { register } from "../../../App/Home/Register/Register";
 import { useNavigate } from "react-router-dom";
 import {
   GoogleOutlined,
@@ -16,7 +17,6 @@ import {
   ProCard,
   PageContainer,
 } from "@ant-design/pro-components";
-
 const { Title } = Typography;
 
 function RegisterPage() {
@@ -31,12 +31,41 @@ function RegisterPage() {
 
     try {
       setLoading(true);
-      // Simulating registration process
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      message.success("Đăng ký thành công! Vui lòng xác thực email.");
-      navigate(`/mailconfirm/${encodeURIComponent(values.email)}`);
+      const { email, password, confirmPassword, fullName } = values;
+      const response = await register(
+        email,
+        password,
+        confirmPassword,
+        fullName
+      );
+
+      // Log thông tin đăng ký thành công
+      console.log("Đăng ký thành công:", {
+        email,
+        fullName,
+        response,
+      });
+
+      // Hiển thị thông báo thành công
+      notification.success({
+        message: "Đăng ký thành công!",
+        description:
+          "Chúng tôi đã gửi email xác thực đến địa chỉ email của bạn.",
+        duration: 3,
+      });
+
+      // Chuyển hướng đến trang xác thực email với state
+      navigate("/mailconfirm", {
+        state: { email: values.email },
+      });
     } catch (error) {
-      message.error("Đăng ký thất bại. Vui lòng thử lại!");
+      if (error.response && error.response.data) {
+        message.error(
+          error.response.data.message || "Đăng ký thất bại. Vui lòng thử lại!"
+        );
+      } else {
+        message.error("Đăng ký thất bại. Vui lòng thử lại!");
+      }
     } finally {
       setLoading(false);
     }
@@ -81,7 +110,7 @@ function RegisterPage() {
               submitButtonProps: { size: "large", loading },
             }}
           >
-            <ProFormText
+            {/* <ProFormText
               name="username"
               fieldProps={{
                 size: "large",
@@ -90,6 +119,19 @@ function RegisterPage() {
               placeholder="Tên đăng nhập"
               rules={[
                 { required: true, message: "Vui lòng nhập tên đăng nhập!" },
+              ]}
+            /> */}
+
+            <ProFormText
+              name="fullName"
+              fieldProps={{
+                size: "large",
+                prefix: <UserOutlined />,
+              }}
+              placeholder="Họ và tên"
+              rules={[
+                { required: true, message: "Vui lòng nhập họ và tên!" },
+                { min: 2, message: "Họ và tên phải có ít nhất 2 ký tự!" },
               ]}
             />
 
@@ -106,14 +148,14 @@ function RegisterPage() {
               ]}
             />
 
-            <ProFormText
+            {/* <ProFormText
               name="phone"
               fieldProps={{
                 size: "large",
                 prefix: <PhoneOutlined />,
               }}
               placeholder="Số điện thoại (tùy chọn)"
-            />
+            /> */}
 
             <ProFormText.Password
               name="password"
@@ -124,7 +166,12 @@ function RegisterPage() {
               placeholder="Mật khẩu"
               rules={[
                 { required: true, message: "Vui lòng nhập mật khẩu!" },
-                { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự!" },
+                { min: 8, message: "Mật khẩu phải có ít nhất 8 ký tự!" },
+                {
+                  pattern: /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/,
+                  message:
+                    "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 số và 1 ký tự đặc biệt!",
+                },
               ]}
             />
 
@@ -137,7 +184,12 @@ function RegisterPage() {
               placeholder="Xác nhận mật khẩu"
               rules={[
                 { required: true, message: "Vui lòng xác nhận mật khẩu!" },
-                { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự!" },
+                { min: 8, message: "Mật khẩu phải có ít nhất 8 ký tự!" },
+                {
+                  pattern: /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/,
+                  message:
+                    "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 số và 1 ký tự đặc biệt!",
+                },
               ]}
             />
 
