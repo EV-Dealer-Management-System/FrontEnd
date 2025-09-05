@@ -1,7 +1,7 @@
 import api from "../../../../api/api";
 
 export const mailConfirmation = async (email) => {
-  const response = await api.post("/Auth/verify-email", { email });
+  const response = await api.post("/Auth/send-verification-email", { email });
   return response.data;
 };
 
@@ -17,22 +17,32 @@ export const verifyEmail = async (userId, token) => {
       token,
     });
 
-    // Gửi POST request với query parameters
-    const response = await api.post(
-      `/Auth/verify-email?userId=${encodeURIComponent(
-        userId
-      )}&token=${encodeURIComponent(token)}`
-    );
-
-    console.log("Verification response:", response.data);
-    return response.data;
+    // Gửi request xác thực email
+    try {
+      const response = await api.post(
+        `/Auth/verify-email?userId=${encodeURIComponent(
+          userId
+        )}&token=${encodeURIComponent(token)}`
+      );
+      return response.data;
+    } catch (error) {
+      // Nếu email đã được xác thực, trả về response với message phù hợp
+      if (error.response?.data?.message === "Email is already verified") {
+        return {
+          isSuccess: true,
+          message: "Email is already verified",
+          statusCode: 200,
+          result: null,
+        };
+      }
+      throw error;
+    }
   } catch (error) {
-    // Log chi tiết lỗi
-    console.error("Verification error details:", {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-    });
+    // Nếu là lỗi từ API
+    if (error.response?.data) {
+      throw new Error(error.response.data.message || "Xác thực email thất bại");
+    }
+    // Nếu là lỗi khác
     throw error;
   }
 };
