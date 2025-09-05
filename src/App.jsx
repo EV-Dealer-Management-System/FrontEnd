@@ -6,6 +6,10 @@ import RegisterPage from "./Pages/Home/Register/RegisterPage";
 import CustomerProfile from "./Pages/Customer/CustomerProfile";
 import { MailConfirmation } from "./Pages/Home/Register/partial/MailConfirmation";
 import Customer from "./Pages/Customer/Customer";
+import EmailVerification from "./Pages/Home/Register/partial/EmailVerification";
+import ResetPassword from "./Pages/Home/Login/Partial/ResetPassword";
+import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfirm";
+
 function App() {
   return (
     <BrowserRouter>
@@ -16,6 +20,9 @@ function App() {
         <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/mailconfirm" element={<MailConfirmation />} />
         <Route path="/customer" element={<Customer />} />
+        <Route path="/email-verification" element={<EmailVerification />} />
+        <Route path="/forgot-password" element={<ResetPassword />} />
+        <Route path="/api/reset-password" element={<ResetPasswordConfirm />} />
         {/* Redirect to login page by default */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

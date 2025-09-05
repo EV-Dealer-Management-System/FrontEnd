@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Typography, Avatar, Space, message } from "antd";
 import { login } from "../../../App/Home/Login/Login";
+import { useNavigate, Link } from "react-router-dom";
 import {
   GoogleOutlined,
   FacebookOutlined,
@@ -19,6 +20,7 @@ const { Title, Text } = Typography;
 
 function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = async (values) => {
     const { username, password } = values;
@@ -100,9 +102,9 @@ function LoginPage() {
               <ProFormCheckbox noStyle name="autoLogin">
                 Ghi nhớ đăng nhập
               </ProFormCheckbox>
-              <a href="/reset-password" className="text-blue-600">
+              <Link to="/forgot-password" className="text-blue-600">
                 Quên mật khẩu?
-              </a>
+              </Link>
             </div>
           </LoginForm>
 
@@ -159,9 +161,9 @@ function LoginPage() {
             }}
           >
             Chưa có tài khoản?{" "}
-            <a href="/register" style={{ color: "#1677ff", fontWeight: 500 }}>
+            <Link to="/register" style={{ color: "#1677ff", fontWeight: 500 }}>
               Đăng ký ngay
-            </a>
+            </Link>
           </div>
         </ProCard>
       </div>
