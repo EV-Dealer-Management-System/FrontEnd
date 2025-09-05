@@ -5,6 +5,7 @@ import LoginPage from "./Pages/Home/Login/LoginPage";
 import RegisterPage from "./Pages/Home/Register/RegisterPage";
 import CustomerProfile from "./Pages/Customer/CustomerProfile";
 import { MailConfirmation } from "./Pages/Home/Register/partial/MailConfirmation";
+import Customer from "./Pages/Customer/Customer";
 function App() {
   return (
     <BrowserRouter>
@@ -14,7 +15,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/mailconfirm" element={<MailConfirmation />} />
-
+        <Route path="/customer" element={<Customer />} />
         {/* Redirect to login page by default */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

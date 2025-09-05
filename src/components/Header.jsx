@@ -1,8 +1,8 @@
 import React from "react";
-import { Button } from "antd";
+import { Button, Avatar, Dropdown } from "antd";
 import { ProLayout } from "@ant-design/pro-components";
-import { HomeOutlined, LoginOutlined, UserAddOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { HomeOutlined, LoginOutlined, UserAddOutlined, UserOutlined, LogoutOutlined } from "@ant-design/icons";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const menuRoutes = [
   { path: "/", name: "Trang chủ", icon: <HomeOutlined /> },
@@ -10,6 +10,57 @@ const menuRoutes = [
 
 const Header = ({ children, title = "Hệ thống quản lý dịch vụ" }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Chỉ kiểm tra đơn giản: có phải trang Customer không?
+  const isOnCustomerPage = location.pathname.includes('/customer');
+
+  const profileMenuItems = [
+    {
+      key: "profile",
+      icon: <UserOutlined />,
+      label: "Hồ sơ cá nhân",
+      onClick: () => navigate("/customer/profile")
+    },
+    {
+      type: "divider"
+    },
+    {
+      key: "logout",
+      icon: <LogoutOutlined />,
+      label: "Đăng xuất",
+      onClick: () => navigate("/")
+    }
+  ];
+
+  const renderUserActions = () => {
+    if (isOnCustomerPage) {
+      // Ở trang Customer: hiển thị nút user
+      return [
+        <Dropdown
+          key="user-menu"
+          menu={{ items: profileMenuItems }}
+          placement="bottomRight"
+          arrow
+        >
+          <Button type="text" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Avatar size="small" icon={<UserOutlined />} />
+            <span>Nguyễn Văn A</span>
+          </Button>
+        </Dropdown>
+      ];
+    } else {
+      // Ở các trang khác: hiển thị nút Login/Register
+      return [
+        <Button key="login" onClick={() => navigate('/login')} icon={<LoginOutlined />}>
+          Đăng nhập
+        </Button>,
+        <Button key="register" type="primary" onClick={() => navigate('/register')} icon={<UserAddOutlined />}>
+          Đăng ký
+        </Button>
+      ];
+    }
+  };
 
   return (
     <div style={{ width: "100vw", marginLeft: "calc(50% - 50vw)", marginRight: "calc(50% - 50vw)", minHeight: "100vh" }}>
@@ -32,10 +83,7 @@ const Header = ({ children, title = "Hệ thống quản lý dịch vụ" }) => 
         )}
         layout="top"
         fixedHeader
-        actionsRender={() => [
-          <Button key="login" onClick={() => navigate('/login')} icon={<LoginOutlined />}>Đăng nhập</Button>,
-          <Button key="register" type="primary" onClick={() => navigate('/register')} icon={<UserAddOutlined />}>Đăng ký</Button>,
-        ]}
+        actionsRender={renderUserActions}
         menuItemRender={(item, dom) => (
           <a onClick={() => item.path && navigate(item.path)}>{dom}</a>
         )}

@@ -58,29 +58,29 @@ const HomePage = () => {
       <PageContainer breadcrumb={false}>
         <div className="bg-gradient-to-br from-blue-50 to-white">
           <div className="text-center w-full px-6 py-16">
-            <Title level={1} className="text-3xl font-bold mb-4">
-              Welcome to Our Service
-            </Title>
-            <Paragraph className="text-lg text-gray-600 mb-8">
-              Please login or register to continue.
-            </Paragraph>
-            <div className="flex justify-center gap-6">
-              <Button
-                type="primary"
-                size="large"
-                onClick={() => navigate("/login")}
-                className="!min-w-[120px] !rounded-xl !font-medium hover:!scale-105 hover:!shadow-lg transition-all duration-200"
-              >
-                Login
-              </Button>
-              <Button
-                type="default"
-                size="large"
-                onClick={() => navigate("/register")}
-                className="!min-w-[120px] !rounded-xl !font-medium hover:!scale-105 hover:!shadow-lg transition-all duration-200"
-              >
-                Register
-              </Button>
+          <Title level={1} className="text-3xl font-bold mb-4">
+            Welcome to Our Service
+          </Title>
+          <Paragraph className="text-lg text-gray-600 mb-8">
+            Please login or register to continue.
+          </Paragraph>
+          <div className="flex justify-center gap-6">
+            <Button
+              type="primary"
+              size="large"
+              onClick={() => navigate("/login")}
+              className="!min-w-[120px] !rounded-xl !font-medium hover:!scale-105 hover:!shadow-lg transition-all duration-200"
+            >
+              Login
+            </Button>
+            <Button
+              type="default"
+              size="large"
+              onClick={() => navigate("/register")}
+              className="!min-w-[120px] !rounded-xl !font-medium hover:!scale-105 hover:!shadow-lg transition-all duration-200"
+            >
+              Register
+            </Button>
             </div>
 
             {/* Products/Services grid */}
