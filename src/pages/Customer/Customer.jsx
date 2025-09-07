@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Typography, Row, Col, Card } from "antd";
+import { Button, Typography, Row, Col, Card, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import { PageContainer } from "@ant-design/pro-components";
 import Header from "../../components/Header";
@@ -38,9 +38,10 @@ function generateProducts(count = 12) {
     }`;
     const price = getRandomInt(99, 1999) * 1000;
     const duration = ["theo tháng", "theo năm", "trọn đời"][getRandomInt(0, 2)];
-    const desc = `Giải pháp giúp bạn vận hành hiệu quả hơn, hỗ trợ ${
-      getRandomInt(5, 100)
-    }+ tác vụ ${duration}.`;
+    const desc = `Giải pháp giúp bạn vận hành hiệu quả hơn, hỗ trợ ${getRandomInt(
+      5,
+      100
+    )}+ tác vụ ${duration}.`;
     return {
       id: `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
       name,
@@ -51,8 +52,9 @@ function generateProducts(count = 12) {
 }
 
 const Customer = () => {
-//   const navigate = useNavigate();
+  const navigate = useNavigate();
   const products = React.useMemo(() => generateProducts(12), []);
+
   return (
     <Header title="Hệ thống quản lý dịch vụ">
       <PageContainer breadcrumb={false}>
@@ -85,20 +87,31 @@ const Customer = () => {
 
             {/* Products/Services grid */}
             <div className="w-full mt-14">
-              <Title level={3} className="!mb-4">Sản phẩm / Dịch vụ mẫu</Title>
+              <Title level={3} className="!mb-4">
+                Sản phẩm / Dịch vụ mẫu
+              </Title>
               <Paragraph className="text-gray-600 !mb-8">
-                Danh sách ngẫu nhiên được tạo khi tải trang để minh họa giao diện.
+                Danh sách ngẫu nhiên được tạo khi tải trang để minh họa giao
+                diện.
               </Paragraph>
               <Row gutter={[16, 16]}>
                 {products.map((p) => (
                   <Col key={p.id} xs={24} sm={12} md={8} lg={6}>
-                    <Card hoverable className="!rounded-xl h-full" title={p.name}>
-                      <Paragraph className="!mb-4 text-gray-600">{p.desc}</Paragraph>
+                    <Card
+                      hoverable
+                      className="!rounded-xl h-full"
+                      title={p.name}
+                    >
+                      <Paragraph className="!mb-4 text-gray-600">
+                        {p.desc}
+                      </Paragraph>
                       <div className="text-xl font-semibold text-blue-600">
                         {p.price.toLocaleString("vi-VN")}₫
                       </div>
                       <div className="mt-4">
-                        <Button type="primary" block className="!rounded-lg">Dùng thử</Button>
+                        <Button type="primary" block className="!rounded-lg">
+                          Dùng thử
+                        </Button>
                       </div>
                     </Card>
                   </Col>

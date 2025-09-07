@@ -23,18 +23,20 @@ function LoginPage() {
   const navigate = useNavigate();
 
   const handleLogin = async (values) => {
-    const { username, password } = values;
-    if (!username || !password) {
+    const { email, password, autoLogin } = values;
+    if (!email || !password) {
       message.error("Vui lòng nhập đầy đủ thông tin!");
       return;
     }
 
     try {
       setLoading(true);
-      const response = await login(username, password);
-      // keep the existing console log for debugging
-      console.log(response);
-      message.success(`Chào mừng ${username}! Đăng nhập thành công!`);
+      const response = await login(email, password, autoLogin);
+      // Save JWT token
+      localStorage.setItem("jwt_token", response.token);
+      message.success(`Chào mừng ${email}! Đăng nhập thành công!`);
+      // Redirect to customer dashboard after login
+      navigate("/customer", { replace: true });
       // TODO: redirect after successful login (handled elsewhere in the app)
     } catch (err) {
       console.error(err);
@@ -83,11 +85,15 @@ function LoginPage() {
             initialValues={{ autoLogin: true }}
           >
             <ProFormText
-              name="username"
+              name="email"
               fieldProps={{ size: "large", prefix: <UserOutlined /> }}
-              placeholder="Tên đăng nhập hoặc email"
+              placeholder="Email"
               rules={[
-                { required: true, message: "Vui lòng nhập tên đăng nhập!" },
+                { required: true, message: "Vui lòng nhập email!" },
+                {
+                  type: "email",
+                  message: "Vui lòng nhập đúng định dạng email!",
+                },
               ]}
             />
 
