@@ -29,7 +29,12 @@ const Header = ({ children, title = "Hệ thống quản lý dịch vụ" }) => 
       key: "logout",
       icon: <LogoutOutlined />,
       label: "Đăng xuất",
-      onClick: () => navigate("/")
+      onClick: () => {
+        // Xóa JWT token khỏi localStorage
+        localStorage.removeItem('jwt_token');
+        // Chuyển về trang chủ
+        navigate("/");
+      }
     }
   ];
 
