@@ -9,8 +9,8 @@ import Customer from "./Pages/Customer/Customer";
 import EmailVerification from "./Pages/Home/Register/partial/EmailVerification";
 import ResetPassword from "./Pages/Home/Login/Partial/ResetPassword";
 import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfirm";
-import ProtectedRoute from "./components/ProtectedRoute";
-import PublicRoute from "./components/PublicRoute";
+import ProtectedRoute from "./Router/ProtectedRoute";
+import PublicRoute from "./Router/PublicRoute";
 
 function App() {
   return (
