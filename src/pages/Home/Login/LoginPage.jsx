@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Typography, Avatar, Space, message } from "antd";
+import { Typography, Avatar, Space, message, Alert } from "antd";
 import { login } from "../../../App/Home/Login/Login";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -20,6 +20,7 @@ const { Title, Text } = Typography;
 
 function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async (values) => {
@@ -37,10 +38,76 @@ function LoginPage() {
       message.success(`Chào mừng ${email}! Đăng nhập thành công!`);
       // Redirect to customer dashboard after login
       navigate("/customer", { replace: true });
-      // TODO: redirect after successful login (handled elsewhere in the app)
     } catch (err) {
-      console.error(err);
-      message.error(err?.message || "Đăng nhập thất bại. Vui lòng thử lại.");
+      console.error("Login error:", err);
+
+      // Xóa thông báo lỗi cũ nếu có
+      setLoginError("");
+
+      // Xử lý các trường hợp lỗi cụ thể
+      if (err.response?.data?.message === "Email is not exist") {
+        setLoginError(
+          "Email không tồn tại trong hệ thống! Vui lòng kiểm tra lại hoặc đăng ký tài khoản mới."
+        );
+      } else if (
+        err.response?.data?.message.includes("Password is incorrect")
+      ) {
+        const message = err.response?.data?.message;
+        // Kiểm tra nếu có thông báo về số lần thử còn lại
+        if (message.includes("If you enter")) {
+          const attemptsLeft = 5; // Số này nên được lấy từ server response nếu có
+          setLoginError(
+            `Mật khẩu không đúng! Nếu nhập sai thêm ${attemptsLeft} lần nữa, tài khoản của bạn sẽ bị khóa trong 5 phút.`
+          );
+        } else {
+          setLoginError(
+            "Mật khẩu không đúng! Vui lòng kiểm tra lại hoặc sử dụng tính năng quên mật khẩu."
+          );
+        }
+      } else if (err.response?.status === 400) {
+        // Nếu có message từ server, hiển thị nó
+        if (err.response?.data?.message) {
+          setLoginError(err.response.data.message);
+        } else {
+          setLoginError(
+            "Thông tin đăng nhập không hợp lệ! Vui lòng kiểm tra lại."
+          );
+        }
+      } else if (err.response?.status === 401) {
+        setLoginError(
+          "Phiên đăng nhập đã hết hạn hoặc không hợp lệ! Vui lòng đăng nhập lại."
+        );
+      } else if (err.response?.status === 403) {
+        // Xử lý trường hợp tài khoản bị khóa
+        const message = err.response?.data?.message || "";
+        const minutes = message.match(/\d+/)?.[0] || "vài"; // Lấy số phút từ thông báo
+        setLoginError(
+          `Tài khoản đã bị khóa. Vui lòng thử lại sau ${minutes} phút.`
+        );
+      } else if (err.response?.status === 429) {
+        setLoginError(
+          "Bạn đã thử đăng nhập quá nhiều lần! Vui lòng thử lại sau ít phút."
+        );
+      } else if (!navigator.onLine) {
+        setLoginError(
+          "Không thể kết nối đến máy chủ! Vui lòng kiểm tra kết nối internet của bạn."
+        );
+      } else {
+        // Log chi tiết lỗi để debug
+        console.log("Response data:", err.response?.data);
+        console.log("Response status:", err.response?.status);
+
+        setLoginError(
+          "Đã có lỗi xảy ra trong quá trình đăng nhập! Vui lòng thử lại sau hoặc liên hệ hỗ trợ."
+        );
+      }
+
+      // Hiển thị thông báo lỗi dưới dạng message toàn cục
+      message.error({
+        content: "Đăng nhập thất bại",
+        description: loginError,
+        duration: 5,
+      });
     } finally {
       setLoading(false);
     }
@@ -83,6 +150,12 @@ function LoginPage() {
               submitButtonProps: { size: "large", loading },
             }}
             initialValues={{ autoLogin: true }}
+            // Hiển thị thông báo lỗi
+            message={
+              loginError ? (
+                <Alert message={loginError} type="error" showIcon />
+              ) : null
+            }
           >
             <ProFormText
               name="email"
