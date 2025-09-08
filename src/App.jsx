@@ -11,7 +11,8 @@ import LoginPage from "./pages/Home/Login/LoginPage";
 import RegisterPage from "./pages/Home/Register/RegisterPage";
 import Admin from "./Pages/Admin/Admin";
 import CustomerProfile from "./pages/Customer/CustomerProfile";
-import { MailConfirmation } from "./Pages/Home/Register/partial/MailConfirmation";
+import Admin from "./Pages/Admin/Admin";
+import { MailConfirmation } from "./pages/Home/Register/partial/MailConfirmation";
 function App() {
   return (
     <BrowserRouter>
@@ -22,6 +23,9 @@ function App() {
         <Route path="/customer/profile" element={<CustomerProfile />} />
         <Route path="/mailconfirm" element={<MailConfirmation />} />
         <Route path="/admin" element={<Admin />} />
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 function App() {
