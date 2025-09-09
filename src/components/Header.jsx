@@ -12,8 +12,8 @@ const Header = ({ children, title = "Hệ thống quản lý dịch vụ" }) => 
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Chỉ kiểm tra đơn giản: có phải trang Customer không?
-  const isOnCustomerPage = location.pathname.includes('/customer');
+  // Đồng bộ với ProtectedRoute: xác định trạng thái đăng nhập theo jwt_token
+  const isLoggedIn = !!localStorage.getItem('jwt_token');
 
   const profileMenuItems = [
     {
@@ -32,6 +32,7 @@ const Header = ({ children, title = "Hệ thống quản lý dịch vụ" }) => 
       onClick: () => {
         // Xóa JWT token khỏi localStorage
         localStorage.removeItem('jwt_token');
+        localStorage.removeItem('userFullName');
         // Chuyển về trang chủ
         navigate("/");
       }
@@ -39,8 +40,9 @@ const Header = ({ children, title = "Hệ thống quản lý dịch vụ" }) => 
   ];
 
   const renderUserActions = () => {
-    if (isOnCustomerPage) {
-      // Ở trang Customer: hiển thị nút user
+    if (isLoggedIn) {
+      // Đã đăng nhập: hiển thị menu người dùng
+      const userFullName = localStorage.getItem('userFullName') || 'Người dùng';
       return [
         <Dropdown
           key="user-menu"
@@ -50,21 +52,20 @@ const Header = ({ children, title = "Hệ thống quản lý dịch vụ" }) => 
         >
           <Button type="text" style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Avatar size="small" icon={<UserOutlined />} />
-            <span>Nguyễn Văn A</span>
+            <span>{userFullName}</span>
           </Button>
         </Dropdown>
       ];
-    } else {
-      // Ở các trang khác: hiển thị nút Login/Register
-      return [
-        <Button key="login" onClick={() => navigate('/login')} icon={<LoginOutlined />}>
-          Đăng nhập
-        </Button>,
-        <Button key="register" type="primary" onClick={() => navigate('/register')} icon={<UserAddOutlined />}>
-          Đăng ký
-        </Button>
-      ];
     }
+    // Chưa đăng nhập: hiển thị nút Login/Register
+    return [
+      <Button key="login" onClick={() => navigate('/login')} icon={<LoginOutlined />}>
+        Đăng nhập
+      </Button>,
+      <Button key="register" type="primary" onClick={() => navigate('/register')} icon={<UserAddOutlined />}>
+        Đăng ký
+      </Button>
+    ];
   };
 
   return (
