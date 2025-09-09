@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 import HomePage from "./Pages/Home/HomePage";
@@ -11,6 +12,7 @@ import ResetPassword from "./Pages/Home/Login/Partial/ResetPassword";
 import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfirm";
 import ProtectedRoute from "./Router/ProtectedRoute";
 import PublicRoute from "./Router/PublicRoute";
+import Admin from "./Pages/Admin/Admin";
 
 function App() {
   return (
@@ -60,6 +62,7 @@ function App() {
         <Route path="/email-verification" element={<EmailVerification />} />
         <Route path="/forgot-password" element={<ResetPassword />} />
         <Route path="/api/reset-password" element={<ResetPasswordConfirm />} />
+        <Route path="/admin" element={<Admin />} />
         {/* Redirect to login page by default */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
