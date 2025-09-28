@@ -8,7 +8,7 @@ export const SignContract = () => {
         reason: contractData.reason || "",
         reject: contractData.reject || false,
         otp: null,
-        signatureDisplayMode: 2,
+        signatureDisplayMode: contractData.signatureDisplayMode || 2,
         signatureImage: contractData.signatureImage || "",
         signingPage: contractData.signingPage || 0,
         signingPosition: contractData.signingPosition || "",
