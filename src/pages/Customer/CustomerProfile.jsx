@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button, Card, DatePicker, Form, Input, Descriptions, Select, message } from "antd";
 import dayjs from "dayjs";
 import { PageContainer } from "@ant-design/pro-components";
-import Navbar from "../../components/Navbar";
+import Header from "../../components/Header";
 import { getProfile } from "../../app/User/Profile";
 
 function CustomerProfile() {

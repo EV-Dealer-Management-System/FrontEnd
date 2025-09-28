@@ -2,7 +2,7 @@ import React from "react";
 import { Button, Typography, Row, Col, Card, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import { PageContainer } from "@ant-design/pro-components";
-import Navbar from "../../components/Navbar";
+import Header from "../../components/Header";
 
 const { Title, Paragraph } = Typography;
 

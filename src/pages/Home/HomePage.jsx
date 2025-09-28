@@ -2,7 +2,7 @@ import React from "react";
 import { Button, Typography, Row, Col, Card } from "antd";
 import { useNavigate } from "react-router-dom";
 import { PageContainer } from "@ant-design/pro-components";
-import Navbar from "../../components/Navbar";
+import Header from "../../components/Header";
 
 const { Title, Paragraph } = Typography;
 
@@ -54,7 +54,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const products = React.useMemo(() => generateProducts(12), []);
   return (
-    <Navbar title="Hệ thống quản lý dịch vụ">
+    <Header title="Hệ thống quản lý dịch vụ">
       <PageContainer breadcrumb={false}>
         <div className="bg-gradient-to-br from-blue-50 to-white">
           <div className="text-center w-full px-6 py-16">
@@ -108,7 +108,7 @@ const HomePage = () => {
           </div>
         </div>
       </PageContainer>
-    </Navbar>
+    </Header>
   );
 };
 export default HomePage;
