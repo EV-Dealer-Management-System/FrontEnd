@@ -11,6 +11,7 @@ import ResetPassword from "./Pages/Home/Login/Partial/ResetPassword";
 import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfirm";
 import ProtectedRoute from "./Router/ProtectedRoute";
 import PublicRoute from "./Router/PublicRoute";
+import CreateAccount from "./Pages/Admin/CreateAccount";
 
 function App() {
   return (
@@ -60,6 +61,7 @@ function App() {
         <Route path="/email-verification" element={<EmailVerification />} />
         <Route path="/forgot-password" element={<ResetPassword />} />
         <Route path="/api/reset-password" element={<ResetPasswordConfirm />} />
+        <Route path="/create-account" element={<CreateAccount />} />
         {/* Redirect to login page by default */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
