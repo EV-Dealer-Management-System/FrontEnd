@@ -439,7 +439,7 @@ const CreateAccount = () => {
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signingLoading, setSigningLoading] = useState(false);
   const [contractSigned, setContractSigned] = useState(false);
-  const [signatureDisplayMode, setSignatureDisplayMode] = useState(2); // 1: Chỉ văn bản, 2: Văn bản và hình ảnh, 3: Chỉ hình ảnh
+  const [signatureDisplayMode, setSignatureDisplayMode] = useState(2); // 2: Văn bản và hình ảnh, 3: Kết hợp ảnh và chữ ký
   const [signatureMethod, setSignatureMethod] = useState('draw'); // 'draw' hoặc 'upload'
   const [uploadedImage, setUploadedImage] = useState(null);
   const [uploadedImageBase64, setUploadedImageBase64] = useState('');
@@ -608,7 +608,7 @@ const CreateAccount = () => {
   // Handle digital signature (Step 1)
   const handleDigitalSignature = async () => {
     // Kiểm tra chữ ký dựa trên method và display mode
-    if (signatureDisplayMode === 2 || signatureDisplayMode === 3) {
+    if (signatureDisplayMode === 2) {
       if (signatureMethod === 'draw') {
         if (!signatureRef.current || signatureRef.current.isEmpty()) {
           message.error('Vui lòng vẽ chữ ký của bạn!');
@@ -620,6 +620,16 @@ const CreateAccount = () => {
           return;
         }
       }
+    } else if (signatureDisplayMode === 3) {
+      // Kiểm tra cả ảnh upload và chữ ký vẽ tay cho chế độ kết hợp
+      if (!uploadedImageBase64) {
+        message.error('Vui lòng tải lên ảnh để kết hợp với chữ ký!');
+        return;
+      }
+      if (!signatureRef.current || signatureRef.current.isEmpty()) {
+        message.error('Vui lòng vẽ chữ ký để kết hợp với ảnh!');
+        return;
+      }
     }
 
     setSigningLoading(true);
@@ -629,14 +639,28 @@ const CreateAccount = () => {
     try {
       // Lấy signature data dựa trên method được chọn
       let signatureDataURL = '';
-      if (signatureDisplayMode === 2 || signatureDisplayMode === 3) {
-        signatureDataURL = getSignatureData();
+      try {
+        const signatureData = getSignatureData();
+        
+        // Xử lý async cho combined signature
+        if (signatureDisplayMode === 3 && signatureData instanceof Promise) {
+          console.log('Processing combined signature...');
+          signatureDataURL = await signatureData;
+          console.log('Combined signature completed:', signatureDataURL ? 'Success' : 'Failed');
+        } else {
+          signatureDataURL = signatureData;
+        }
         
         if (!signatureDataURL) {
           message.error('Không thể lấy dữ liệu chữ ký. Vui lòng thử lại!');
           setSigningLoading(false);
           return;
         }
+      } catch (error) {
+        console.error('Error getting signature data:', error);
+        message.error(`Lỗi xử lý chữ ký: ${error.message}`);
+        setSigningLoading(false);
+        return;
       }
       
       const signContractApi = SignContract();
@@ -831,15 +855,29 @@ const CreateAccount = () => {
   const handleImageUpload = (info) => {
     const { file } = info;
     
+    // Xử lý file khi upload thành công hoặc khi có file type
     if (file.status === 'done' || file.type) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target.result;
-        setUploadedImageBase64(base64);
-        setUploadedImage(file);
-        message.success('Ảnh đã được tải lên thành công!');
-      };
-      reader.readAsDataURL(file.originFileObj || file);
+      const fileToRead = file.originFileObj || file;
+      
+      if (fileToRead) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64 = e.target.result;
+          console.log('Image uploaded and converted to base64:', {
+            fileName: fileToRead.name,
+            fileSize: fileToRead.size,
+            fileType: fileToRead.type,
+            base64Prefix: base64.substring(0, 50) + '...'
+          });
+          setUploadedImageBase64(base64);
+          setUploadedImage(file);
+          message.success('Ảnh đã được tải lên thành công!');
+        };
+        reader.onerror = () => {
+          message.error('Lỗi khi đọc file ảnh!');
+        };
+        reader.readAsDataURL(fileToRead);
+      }
     }
   };
 
@@ -860,9 +898,104 @@ const CreateAccount = () => {
     return true;
   };
 
+  // Function kết hợp ảnh upload và chữ ký vẽ tay thành một ảnh
+  const getCombinedSignatureData = () => {
+    if (!uploadedImageBase64 || !signatureRef.current || signatureRef.current.isEmpty()) {
+      return null;
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Tạo ảnh từ uploaded image - sử dụng document.createElement
+        const uploadedImg = document.createElement('img');
+        uploadedImg.onload = () => {
+          try {
+            // Lấy signature data trước
+            const signatureDataURL = getSignatureAsFullDataURL();
+            if (!signatureDataURL) {
+              reject(new Error('Không thể lấy dữ liệu chữ ký'));
+              return;
+            }
+            
+            // Tạo ảnh từ signature canvas
+            const signatureImg = document.createElement('img');
+            
+            signatureImg.onload = () => {
+              try {
+                // Tính toán kích thước canvas kết hợp
+                const padding = 20;
+                const maxWidth = Math.max(uploadedImg.width, signatureImg.width);
+                const totalHeight = uploadedImg.height + signatureImg.height + padding;
+                
+                canvas.width = maxWidth;
+                canvas.height = totalHeight;
+                
+                // Vẽ nền trắng
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Vẽ ảnh upload ở trên (căn giữa)
+                const uploadX = (maxWidth - uploadedImg.width) / 2;
+                ctx.drawImage(uploadedImg, uploadX, 0, uploadedImg.width, uploadedImg.height);
+                
+                // Vẽ chữ ký ở dưới (căn giữa)
+                const signatureX = (maxWidth - signatureImg.width) / 2;
+                const signatureY = uploadedImg.height + padding;
+                ctx.drawImage(signatureImg, signatureX, signatureY, signatureImg.width, signatureImg.height);
+                
+                // Chuyển thành base64 và trả về
+                const combinedDataURL = canvas.toDataURL('image/png', 1.0);
+                console.log('Combined signature created successfully:', {
+                  uploadedImgSize: `${uploadedImg.width}x${uploadedImg.height}`,
+                  signatureImgSize: `${signatureImg.width}x${signatureImg.height}`,
+                  canvasSize: `${canvas.width}x${canvas.height}`,
+                  dataURLPrefix: combinedDataURL.substring(0, 50) + '...'
+                });
+                resolve(combinedDataURL);
+              } catch (error) {
+                console.error('Error drawing combined signature:', error);
+                reject(error);
+              }
+            };
+            
+            signatureImg.onerror = () => {
+              reject(new Error('Không thể load ảnh chữ ký'));
+            };
+            
+            signatureImg.src = signatureDataURL;
+          } catch (error) {
+            console.error('Error processing signature:', error);
+            reject(error);
+          }
+        };
+        
+        uploadedImg.onerror = () => {
+          reject(new Error('Không thể load ảnh upload'));
+        };
+        
+        // Đảm bảo uploadedImageBase64 có định dạng đúng
+        if (!uploadedImageBase64.startsWith('data:image/')) {
+          reject(new Error('Định dạng ảnh upload không hợp lệ'));
+          return;
+        }
+        
+        uploadedImg.src = uploadedImageBase64;
+      } catch (error) {
+        console.error('Error in getCombinedSignatureData:', error);
+        reject(error);
+      }
+    });
+  };
+
   // Function lấy signature data từ method được chọn
   const getSignatureData = () => {
-    if (signatureMethod === 'upload') {
+    if (signatureDisplayMode === 3) {
+      // Trả về promise cho combined signature
+      return getCombinedSignatureData();
+    } else if (signatureMethod === 'upload') {
       return uploadedImageBase64;
     } else {
       return getSignatureAsFullDataURL();
@@ -1191,22 +1324,16 @@ const CreateAccount = () => {
                 style={{ width: '100%' }}
               >
                 <Space direction="vertical" style={{ width: '100%' }}>
-                  <Radio value={1}>
-                    <span style={{ fontWeight: '500' }}>Chỉ văn bản</span>
-                    <div style={{ fontSize: '12px', color: '#666', marginLeft: '24px' }}>
-                      Hiển thị chữ ký dưới dạng văn bản "Chữ ký điện tử"
-                    </div>
-                  </Radio>
                   <Radio value={2}>
-                    <span style={{ fontWeight: '500' }}>Văn bản và hình ảnh</span>
+                    <span style={{ fontWeight: '500' }}>Văn bản hoặc hình ảnh</span>
                     <div style={{ fontSize: '12px', color: '#666', marginLeft: '24px' }}>
-                      Hiển thị cả văn bản và hình ảnh chữ ký bạn vẽ
+                      Hiển thị văn bản hoặc hình ảnh chữ ký bạn vẽ
                     </div>
                   </Radio>
                   <Radio value={3}>
-                    <span style={{ fontWeight: '500' }}>Chỉ hình ảnh</span>
+                    <span style={{ fontWeight: '500' }}>Kết hợp ảnh và chữ ký</span>
                     <div style={{ fontSize: '12px', color: '#666', marginLeft: '24px' }}>
-                      Chỉ hiển thị hình ảnh chữ ký bạn vẽ
+                      Kết hợp ảnh upload (trên) và chữ ký vẽ tay (dưới) thành một
                     </div>
                   </Radio>
                 </Space>
@@ -1214,7 +1341,7 @@ const CreateAccount = () => {
             </div>
             
             {/* Tabs cho việc vẽ chữ ký hoặc upload ảnh - chỉ hiển thị khi cần hình ảnh */}
-            {(signatureDisplayMode === 2 || signatureDisplayMode === 3) && (
+            {signatureDisplayMode === 2 && (
               <div style={{ marginBottom: '20px' }}>
                 <Tabs 
                   activeKey={signatureMethod} 
@@ -1293,6 +1420,12 @@ const CreateAccount = () => {
                               onChange={handleImageUpload}
                               beforeUpload={beforeUpload}
                               showUploadList={false}
+                              customRequest={({ onSuccess }) => {
+                                // Fake upload success to prevent HTTP request
+                                setTimeout(() => {
+                                  onSuccess();
+                                }, 0);
+                              }}
                               style={{
                                 width: '100%',
                                 border: 'none',
@@ -1340,24 +1473,125 @@ const CreateAccount = () => {
               </div>
             )}
             
-            {/* Thông báo khi chọn chỉ văn bản */}
-            {signatureDisplayMode === 1 && (
-              <div style={{
-                border: '1px solid #d9d9d9',
-                borderRadius: '8px',
-                padding: '20px',
-                backgroundColor: '#f9f9f9',
-                marginBottom: '20px',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '16px', color: '#1890ff', marginBottom: '8px' }}>
-                  📝 Chế độ chỉ văn bản
+            {/* Giao diện cho chế độ kết hợp ảnh và chữ ký */}
+            {signatureDisplayMode === 3 && (
+              <div style={{ marginBottom: '20px' }}>
+                <Alert
+                  message="Chế độ kết hợp: Vui lòng cung cấp cả ảnh và chữ ký"
+                  type="warning"
+                  style={{ marginBottom: '16px' }}
+                />
+                
+                {/* Upload ảnh */}
+                <div style={{ marginBottom: '16px' }}>
+                  <Text strong style={{ display: 'block', marginBottom: '8px' }}>1. Tải lên ảnh (sẽ hiển thị ở trên):</Text>
+                  <div style={{
+                    border: '2px dashed #d9d9d9',
+                    borderRadius: '8px',
+                    padding: '16px',
+                    backgroundColor: '#fafafa',
+                    textAlign: 'center'
+                  }}>
+                    {!uploadedImageBase64 ? (
+                      <Upload.Dragger
+                        name="signature"
+                        multiple={false}
+                        onChange={handleImageUpload}
+                        beforeUpload={beforeUpload}
+                        showUploadList={false}
+                        customRequest={({ onSuccess }) => {
+                          // Fake upload success to prevent HTTP request
+                          setTimeout(() => {
+                            onSuccess();
+                          }, 0);
+                        }}
+                        style={{
+                          border: 'none',
+                          backgroundColor: 'transparent'
+                        }}
+                      >
+                        <p className="ant-upload-drag-icon">
+                          <PictureOutlined style={{ fontSize: '32px', color: '#1890ff' }} />
+                        </p>
+                        <p className="ant-upload-text">Tải lên ảnh logo/hình ảnh</p>
+                        <p className="ant-upload-hint">JPG, PNG, GIF - Tối đa 5MB</p>
+                      </Upload.Dragger>
+                    ) : (
+                      <div>
+                        <Image
+                          src={uploadedImageBase64}
+                          alt="Logo Preview"
+                          style={{ 
+                            maxWidth: '200px', 
+                            maxHeight: '100px',
+                            border: '1px solid #d9d9d9',
+                            borderRadius: '4px'
+                          }}
+                        />
+                        <div style={{ marginTop: '8px' }}>
+                          <Button 
+                            icon={<ClearOutlined />}
+                            onClick={clearUploadedImage}
+                            size="small"
+                            type="dashed"
+                          >
+                            Thay đổi ảnh
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div style={{ fontSize: '14px', color: '#666' }}>
-                  Chữ ký sẽ hiển thị dưới dạng văn bản "Chữ ký điện tử" trên hợp đồng
+                
+                {/* Vẽ chữ ký */}
+                <div>
+                  <Text strong style={{ display: 'block', marginBottom: '8px' }}>2. Vẽ chữ ký (sẽ hiển thị ở dưới):</Text>
+                  <div style={{
+                    border: '2px dashed #d9d9d9',
+                    borderRadius: '8px',
+                    padding: '10px',
+                    backgroundColor: '#fafafa'
+                  }}>
+                    <SignatureCanvas
+                      ref={signatureRef}
+                      canvasProps={{
+                        width: 500,
+                        height: 150,
+                        className: 'signature-canvas',
+                        style: {
+                          border: '1px solid #d9d9d9',
+                          borderRadius: '4px',
+                          backgroundColor: 'white'
+                        }
+                      }}
+                      backgroundColor="white"
+                      penColor="black"
+                      dotSize={2}
+                      minWidth={1}
+                      maxWidth={3}
+                      velocityFilterWeight={0.7}
+                    />
+                    <div style={{ 
+                      fontSize: '12px', 
+                      color: '#666', 
+                      marginTop: '8px',
+                      textAlign: 'center'
+                    }}>
+                      Vẽ chữ ký của bạn trong khung trên
+                    </div>
+                  </div>
                 </div>
+                
+                {/* Preview kết hợp nếu cả hai đều có */}
+                {uploadedImageBase64 && signatureRef.current && !signatureRef.current.isEmpty() && (
+                  <div style={{ marginTop: '16px', textAlign: 'center' }}>
+                    <Text style={{ fontSize: '12px', color: '#1890ff' }}>✅ Sẵn sàng kết hợp: Ảnh (trên) + Chữ ký (dưới)</Text>
+                  </div>
+                )}
               </div>
             )}
+            
+
 
             <div style={{ 
               fontSize: '12px', 
@@ -1366,22 +1600,22 @@ const CreateAccount = () => {
               textAlign: 'left'
             }}>
               <strong>Lưu ý:</strong> 
-              {signatureMethod === 'draw' 
-                ? ' Chữ ký vẽ tay sẽ được chuyển đổi thành định dạng PNG base64'
-                : ' Ảnh upload sẽ được chuyển đổi thành định dạng base64'
+              {signatureDisplayMode === 3 
+                ? ' Ảnh và chữ ký sẽ được kết hợp thành một ảnh PNG base64'
+                : signatureMethod === 'draw' 
+                  ? ' Chữ ký vẽ tay sẽ được chuyển đổi thành định dạng PNG base64'
+                  : ' Ảnh upload sẽ được chuyển đổi thành định dạng base64'
               } để gửi lên server
             </div>
 
             <Space size="large">
-              {(signatureDisplayMode === 2 || signatureDisplayMode === 3) && (
-                <Button
-                  icon={<ClearOutlined />}
-                  onClick={clearAllSignatureData}
-                  style={{ minWidth: '100px' }}
-                >
-                  Xóa tất cả
-                </Button>
-              )}
+              <Button
+                icon={<ClearOutlined />}
+                onClick={clearAllSignatureData}
+                style={{ minWidth: '100px' }}
+              >
+                Xóa tất cả
+              </Button>
               
               <Button
                 onClick={() => setShowSignatureModal(false)}
