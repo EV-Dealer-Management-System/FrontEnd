@@ -1,20 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Form, 
-  Input, 
-  Button, 
-  Card, 
-  Row, 
-  Col, 
-  message, 
-  Select,
-  Space,
-  Typography,
-  Divider,
-  Spin,
-  Modal,
-  Alert
-} from 'antd';
+import { Form, Input, Button, Card, Row, Col, message, Select, Space, Typography, Divider, Spin, Modal, Alert } from 'antd';
 import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FilePdfOutlined, EditOutlined, CheckOutlined, ClearOutlined } from '@ant-design/icons';
 import SignatureCanvas from 'react-signature-canvas';
 import { locationApi } from '../../api/api';
@@ -24,8 +9,226 @@ import { SignContract } from '../../App/EVMAdmin/SignContract';
 const { Title, Text } = Typography;
 const { Option } = Select;
 
+// Custom form field component with consistent styling
+const FormField = ({ 
+  name, 
+  label, 
+  icon, 
+  rules, 
+  children, 
+  span = 12,
+  required = true 
+}) => (
+  <Col xs={24} md={span}>
+    <Form.Item
+      name={name}
+      label={
+        <span className="font-semibold text-gray-700 flex items-center">
+          {icon && <span className="mr-2 text-blue-500">{icon}</span>}
+          {label}
+        </span>
+      }
+      rules={rules}
+    >
+      {children}
+    </Form.Item>
+  </Col>
+);
+
+// Contract display component
+const ContractDisplay = ({ 
+  contractLink, 
+  contractNo, 
+  contractSigned, 
+  onSign, 
+  onDownload, 
+  onNewContract 
+}) => (
+  <Card 
+    className="bg-green-50 border-green-200 mb-6"
+    title={
+      <span className="flex items-center text-green-600">
+        <ShopOutlined className="mr-2" />
+        Hợp đồng đã được tạo thành công
+      </span>
+    }
+  >
+    <div className="space-y-4">
+      <p><strong>Số hợp đồng:</strong> {contractNo}</p>
+      
+      {contractSigned && (
+        <Alert
+          message={
+            <span className="text-green-600 font-semibold">
+              ✅ Hợp đồng đã được ký thành công!
+            </span>
+          }
+          type="success"
+          className="mb-4"
+        />
+      )}
+      
+      {/* PDF Viewer */}
+      <div className="mt-6 mb-6">
+        <div className="border border-gray-300 rounded-lg overflow-hidden h-96">
+          <iframe
+            src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(contractLink)}`}
+            title="PDF Viewer"
+            className="w-full h-full border-0"
+            allowFullScreen
+          />
+        </div>
+      </div>
+      
+      {/* Action buttons */}
+      <div className="flex justify-between items-center mt-4">
+        <Space>
+          <Button 
+            type="primary" 
+            href={contractLink} 
+            target="_blank"
+            icon={<EnvironmentOutlined />}
+            className="bg-green-500 border-green-500 hover:bg-green-600"
+          >
+            Mở trong trang mới
+          </Button>
+          
+          <Button
+            type="default"
+            icon={<FilePdfOutlined />}
+            onClick={onDownload}
+          >
+            Tải hợp đồng PDF
+          </Button>
+
+          {!contractSigned && (
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={onSign}
+              className="bg-blue-500 border-blue-500 hover:bg-blue-600"
+            >
+              Ký Hợp Đồng
+            </Button>
+          )}
+
+          {contractSigned && (
+            <Button
+              type="primary"
+              icon={<CheckOutlined />}
+              disabled
+              className="bg-green-500 border-green-500"
+            >
+              Đã Ký
+            </Button>
+          )}
+        </Space>
+        
+        <Button onClick={onNewContract}>
+          Tạo hợp đồng mới
+        </Button>
+      </div>
+    </div>
+  </Card>
+);
+
+// Signature modal component
+const SignatureModal = ({ 
+  visible, 
+  onCancel, 
+  onSign, 
+  onClear, 
+  loading,
+  signatureRef
+}) => {
+  const clearSignature = () => {
+    if (signatureRef && signatureRef.current) {
+      signatureRef.current.clear();
+    }
+    onClear();
+  };
+
+  return (
+    <Modal
+      title={
+        <span className="flex items-center">
+          <EditOutlined className="text-blue-500 mr-2" />
+          Ký Hợp Đồng Điện Tử
+        </span>
+      }
+      open={visible}
+      onCancel={onCancel}
+      footer={null}
+      width={600}
+      centered
+    >
+      <div className="text-center py-5">
+        <Alert
+          message="Vui lòng vẽ chữ ký của bạn trong khung bên dưới"
+          type="info"
+          className="mb-5"
+        />
+        
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 mb-5">
+          <SignatureCanvas
+            ref={signatureRef}
+            canvasProps={{
+              width: 500,
+              height: 200,
+              className: 'signature-canvas',
+              style: {
+                border: '1px solid #d9d9d9',
+                borderRadius: '4px',
+                backgroundColor: 'white'
+              }
+            }}
+            backgroundColor="white"
+            penColor="black"
+            dotSize={2}
+            minWidth={1}
+            maxWidth={3}
+            velocityFilterWeight={0.7}
+          />
+        </div>
+
+        <div className="text-xs text-gray-600 mb-4 text-left">
+          <strong>Lưu ý:</strong> Chữ ký sẽ được chuyển đổi thành định dạng <code>data:image/png;base64,...</code> để gửi lên server
+        </div>
+
+        <Space size="large">
+          <Button
+            icon={<ClearOutlined />}
+            onClick={clearSignature}
+            className="min-w-24"
+          >
+            Xóa
+          </Button>
+          
+          <Button
+            onClick={onCancel}
+            className="min-w-24"
+          >
+            Hủy
+          </Button>
+          
+          <Button
+            type="primary"
+            icon={<CheckOutlined />}
+            onClick={onSign}
+            loading={loading}
+            className="min-w-24 bg-green-500 border-green-500 hover:bg-green-600"
+          >
+            {loading ? 'Đang ký...' : 'Ký Hợp Đồng'}
+          </Button>
+        </Space>
+      </div>
+    </Modal>
+  );
+};
+
 const CreateAccount = () => {
   const [form] = Form.useForm();
+  const signatureRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
@@ -38,15 +241,13 @@ const CreateAccount = () => {
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signingLoading, setSigningLoading] = useState(false);
   const [contractSigned, setContractSigned] = useState(false);
-  const signatureRef = useRef(null);
 
-  // Load danh sách tỉnh/thành phố khi component mount
+  // Load provinces on component mount
   useEffect(() => {
     const loadProvinces = async () => {
       try {
         setLoadingProvinces(true);
         const data = await locationApi.getProvinces();
-        // API trả về array của provinces
         setProvinces(data);
       } catch (error) {
         message.error('Không thể tải danh sách tỉnh/thành phố');
@@ -59,7 +260,7 @@ const CreateAccount = () => {
     loadProvinces();
   }, []);
 
-  // Load phường/xã khi chọn tỉnh/thành phố (API v2 bỏ quận/huyện)
+  // Load wards when province changes
   const handleProvinceChange = async (provinceCode) => {
     if (!provinceCode) {
       setWards([]);
@@ -80,32 +281,28 @@ const CreateAccount = () => {
     }
   };
 
+  // Handle form submission
   const onFinish = async (values) => {
     setLoading(true);
     
     try {
-      // Kết hợp địa chỉ với thông tin tỉnh/thành phố và phường/xã
+      // Combine address with province and ward information
       const provinceCode = values.province;
       const wardCode = values.ward;
       let fullAddress = values.address || '';
 
-      // Tìm tên phường/xã và tỉnh/thành phố từ mã code
       const selectedProvince = provinces.find(p => p.code === provinceCode);
       const selectedWard = wards.find(w => w.code === wardCode);
 
-      // Kết hợp địa chỉ với tên phường/xã và tỉnh/thành phố
       if (selectedWard && selectedProvince) {
         fullAddress = `${fullAddress}, ${selectedWard.name}, ${selectedProvince.name}`.trim().replace(/^,\s+/, '');
-        
-        // Ghi đè trường địa chỉ bằng địa chỉ đầy đủ
         values.address = fullAddress;
-        
         console.log('Địa chỉ đầy đủ đã được cập nhật:', values.address);
       } else {
         console.error('Không thể tìm thấy thông tin phường/xã hoặc tỉnh/thành phố');
       }
 
-      // Validate dữ liệu trước khi gửi
+      // Validate form data
       const validation = createAccountApi.validateFormData(values);
       if (!validation.isValid) {
         message.error(validation.errors[0]);
@@ -113,42 +310,31 @@ const CreateAccount = () => {
         return;
       }
 
-      // Log giá trị trước khi gửi để kiểm tra
       console.log('Dữ liệu gửi đi:', values);
       
-      // Gọi API tạo hợp đồng đại lý
+      // Create dealer contract
       const result = await createAccountApi.createDealerContract(values);
       
       if (result.isSuccess || result.success) {
         message.success('Tạo hợp đồng thành công!');
         
-        // Xác định dữ liệu từ response
         let contractData = null;
-        
-        // Log toàn bộ result để debug
         console.log('Full API response:', JSON.stringify(result, null, 2));
         
-        // Phân tích cấu trúc response để lấy downloadUrl và id
         if (result.result?.data) {
-          // Cấu trúc từ API: { isSuccess: true, result: { data: { id, downloadUrl } } }
           contractData = result.result.data;
           console.log('Lấy dữ liệu từ result.result.data:', contractData);
         } else if (result.data) {
-          // Cấu trúc thay thế: { success: true, data: { id, downloadUrl } }
           contractData = result.data;
           console.log('Lấy dữ liệu từ result.data:', contractData);
         }
         
         if (contractData) {
-          // Lấy các trường từ cấu trúc JSON
           const contractIdFromResponse = contractData.id;
           const downloadUrl = contractData.downloadUrl;
           const contractNo = contractData.no;
-          
-          // Lấy processId từ waitingProcess.id
           const processId = contractData.waitingProcess?.id || contractIdFromResponse;
           
-          // Log chi tiết để debug
           console.log('Contract data:', {
             id: contractIdFromResponse,
             no: contractNo,
@@ -158,19 +344,13 @@ const CreateAccount = () => {
             waitingProcess: contractData.waitingProcess
           });
           
-          // Lưu processId từ waitingProcess để sử dụng cho việc ký
           setContractId(processId);
-          // Lưu toàn bộ waitingProcess data
           setWaitingProcessData(contractData.waitingProcess);
           
           if (downloadUrl) {
-            // Lưu thông tin để hiển thị UI
             setContractLink(downloadUrl);
             setContractNo(contractNo || 'Không xác định');
             
-            // URL có sẵn để hiển thị PDF
-            
-            // Thông báo thành công với tùy chọn đi đến trang gốc
             message.success({
               content: (
                 <span>
@@ -188,7 +368,6 @@ const CreateAccount = () => {
         }
       } else {
         message.error(result.error || 'Có lỗi khi tạo hợp đồng');
-        // Reset thông tin hợp đồng nếu có lỗi
         setContractLink(null);
         setContractNo(null);
       }
@@ -205,7 +384,7 @@ const CreateAccount = () => {
     message.error('Vui lòng kiểm tra lại thông tin đã nhập');
   };
 
-  // Xử lý ký hợp đồng
+  // Handle contract signing
   const handleSignContract = async () => {
     if (!signatureRef.current || signatureRef.current.isEmpty()) {
       message.error('Vui lòng vẽ chữ ký của bạn!');
@@ -214,8 +393,7 @@ const CreateAccount = () => {
 
     setSigningLoading(true);
     try {
-      // Lấy chữ ký dưới dạng PNG base64 với format đầy đủ
-      const signatureDataURL = getSignatureAsFullDataURL();
+      const signatureDataURL = getSignatureAsFullDataURL(signatureRef.current);
       
       if (!signatureDataURL) {
         message.error('Không thể tạo chữ ký. Vui lòng thử lại!');
@@ -223,15 +401,13 @@ const CreateAccount = () => {
         return;
       }
       
-      // Tạo instance của SignContract
       const signContractApi = SignContract();
       
-      // Chuẩn bị dữ liệu để ký
       const signData = {
-        waitingProcess: waitingProcessData, // Toàn bộ waitingProcess object
+        waitingProcess: waitingProcessData,
         reason: "Ký hợp đồng đại lý",
         reject: false,
-        signatureImage: signatureDataURL, // Format: data:image/png;base64,iVBORw0KGgoAAAA...
+        signatureImage: signatureDataURL,
         signingPage: 0,
         signingPosition: "bottom-right",
         signatureText: "Test Signature",
@@ -240,7 +416,6 @@ const CreateAccount = () => {
         confirmTermsConditions: true
       };
 
-      // Log để debug
       console.log('Signature data format:', {
         fullDataURL: signatureDataURL.substring(0, 100) + '...',
         dataURLLength: signatureDataURL.length,
@@ -249,7 +424,6 @@ const CreateAccount = () => {
         hasCorrectPrefix: signatureDataURL.startsWith('data:image/png;base64,')
       });
 
-      // Gọi API ký hợp đồng
       const result = await signContractApi.handleSignContract(signData);
       
       console.log('Sign contract API result:', JSON.stringify(result, null, 2));
@@ -259,7 +433,6 @@ const CreateAccount = () => {
         setContractSigned(true);
         setShowSignatureModal(false);
         
-        // Cập nhật URL hợp đồng đã ký nếu có downloadUrl mới
         let signedContractData = null;
         
         if (result.result?.data) {
@@ -276,9 +449,7 @@ const CreateAccount = () => {
             oldUrl: contractLink,
             newUrl: newDownloadUrl,
             contractNo: newContractNo
-          });
-          
-          // Cập nhật link hợp đồng với phiên bản đã ký
+          });          
           setContractLink(newDownloadUrl);
           setContractNo(newContractNo);
           
@@ -302,81 +473,81 @@ const CreateAccount = () => {
     }
   };
 
-  // Helper function để chuyển đổi signature thành PNG base64 với format đầy đủ
-  const getSignatureAsFullDataURL = () => {
-    if (!signatureRef.current || signatureRef.current.isEmpty()) {
+  // Helper function to convert signature to PNG base64
+  const getSignatureAsFullDataURL = (sigRefCurrent) => {
+    if (!sigRefCurrent || sigRefCurrent.isEmpty()) {
       return null;
     }
     
-    // Lấy canvas element
-    const canvas = signatureRef.current.getCanvas();
-    
-    // Tạo một canvas mới với nền trắng để đảm bảo PNG có nền trắng
+    const canvas = sigRefCurrent.getCanvas();
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
     
     tempCanvas.width = canvas.width;
     tempCanvas.height = canvas.height;
-    
-    // Vẽ nền trắng
+  
     tempCtx.fillStyle = 'white';
     tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-    
-    // Vẽ chữ ký lên nền trắng
     tempCtx.drawImage(canvas, 0, 0);
     
-    // Chuyển thành PNG base64 với format đầy đủ: data:image/png;base64,iVBORw0KGgoAAAA...
-    const dataURL = tempCanvas.toDataURL('image/png', 1.0); // Chất lượng cao nhất
-    return dataURL; // Trả về format đầy đủ bao gồm prefix
+    const dataURL = tempCanvas.toDataURL('image/png', 1.0);
+    return dataURL;
   };
 
-  // Clear chữ ký
-  const clearSignature = () => {
-    if (signatureRef.current) {
-      signatureRef.current.clear();
-    }
+  // Reset form and contract data
+  const resetForm = () => {
+    form.resetFields();
+    setContractLink(null);
+    setContractNo(null);
+    setContractId(null);
+    setWaitingProcessData(null);
+    setContractSigned(false);
   };
 
-  // Mở modal ký hợp đồng
-  const openSignatureModal = () => {
-    setShowSignatureModal(true);
+  // Download PDF
+  const handleDownload = () => {
+    const a = document.createElement('a');
+    a.href = contractLink;
+    a.download = `hop-dong-${contractNo || 'dai-ly'}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   return (
-    <div style={{ 
-      padding: '24px', 
-      background: '#f0f2f5', 
-      minHeight: '100vh',
-      fontFamily: 'system-ui, -apple-system, sans-serif'
-    }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <Card 
-          style={{ 
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            borderRadius: '12px',
-            marginBottom: '24px'
-          }}
-        >
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <Title level={2} style={{ 
-                color: '#1890ff', 
-                marginBottom: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '12px'
-              }}>
+    <div className="p-6 bg-gray-50 min-h-screen font-sans">
+      <div className="max-w-6xl mx-auto">
+        <Card className="shadow-lg rounded-xl mb-6">
+          <Space direction="vertical" size="large" className="w-full">
+            {/* Header */}
+            <div className="text-center py-5">
+              <Title 
+                level={2} 
+                className="text-blue-500 mb-2 flex items-center justify-center gap-3"
+              >
                 <UserAddOutlined />
                 Tạo Hợp Đồng Đại Lý
               </Title>
-              <Text type="secondary" style={{ fontSize: '16px' }}>
+              <Text className="text-base text-gray-600">
                 Quản lý và tạo hợp đồng cho các đại lý xe điện
               </Text>
             </div>
 
-            <Divider style={{ margin: '24px 0' }} />
+            <Divider className="my-6" />
 
+            {/* Contract Display */}
+            {contractLink && (
+              <ContractDisplay
+                contractLink={contractLink}
+                contractNo={contractNo}
+                contractSigned={contractSigned}
+                onSign={() => setShowSignatureModal(true)}
+                onDownload={handleDownload}
+                onNewContract={resetForm}
+              />
+            )}
+
+            {/* Form */}
             <Form
               form={form}
               name="dealerForm"
@@ -384,348 +555,151 @@ const CreateAccount = () => {
               onFinishFailed={onFinishFailed}
               layout="vertical"
               size="large"
-              style={{ maxWidth: '800px', margin: '0 auto' }}
+              className="max-w-4xl mx-auto"
             >
               <Row gutter={[24, 16]}>
-                {/* Tên Hãng */}
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="brandName"
-                    label={
-                      <span style={{ fontWeight: '600', color: '#262626' }}>
-                        <ShopOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-                        Tên Hãng
-                      </span>
-                    }
-                    rules={[
-                      { required: true, message: 'Vui lòng nhập tên hãng!' },
-                      { min: 2, message: 'Tên hãng phải có ít nhất 2 ký tự!' }
-                    ]}
-                  >
-                    <Input 
-                      placeholder="Nhập tên hãng xe điện"
-                      style={{ borderRadius: '8px' }}
-                    />
-                  </Form.Item>
-                </Col>
+                <FormField
+                  name="brandName"
+                  label="Tên Hãng"
+                  icon={<ShopOutlined />}
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập tên hãng!' },
+                    { min: 2, message: 'Tên hãng phải có ít nhất 2 ký tự!' }
+                  ]}
+                >
+                  <Input 
+                    placeholder="Nhập tên hãng xe điện"
+                    className="rounded-lg"
+                  />
+                </FormField>
 
-                {/* Tên Quản Lý */}
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="representativeName"
-                    label={
-                      <span style={{ fontWeight: '600', color: '#262626' }}>
-                        <UserAddOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-                        Họ Tên Quản Lý
-                      </span>
-                    }
-                    rules={[
-                      { required: true, message: 'Vui lòng nhập họ tên quản lý!' },
-                      { min: 2, message: 'Họ tên quản lý phải có ít nhất 2 ký tự!' }
-                    ]}
-                  >
-                    <Input 
-                      placeholder="Nhập họ tên quản lý"
-                      style={{ borderRadius: '8px' }}
-                    />
-                  </Form.Item>
-                </Col>
+                <FormField
+                  name="representativeName"
+                  label="Họ Tên Quản Lý"
+                  icon={<UserAddOutlined />}
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập họ tên quản lý!' },
+                    { min: 2, message: 'Họ tên quản lý phải có ít nhất 2 ký tự!' }
+                  ]}
+                >
+                  <Input 
+                    placeholder="Nhập họ tên quản lý"
+                    className="rounded-lg"
+                  />
+                </FormField>
 
-                {/* Tỉnh/Thành phố */}
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="province"
-                    label={
-                      <span style={{ fontWeight: '600', color: '#262626' }}>
-                        <EnvironmentOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-                        Tỉnh/Thành phố
-                      </span>
+                <FormField
+                  name="province"
+                  label="Tỉnh/Thành phố"
+                  icon={<EnvironmentOutlined />}
+                  rules={[
+                    { required: true, message: 'Vui lòng chọn tỉnh/thành phố!' }
+                  ]}
+                >
+                  <Select 
+                    placeholder="Chọn tỉnh/thành phố"
+                    className="rounded-lg"
+                    showSearch
+                    loading={loadingProvinces}
+                    onChange={handleProvinceChange}
+                    filterOption={(input, option) =>
+                      option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                     }
-                    rules={[
-                      { required: true, message: 'Vui lòng chọn tỉnh/thành phố!' }
-                    ]}
+                    notFoundContent={loadingProvinces ? <Spin size="small" /> : 'Không tìm thấy tỉnh/thành phố'}
                   >
-                    <Select 
-                      placeholder="Chọn tỉnh/thành phố"
-                      style={{ borderRadius: '8px' }}
-                      showSearch
-                      loading={loadingProvinces}
-                      onChange={handleProvinceChange}
-                      filterOption={(input, option) =>
-                        option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                      }
-                      notFoundContent={loadingProvinces ? <Spin size="small" /> : 'Không tìm thấy tỉnh/thành phố'}
-                    >
-                      {provinces.map(province => (
-                        <Option key={province.code} value={province.code}>
-                          {province.name}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
+                    {provinces.map(province => (
+                      <Option key={province.code} value={province.code}>
+                        {province.name}
+                      </Option>
+                    ))}
+                  </Select>
+                </FormField>
 
-                {/* Phường/Xã */}
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="ward"
-                    label={
-                      <span style={{ fontWeight: '600', color: '#262626' }}>
-                        <EnvironmentOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-                        Phường/Xã
-                      </span>
+                <FormField
+                  name="ward"
+                  label="Phường/Xã"
+                  icon={<EnvironmentOutlined />}
+                  rules={[
+                    { required: true, message: 'Vui lòng chọn phường/xã!' }
+                  ]}
+                >
+                  <Select 
+                    placeholder="Chọn phường/xã"
+                    className="rounded-lg"
+                    showSearch
+                    loading={loadingWards}
+                    disabled={wards.length === 0}
+                    filterOption={(input, option) =>
+                      option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                     }
-                    rules={[
-                      { required: true, message: 'Vui lòng chọn phường/xã!' }
-                    ]}
+                    notFoundContent={loadingWards ? <Spin size="small" /> : 'Không tìm thấy phường/xã'}
                   >
-                    <Select 
-                      placeholder="Chọn phường/xã"
-                      style={{ borderRadius: '8px' }}
-                      showSearch
-                      loading={loadingWards}
-                      disabled={wards.length === 0}
-                      filterOption={(input, option) =>
-                        option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                      }
-                      notFoundContent={loadingWards ? <Spin size="small" /> : 'Không tìm thấy phường/xã'}
-                    >
-                      {wards.map(ward => (
-                        <Option key={ward.code} value={ward.code}>
-                          {ward.name}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
+                    {wards.map(ward => (
+                      <Option key={ward.code} value={ward.code}>
+                        {ward.name}
+                      </Option>
+                    ))}
+                  </Select>
+                </FormField>
 
-                {/* Email Quản Lý */}
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="email"
-                    label={
-                      <span style={{ fontWeight: '600', color: '#262626' }}>
-                        <MailOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-                        Email Quản Lý
-                      </span>
-                    }
-                    rules={[
-                      { required: true, message: 'Vui lòng nhập email quản lý!' },
-                      { type: 'email', message: 'Email không hợp lệ!' }
-                    ]}
-                  >
-                    <Input 
-                      placeholder="Nhập email quản lý"
-                      style={{ borderRadius: '8px' }}
-                    />
-                  </Form.Item>
-                </Col>
+                <FormField
+                  name="email"
+                  label="Email Quản Lý"
+                  icon={<MailOutlined />}
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập email quản lý!' },
+                    { type: 'email', message: 'Email không hợp lệ!' }
+                  ]}
+                >
+                  <Input 
+                    placeholder="Nhập email quản lý"
+                    className="rounded-lg"
+                  />
+                </FormField>
 
-                {/* Số điện thoại Quản Lý */}
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="phone"
-                    label={
-                      <span style={{ fontWeight: '600', color: '#262626' }}>
-                        <PhoneOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-                        Số Điện Thoại Quản Lý
-                      </span>
+                <FormField
+                  name="phone"
+                  label="Số Điện Thoại Quản Lý"
+                  icon={<PhoneOutlined />}
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập số điện thoại quản lý!' },
+                    { 
+                      pattern: /^0[1-9]{9}$/, 
+                      message: 'Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số!' 
                     }
-                    rules={[
-                      { required: true, message: 'Vui lòng nhập số điện thoại quản lý!' },
-                      { 
-                        pattern: /^0[1-9]{9}$/, 
-                        message: 'Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số!' 
-                      }
-                    ]}
-                  >
-                    <Input 
-                      placeholder="Nhập số điện thoại quản lý (bắt đầu bằng 0)"
-                      style={{ borderRadius: '8px' }}
-                    />
-                  </Form.Item>
-                </Col>
+                  ]}
+                >
+                  <Input 
+                    placeholder="Nhập số điện thoại quản lý (bắt đầu bằng 0)"
+                    className="rounded-lg"
+                  />
+                </FormField>
 
-                {/* Địa chỉ Đại Lý */}
-                <Col xs={24}>
-                  <Form.Item
-                    name="address"
-                    label={
-                      <span style={{ fontWeight: '600', color: '#262626' }}>
-                        <EnvironmentOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-                        Địa Chỉ Đại Lý
-                      </span>
-                    }
-                    rules={[
-                      { required: true, message: 'Vui lòng nhập địa chỉ đại lý!' }
-                    ]}
-                  >
-                    <Input.TextArea 
-                      placeholder="Nhập địa chỉ đại lý (số nhà, tên đường, ...)"
-                      rows={3}
-                      style={{ borderRadius: '8px' }}
-                    />
-                  </Form.Item>
-                </Col>
+                <FormField
+                  name="address"
+                  label="Địa Chỉ Đại Lý"
+                  icon={<EnvironmentOutlined />}
+                  span={24}
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập địa chỉ đại lý!' }
+                  ]}
+                >
+                  <Input.TextArea 
+                    placeholder="Nhập địa chỉ đại lý (số nhà, tên đường, ...)"
+                    rows={3}
+                    className="rounded-lg"
+                  />
+                </FormField>
               </Row>
 
-              {/* Hiển thị hợp đồng trực tiếp trên trang nếu đã tạo thành công */}
-              {contractLink && (
-                <Row style={{ marginTop: '24px' }}>
-                  <Col span={24}>
-                    <Card 
-                      title={
-                        <span style={{ display: 'flex', alignItems: 'center' }}>
-                          <ShopOutlined style={{ color: '#52c41a', marginRight: '8px' }} /> 
-                          Hợp đồng đã được tạo thành công
-                        </span>
-                      } 
-                      style={{ 
-                        backgroundColor: '#f6ffed', 
-                        borderColor: '#b7eb8f',
-                        marginBottom: '24px' 
-                      }}
-                    >
-                      <div>
-                        <p><strong>Số hợp đồng:</strong> {contractNo}</p>
-                        
-                        {contractSigned && (
-                          <Alert
-                            message={
-                              <span style={{ color: '#52c41a', fontWeight: '600' }}>
-                                ✅ Hợp đồng đã được ký thành công!
-                              </span>
-                            }
-                            type="success"
-                            style={{ marginBottom: '16px' }}
-                          />
-                        )}
-                        
-                        {/* PDF Viewer iframe sử dụng PDF.js */}
-                        <div style={{ marginTop: '24px', marginBottom: '24px' }}>
-                          <div style={{ 
-                            border: '1px solid #d9d9d9', 
-                            borderRadius: '8px', 
-                            overflow: 'hidden',
-                            height: '600px'
-                          }}>
-                            <iframe
-                              src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(contractLink)}`}
-                              title="PDF Viewer"
-                              width="100%"
-                              height="100%"
-                              style={{ border: 'none' }}
-                              allowFullScreen
-                            />
-                          </div>
-                        </div>
-                        
-                        {/* Nút điều khiển */}
-                        <div style={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between', 
-                          alignItems: 'center',
-                          marginTop: '16px' 
-                        }}>
-                          <Space>
-                            <Button 
-                              type="primary" 
-                              href={contractLink} 
-                              target="_blank"
-                              icon={<EnvironmentOutlined />}
-                              style={{ 
-                                backgroundColor: '#52c41a', 
-                                borderColor: '#52c41a' 
-                              }}
-                            >
-                              Mở trong trang mới
-                            </Button>
-                            
-                            <Button
-                              type="default"
-                              icon={<FilePdfOutlined />}
-                              onClick={() => {
-                                // Tạo và tải xuống PDF
-                                const a = document.createElement('a');
-                                a.href = contractLink;
-                                a.download = `hop-dong-${contractNo || 'dai-ly'}.pdf`;
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                              }}
-                            >
-                              Tải hợp đồng PDF
-                            </Button>
-
-                            {!contractSigned && (
-                              <Button
-                                type="primary"
-                                icon={<EditOutlined />}
-                                onClick={openSignatureModal}
-                                style={{
-                                  backgroundColor: '#1890ff',
-                                  borderColor: '#1890ff'
-                                }}
-                              >
-                                Ký Hợp Đồng
-                              </Button>
-                            )}
-
-                            {contractSigned && (
-                              <Button
-                                type="primary"
-                                icon={<CheckOutlined />}
-                                disabled
-                                style={{
-                                  backgroundColor: '#52c41a',
-                                  borderColor: '#52c41a'
-                                }}
-                              >
-                                Đã Ký
-                              </Button>
-                            )}
-                          </Space>
-                          
-                          <Button 
-                            onClick={() => {
-                              setContractLink(null);
-                              setContractNo(null);
-                              setContractId(null);
-                              setWaitingProcessData(null);
-                              setContractSigned(false);
-                              form.resetFields();
-                            }}
-                          >
-                            Tạo hợp đồng mới
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  </Col>
-                </Row>
-              )}
-              
-              {/* Buttons */}
-              <Row justify="center" style={{ marginTop: '32px' }}>
+              {/* Action Buttons */}
+              <Row justify="center" className="mt-8">
                 <Col>
                   <Space size="large">
                     <Button 
                       size="large" 
-                      onClick={() => {
-                        form.resetFields();
-                        setContractLink(null);
-                        setContractNo(null);
-                        setContractId(null);
-                        setWaitingProcessData(null);
-                        setContractSigned(false);
-                      }}
-                      style={{ 
-                        borderRadius: '8px',
-                        minWidth: '120px',
-                        height: '48px',
-                        fontSize: '16px',
-                        fontWeight: '600'
-                      }}
+                      onClick={resetForm}
+                      className="rounded-lg min-w-32 h-12 text-base font-semibold"
                       disabled={contractLink !== null}
                     >
                       Làm Mới
@@ -735,16 +709,7 @@ const CreateAccount = () => {
                       htmlType="submit" 
                       loading={loading}
                       size="large"
-                      style={{ 
-                        borderRadius: '8px',
-                        minWidth: '120px',
-                        height: '48px',
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
-                        border: 'none',
-                        boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)'
-                      }}
+                      className="rounded-lg min-w-32 h-12 text-base font-semibold bg-gradient-to-r from-blue-500 to-blue-600 border-none shadow-lg hover:shadow-xl transition-all duration-200"
                       disabled={contractLink !== null}
                     >
                       {loading ? 'Đang tạo...' : 'Tiếp Theo'}
@@ -756,96 +721,15 @@ const CreateAccount = () => {
           </Space>
         </Card>
 
-        {/* Modal Ký Hợp Đồng */}
-        <Modal
-          title={
-            <span style={{ display: 'flex', alignItems: 'center' }}>
-              <EditOutlined style={{ color: '#1890ff', marginRight: '8px' }} />
-              Ký Hợp Đồng Điện Tử
-            </span>
-          }
-          open={showSignatureModal}
+        {/* Signature Modal */}
+        <SignatureModal
+          visible={showSignatureModal}
           onCancel={() => setShowSignatureModal(false)}
-          footer={null}
-          width={600}
-          centered
-        >
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <Alert
-              message="Vui lòng vẽ chữ ký của bạn trong khung bên dưới"
-              type="info"
-              style={{ marginBottom: '20px' }}
-            />
-            
-            <div style={{
-              border: '2px dashed #d9d9d9',
-              borderRadius: '8px',
-              padding: '10px',
-              backgroundColor: '#fafafa',
-              marginBottom: '20px'
-            }}>
-              <SignatureCanvas
-                ref={signatureRef}
-                canvasProps={{
-                  width: 500,
-                  height: 200,
-                  className: 'signature-canvas',
-                  style: {
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '4px',
-                    backgroundColor: 'white'
-                  }
-                }}
-                backgroundColor="white"
-                penColor="black"
-                dotSize={2}
-                minWidth={1}
-                maxWidth={3}
-                velocityFilterWeight={0.7}
-              />
-            </div>
-
-            <div style={{ 
-              fontSize: '12px', 
-              color: '#666', 
-              marginBottom: '16px',
-              textAlign: 'left'
-            }}>
-              <strong>Lưu ý:</strong> Chữ ký sẽ được chuyển đổi thành định dạng <code>data:image/png;base64,...</code> để gửi lên server
-            </div>
-
-            <Space size="large">
-              <Button
-                icon={<ClearOutlined />}
-                onClick={clearSignature}
-                style={{ minWidth: '100px' }}
-              >
-                Xóa
-              </Button>
-              
-              <Button
-                onClick={() => setShowSignatureModal(false)}
-                style={{ minWidth: '100px' }}
-              >
-                Hủy
-              </Button>
-              
-              <Button
-                type="primary"
-                icon={<CheckOutlined />}
-                onClick={handleSignContract}
-                loading={signingLoading}
-                style={{ 
-                  minWidth: '100px',
-                  backgroundColor: '#52c41a',
-                  borderColor: '#52c41a'
-                }}
-              >
-                {signingLoading ? 'Đang ký...' : 'Ký Hợp Đồng'}
-              </Button>
-            </Space>
-          </div>
-        </Modal>
+          onSign={handleSignContract}
+          onClear={() => {}}
+          loading={signingLoading}
+          signatureRef={signatureRef}
+        />
       </div>
     </div>
   );
