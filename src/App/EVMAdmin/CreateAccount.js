@@ -9,8 +9,6 @@ export const createAccountApi = {
       const apiData = {
         dealerName: formData.brandName,
         dealerAddress: formData.address,
-        dealerEmail: null, // Mặc định null
-        dealerPhoneNumber: null, // Mặc định null
         fullNameManager: formData.representativeName,
         emailManager: formData.email,
         phoneNumberManager: formData.phone

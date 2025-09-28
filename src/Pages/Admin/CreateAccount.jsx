@@ -72,6 +72,27 @@ const CreateAccount = () => {
     setLoading(true);
     
     try {
+      // Kết hợp địa chỉ với thông tin tỉnh/thành phố và phường/xã
+      const provinceCode = values.province;
+      const wardCode = values.ward;
+      let fullAddress = values.address || '';
+
+      // Tìm tên phường/xã và tỉnh/thành phố từ mã code
+      const selectedProvince = provinces.find(p => p.code === provinceCode);
+      const selectedWard = wards.find(w => w.code === wardCode);
+
+      // Kết hợp địa chỉ với tên phường/xã và tỉnh/thành phố
+      if (selectedWard && selectedProvince) {
+        fullAddress = `${fullAddress}, ${selectedWard.name}, ${selectedProvince.name}`.trim().replace(/^,\s+/, '');
+        
+        // Ghi đè trường địa chỉ bằng địa chỉ đầy đủ
+        values.address = fullAddress;
+        
+        console.log('Địa chỉ đầy đủ đã được cập nhật:', values.address);
+      } else {
+        console.error('Không thể tìm thấy thông tin phường/xã hoặc tỉnh/thành phố');
+      }
+
       // Validate dữ liệu trước khi gửi
       const validation = createAccountApi.validateFormData(values);
       if (!validation.isValid) {
@@ -80,6 +101,9 @@ const CreateAccount = () => {
         return;
       }
 
+      // Log giá trị trước khi gửi để kiểm tra
+      console.log('Dữ liệu gửi đi:', values);
+      
       // Gọi API tạo hợp đồng đại lý
       const result = await createAccountApi.createDealerContract(values);
       
