@@ -13,7 +13,7 @@ import {
   Divider,
   Spin
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { locationApi } from '../../api/api';
 import { createAccountApi } from '../../App/EVMAdmin/CreateAccount';
 
@@ -27,6 +27,9 @@ const CreateAccount = () => {
   const [wards, setWards] = useState([]);
   const [loadingProvinces, setLoadingProvinces] = useState(true);
   const [loadingWards, setLoadingWards] = useState(false);
+  const [contractLink, setContractLink] = useState(null);
+  const [contractNo, setContractNo] = useState(null);
+  const [pdfViewerUrl, setPdfViewerUrl] = useState(null);
 
   // Load danh sách tỉnh/thành phố khi component mount
   useEffect(() => {
@@ -107,11 +110,69 @@ const CreateAccount = () => {
       // Gọi API tạo hợp đồng đại lý
       const result = await createAccountApi.createDealerContract(values);
       
-      if (result.success) {
-        message.success(result.message);
-        form.resetFields();
+      if (result.isSuccess || result.success) {
+        message.success('Tạo hợp đồng thành công!');
+        
+        // Xác định dữ liệu từ response
+        let contractData = null;
+        
+        // Log toàn bộ result để debug
+        console.log('Full API response:', JSON.stringify(result, null, 2));
+        
+        // Phân tích cấu trúc response để lấy downloadUrl và id
+        if (result.result?.data) {
+          // Cấu trúc từ API: { isSuccess: true, result: { data: { id, downloadUrl } } }
+          contractData = result.result.data;
+          console.log('Lấy dữ liệu từ result.result.data:', contractData);
+        } else if (result.data) {
+          // Cấu trúc thay thế: { success: true, data: { id, downloadUrl } }
+          contractData = result.data;
+          console.log('Lấy dữ liệu từ result.data:', contractData);
+        }
+        
+        if (contractData) {
+          // Lấy các trường từ cấu trúc JSON
+          const contractId = contractData.id;
+          const downloadUrl = contractData.downloadUrl;
+          const contractNo = contractData.no;
+          
+          // Log chi tiết để debug
+          console.log('Contract data:', {
+            id: contractId,
+            no: contractNo,
+            downloadUrl: downloadUrl
+          });
+          
+          if (downloadUrl) {
+            // Lưu thông tin để hiển thị UI
+            setContractLink(downloadUrl);
+            setContractNo(contractNo || 'Không xác định');
+            
+            // Tạo URL cho PDF.js Viewer để hiển thị PDF trực tiếp trên trang
+            const pdfJsUrl = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(downloadUrl)}`;
+            setPdfViewerUrl(pdfJsUrl);
+            
+            // Thông báo thành công với tùy chọn đi đến trang gốc
+            message.success({
+              content: (
+                <span>
+                  Hợp đồng đã được tạo thành công và sẽ được hiển thị bên dưới!
+                </span>
+              ),
+              duration: 3
+            });
+          } else {
+            message.warning('Không tìm thấy đường dẫn hợp đồng');
+            console.error('Download URL không tồn tại trong phản hồi');
+          }
+        } else {
+          message.warning('Không có thông tin hợp đồng trong kết quả trả về');
+        }
       } else {
-        message.error(result.error);
+        message.error(result.error || 'Có lỗi khi tạo hợp đồng');
+        // Reset thông tin hợp đồng nếu có lỗi
+        setContractLink(null);
+        setContractNo(null);
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -353,13 +414,111 @@ const CreateAccount = () => {
                 </Col>
               </Row>
 
+              {/* Hiển thị hợp đồng trực tiếp trên trang nếu đã tạo thành công */}
+              {contractLink && (
+                <Row style={{ marginTop: '24px' }}>
+                  <Col span={24}>
+                    <Card 
+                      title={
+                        <span style={{ display: 'flex', alignItems: 'center' }}>
+                          <ShopOutlined style={{ color: '#52c41a', marginRight: '8px' }} /> 
+                          Hợp đồng đã được tạo thành công
+                        </span>
+                      } 
+                      style={{ 
+                        backgroundColor: '#f6ffed', 
+                        borderColor: '#b7eb8f',
+                        marginBottom: '24px' 
+                      }}
+                    >
+                      <div>
+                        <p><strong>Số hợp đồng:</strong> {contractNo}</p>
+                        
+                        {/* PDF Viewer iframe sử dụng PDF.js */}
+                        <div style={{ marginTop: '24px', marginBottom: '24px' }}>
+                          <div style={{ 
+                            border: '1px solid #d9d9d9', 
+                            borderRadius: '8px', 
+                            overflow: 'hidden',
+                            height: '600px'
+                          }}>
+                            <iframe
+                              src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(contractLink)}`}
+                              title="PDF Viewer"
+                              width="100%"
+                              height="100%"
+                              style={{ border: 'none' }}
+                              allowFullScreen
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Nút điều khiển */}
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          marginTop: '16px' 
+                        }}>
+                          <Space>
+                            <Button 
+                              type="primary" 
+                              href={contractLink} 
+                              target="_blank"
+                              icon={<EnvironmentOutlined />}
+                              style={{ 
+                                backgroundColor: '#52c41a', 
+                                borderColor: '#52c41a' 
+                              }}
+                            >
+                              Mở trong trang mới
+                            </Button>
+                            
+                            <Button
+                              type="default"
+                              icon={<FilePdfOutlined />}
+                              onClick={() => {
+                                // Tạo và tải xuống PDF
+                                const a = document.createElement('a');
+                                a.href = contractLink;
+                                a.download = `hop-dong-${contractNo || 'dai-ly'}.pdf`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                              }}
+                            >
+                              Tải hợp đồng PDF
+                            </Button>
+                          </Space>
+                          
+                          <Button 
+                            onClick={() => {
+                              setContractLink(null);
+                              setContractNo(null);
+                              setPdfViewerUrl(null);
+                              form.resetFields();
+                            }}
+                          >
+                            Tạo hợp đồng mới
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  </Col>
+                </Row>
+              )}
+              
               {/* Buttons */}
               <Row justify="center" style={{ marginTop: '32px' }}>
                 <Col>
                   <Space size="large">
                     <Button 
                       size="large" 
-                      onClick={() => form.resetFields()}
+                      onClick={() => {
+                        form.resetFields();
+                        setContractLink(null);
+                        setContractNo(null);
+                      }}
                       style={{ 
                         borderRadius: '8px',
                         minWidth: '120px',
@@ -367,6 +526,7 @@ const CreateAccount = () => {
                         fontSize: '16px',
                         fontWeight: '600'
                       }}
+                      disabled={contractLink !== null}
                     >
                       Làm Mới
                     </Button>
@@ -385,6 +545,7 @@ const CreateAccount = () => {
                         border: 'none',
                         boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)'
                       }}
+                      disabled={contractLink !== null}
                     >
                       {loading ? 'Đang tạo...' : 'Tiếp Theo'}
                     </Button>

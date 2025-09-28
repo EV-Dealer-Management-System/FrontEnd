@@ -19,11 +19,13 @@ export const createAccountApi = {
       // Gọi API tạo hợp đồng đại lý
       const response = await api.post('/EContract/dealer-contracts', apiData);
       
-      return {
-        success: true,
-        data: response.data,
-        message: 'Tạo hợp đồng đại lý thành công!'
-      };
+      // Log toàn bộ response để debug
+      console.log('API response:', JSON.stringify(response.data, null, 2));
+      
+      // Trả về đúng cấu trúc mà backend trả về để xử lý phía component
+      // Trong trường hợp này, cấu trúc response là:
+      // { isSuccess: true, message: "...", result: { data: { id, downloadUrl, ... } } }
+      return response.data;
     } catch (error) {
       console.error('Error creating dealer contract:', error);
       
