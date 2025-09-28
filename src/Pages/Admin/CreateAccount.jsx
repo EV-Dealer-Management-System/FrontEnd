@@ -261,9 +261,9 @@ const SignatureModal = ({
             icon={<CheckOutlined />}
             onClick={onSign}
             loading={loading}
-            className="min-w-24 bg-green-500 border-green-500 hover:bg-green-600"
+            className="min-w-24 bg-blue-500 border-blue-500 hover:bg-blue-600"
           >
-            {loading ? 'Đang ký...' : 'Ký Hợp Đồng'}
+            {loading ? 'Đang ký...' : 'Ký Điện Tử'}
           </Button>
         </Space>
       </div>
@@ -443,6 +443,9 @@ const CreateAccount = () => {
   const [signatureMethod, setSignatureMethod] = useState('draw'); // 'draw' hoặc 'upload'
   const [uploadedImage, setUploadedImage] = useState(null);
   const [uploadedImageBase64, setUploadedImageBase64] = useState('');
+  const [showAppVerifyModal, setShowAppVerifyModal] = useState(false);
+  const [signatureCompleted, setSignatureCompleted] = useState(false);
+  const [showSmartCAModal, setShowSmartCAModal] = useState(false);
   const signatureRef = useRef(null);
 
   // Build a display URL for PDF (use dev proxy to avoid CORS/X-Frame in development)
@@ -602,8 +605,8 @@ const CreateAccount = () => {
     message.error('Vui lòng kiểm tra lại thông tin đã nhập');
   };
 
-  // Handle contract signing
-  const handleSignContract = async () => {
+  // Handle digital signature (Step 1)
+  const handleDigitalSignature = async () => {
     // Kiểm tra chữ ký dựa trên method và display mode
     if (signatureDisplayMode === 2 || signatureDisplayMode === 3) {
       if (signatureMethod === 'draw') {
@@ -620,6 +623,9 @@ const CreateAccount = () => {
     }
 
     setSigningLoading(true);
+    setShowSignatureModal(false);
+    setShowSmartCAModal(true);
+    
     try {
       // Lấy signature data dựa trên method được chọn
       let signatureDataURL = '';
@@ -659,7 +665,96 @@ const CreateAccount = () => {
 
       const result = await signContractApi.handleSignContract(signData);
       
-      console.log('Sign contract API result:', JSON.stringify(result, null, 2));
+      console.log('Digital signature result:', JSON.stringify(result, null, 2));
+      
+      // Ký điện tử thành công, chuyển sang bước xác thực app
+      if (result && result.statusCode === 200 && result.isSuccess) {
+        setSignatureCompleted(true);
+        setShowSmartCAModal(false);
+        setShowAppVerifyModal(true);
+        message.success('Ký điện tử thành công! Vui lòng xác thực trên ứng dụng.');
+      } else {
+        // Xử lý lỗi ký điện tử
+        const errorMessage = result?.message || 
+                           result?.result?.messages?.[0] || 
+                           'Có lỗi khi ký điện tử';
+        message.error(errorMessage);
+        setShowSmartCAModal(false);
+      }
+    } catch (error) {
+      console.error('Error in digital signature:', error);
+      message.error('Có lỗi không mong muốn khi ký điện tử');
+      setShowSmartCAModal(false);
+    } finally {
+      setSigningLoading(false);
+    }
+  };
+
+  // Handle app verification (Step 2)
+  const handleAppVerification = async () => {
+    if (!signatureCompleted) {
+      message.error('Vui lòng hoàn thành ký điện tử trước!');
+      return;
+    }
+
+    setSigningLoading(true);
+    try {
+      // Giả lập việc xác thực từ app (có thể gọi API khác để kiểm tra)
+      // Ở đây chúng ta sẽ hiển thị kết quả thành công
+      
+      // Đóng modal xác thực app
+      setShowAppVerifyModal(false);
+      setContractSigned(true);
+      
+      // Hiển thị popup thành công cuối cùng
+      Modal.success({
+        title: (
+          <span className="text-green-600 font-semibold flex items-center">
+            <CheckOutlined className="mr-2" />
+            Ký Hợp Đồng Hoàn Tất!
+          </span>
+        ),
+        content: (
+          <div className="py-4">
+            <div className="text-base mb-3">🎉 Hợp đồng đã được ký và xác thực thành công!</div>
+            <div className="text-sm text-gray-600">
+              Hợp đồng số: <strong>{contractNo}</strong>
+            </div>
+            <div className="text-sm text-gray-600">
+              Trạng thái: <strong className="text-green-600">Đã ký và xác thực ✅</strong>
+            </div>
+            <div className="text-sm text-gray-500 mt-2">
+              Hợp đồng đã được hoàn tất với chữ ký điện tử và xác thực từ ứng dụng
+            </div>
+          </div>
+        ),
+        okText: 'Đóng',
+        centered: true,
+        width: 450,
+        okButtonProps: {
+          className: 'bg-green-500 border-green-500 hover:bg-green-600'
+        }
+      });
+      
+      message.success('Xác thực thành công! Hợp đồng đã hoàn tất.');
+    } catch (error) {
+      console.error('Error in app verification:', error);
+      message.error('Có lỗi khi xác thực từ ứng dụng');
+    } finally {
+      setSigningLoading(false);
+    }
+  };
+
+  // Legacy function for backward compatibility
+  const handleSignContract = async () => {
+    // This now just calls the digital signature step
+    await handleDigitalSignature();
+  };
+
+  // Original signing logic (kept for reference, but modified)
+  const _originalSigningLogic = async () => {
+    try {
+      const result = {}; // Original API call would go here
       
       // Kiểm tra response theo cấu trúc mới: statusCode 200 và isSuccess true
       if (result && result.statusCode === 200 && result.isSuccess) {
@@ -847,6 +942,9 @@ const CreateAccount = () => {
         setWaitingProcessData(null);
         setContractSigned(false);
         setShowSignatureModal(false);
+        setShowAppVerifyModal(false);
+        setShowSmartCAModal(false);
+        setSignatureCompleted(false);
         setSigningLoading(false);
         setSignatureDisplayMode(2);
         setSignatureMethod('draw');
@@ -1083,7 +1181,7 @@ const CreateAccount = () => {
         >
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <Alert
-              message="Vui lòng chọn loại chữ ký và vẽ chữ ký của bạn trong khung bên dưới"
+              message="Bước 1/2: Vui lòng thực hiện ký điện tử trước"
               type="info"
               style={{ marginBottom: '20px' }}
             />
@@ -1299,15 +1397,267 @@ const CreateAccount = () => {
               <Button
                 type="primary"
                 icon={<CheckOutlined />}
-                onClick={handleSignContract}
+                onClick={handleDigitalSignature}
                 loading={signingLoading}
                 style={{ 
                   minWidth: '100px',
+                  backgroundColor: '#1890ff',
+                  borderColor: '#1890ff'
+                }}
+              >
+                {signingLoading ? 'Đang ký...' : 'Ký Điện Tử'}
+              </Button>
+            </Space>
+          </div>
+        </Modal>
+
+        {/* VNPT SmartCA Modal - Signing Process */}
+        <Modal
+          title={
+            <span style={{ display: 'flex', alignItems: 'center' }}>
+              <EditOutlined style={{ color: '#1890ff', marginRight: '8px' }} />
+              Đang Thực Hiện Ký Điện Tử
+            </span>
+          }
+          open={showSmartCAModal}
+          onCancel={() => {
+            setShowSmartCAModal(false);
+            setSigningLoading(false);
+          }}
+          footer={null}
+          width={500}
+          centered
+          closable={true}
+        >
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <Alert
+              message={
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
+                    📱 Vui lòng mở ứng dụng VNPT SmartCA để tiếp tục
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#666' }}>
+                    Hệ thống đang chờ bạn xác nhận ký điện tử trên ứng dụng
+                  </div>
+                </div>
+              }
+              type="info"
+              style={{ marginBottom: '24px', textAlign: 'left' }}
+            />
+            
+            <div style={{
+              border: '2px dashed #1890ff',
+              borderRadius: '8px',
+              padding: '24px',
+              backgroundColor: '#f0f8ff',
+              marginBottom: '24px'
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔐</div>
+              <div style={{ fontSize: '18px', fontWeight: '600', color: '#1890ff', marginBottom: '12px' }}>
+                VNPT SmartCA
+              </div>
+              <div style={{ fontSize: '14px', color: '#666', textAlign: 'left', lineHeight: '1.6' }}>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>Các bước thực hiện:</strong>
+                </div>
+                <div style={{ marginBottom: '6px' }}>1. Mở ứng dụng <strong>VNPT SmartCA</strong> trên điện thoại</div>
+                <div style={{ marginBottom: '6px' }}>2. Tìm thông báo ký điện tử cho hợp đồng số: <strong style={{ color: '#1890ff' }}>{contractNo}</strong></div>
+                <div style={{ marginBottom: '6px' }}>3. Nhập mật khẩu hoặc xác thực sinh trắc học</div>
+                <div style={{ marginBottom: '6px' }}>4. Xác nhận ký điện tử trong ứng dụng</div>
+              </div>
+              
+              <div style={{
+                marginTop: '16px',
+                padding: '12px',
+                backgroundColor: '#fff7e6',
+                borderRadius: '6px',
+                border: '1px solid #ffd591'
+              }}>
+                <div style={{ fontSize: '14px', color: '#fa8c16', textAlign: 'center' }}>
+                  <span style={{ marginRight: '8px' }}>⏳</span>
+                  <strong>Đang chờ xác nhận từ VNPT SmartCA...</strong>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: '12px', color: '#666', marginBottom: '16px' }}>
+              💡 <strong>Lưu ý:</strong> Nếu không nhận được thông báo trong ứng dụng, vui lòng kiểm tra kết nối internet và thử lại.
+            </div>
+
+            <Button
+              onClick={() => {
+                setShowSmartCAModal(false);
+                setSigningLoading(false);
+              }}
+              style={{ minWidth: '120px' }}
+            >
+              Hủy Ký
+            </Button>
+          </div>
+        </Modal>
+
+        {/* App Verification Modal - Step 2 */}
+        <Modal
+          title={
+            <span style={{ display: 'flex', alignItems: 'center' }}>
+              <CheckOutlined style={{ color: '#52c41a', marginRight: '8px' }} />
+              Bước 2/2: Xác Thực Trên Ứng Dụng
+            </span>
+          }
+          open={showAppVerifyModal}
+          onCancel={() => setShowAppVerifyModal(false)}
+          footer={null}
+          width={500}
+          centered
+        >
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <Alert
+              message={
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
+                    ✅ Ký điện tử thành công!
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#666' }}>
+                    📱 Bây giờ vui lòng vào ứng dụng di động để xác thực hợp đồng
+                  </div>
+                </div>
+              }
+              type="success"
+              style={{ marginBottom: '24px', textAlign: 'left' }}
+            />
+            
+            <div style={{
+              border: '2px dashed #52c41a',
+              borderRadius: '8px',
+              padding: '24px',
+              backgroundColor: '#f6ffed',
+              marginBottom: '24px'
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📲</div>
+              <div style={{ fontSize: '16px', fontWeight: '500', color: '#52c41a', marginBottom: '12px' }}>
+                Hướng dẫn xác thực:
+              </div>
+              <div style={{ fontSize: '14px', color: '#666', textAlign: 'left' }}>
+                <div style={{ marginBottom: '6px' }}>1. Mở ứng dụng trên điện thoại của bạn</div>
+                <div style={{ marginBottom: '6px' }}>2. Tìm hợp đồng số: <strong style={{ color: '#1890ff' }}>{contractNo}</strong></div>
+                <div style={{ marginBottom: '6px' }}>3. Thực hiện xác thực hợp đồng trong app</div>
+                <div style={{ marginBottom: '6px' }}>4. Quay lại đây và nhấn "Đã Xác Thực"</div>
+              </div>
+              
+              <div style={{
+                marginTop: '16px',
+                padding: '12px',
+                backgroundColor: '#fff',
+                borderRadius: '6px',
+                border: '1px solid #d9d9d9'
+              }}>
+                <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                  🔒 Trạng thái hiện tại:
+                </div>
+                <div style={{ fontSize: '14px', fontWeight: '500', color: '#52c41a' }}>
+                  ✓ Ký điện tử hoàn tất
+                </div>
+              </div>
+            </div>
+
+            <Space size="large">
+              <Button
+                onClick={() => setShowAppVerifyModal(false)}
+                style={{ minWidth: '120px' }}
+              >
+                Hủy
+              </Button>
+              
+              <Button
+                type="primary"
+                icon={<CheckOutlined />}
+                onClick={handleAppVerification}
+                loading={signingLoading}
+                style={{ 
+                  minWidth: '120px',
                   backgroundColor: '#52c41a',
                   borderColor: '#52c41a'
                 }}
               >
-                {signingLoading ? 'Đang ký...' : 'Ký Hợp Đồng'}
+                {signingLoading ? 'Đang xác thực...' : 'Đã Xác Thực ✓'}
+              </Button>
+            </Space>
+          </div>
+        </Modal>
+
+        {/* App Verification Modal - Step 2 */}
+        <Modal
+          title={
+            <span style={{ display: 'flex', alignItems: 'center' }}>
+              <CheckOutlined style={{ color: '#52c41a', marginRight: '8px' }} />
+              Bước 2/2: Xác Thực Trên Ứng Dụng
+            </span>
+          }
+          open={showAppVerifyModal}
+          onCancel={() => setShowAppVerifyModal(false)}
+          footer={null}
+          width={500}
+          centered
+        >
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <Alert
+              message={
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
+                    ✅ Ký điện tử thành công!
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#666' }}>
+                    📱 Bây giờ vui lòng vào ứng dụng di động để xác thực hợp đồng
+                  </div>
+                </div>
+              }
+              type="success"
+              style={{ marginBottom: '24px', textAlign: 'left' }}
+            />
+            
+            <div style={{
+              border: '2px dashed #52c41a',
+              borderRadius: '8px',
+              padding: '24px',
+              backgroundColor: '#f6ffed',
+              marginBottom: '24px'
+            }}>
+              <div style={{
+                marginTop: '16px',
+                padding: '12px',
+                backgroundColor: '#fff',
+                borderRadius: '6px',
+                border: '1px solid #d9d9d9'
+              }}>
+                <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                  🔒 Trạng thái hiện tại:
+                </div>
+                <div style={{ fontSize: '14px', fontWeight: '500', color: '#52c41a' }}>
+                  ✓ Ký điện tử hoàn tất
+                </div>
+              </div>
+            </div>
+
+            <Space size="large">
+              <Button
+                onClick={() => setShowAppVerifyModal(false)}
+                style={{ minWidth: '120px' }}
+              >
+                Hủy
+              </Button>
+              
+              <Button
+                type="primary"
+                icon={<CheckOutlined />}
+                onClick={handleAppVerification}
+                loading={signingLoading}
+                style={{ 
+                  minWidth: '120px',
+                  backgroundColor: '#52c41a',
+                  borderColor: '#52c41a'
+                }}
+              >
+                {signingLoading ? 'Đang xác thực...' : 'OK'}
               </Button>
             </Space>
           </div>
