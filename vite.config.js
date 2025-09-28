@@ -21,6 +21,31 @@ export default defineConfig({
             console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
           });
         },
+      },
+      // Dev-only proxy to display remote PDF inline without CORS/X-Frame issues
+      '/pdf-proxy': {
+        target: 'https://econtract-premium-api.vnpt.vn',
+        changeOrigin: true,
+        secure: true,
+        // Map /pdf-proxy?token=... -> /Api/Download?token=...
+        rewrite: (path) => path.replace(/^\/pdf-proxy/, '/Api/Download'),
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            // Remove/override headers that block embedding
+            if (proxyRes.headers) {
+              delete proxyRes.headers['x-frame-options'];
+              delete proxyRes.headers['x-frame-options'.toLowerCase()];
+              delete proxyRes.headers['content-security-policy'];
+              delete proxyRes.headers['content-security-policy'.toLowerCase()];
+              // Force inline display
+              if (proxyRes.headers['content-disposition']) {
+                proxyRes.headers['content-disposition'] = 'inline';
+              }
+              // Allow cross-origin when needed (mostly harmless for embedding)
+              res.setHeader('Access-Control-Allow-Origin', '*');
+            }
+          });
+        },
       }
     }
   }

@@ -19,7 +19,7 @@ import {
   Upload,
   Image
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FilePdfOutlined, EditOutlined, CheckOutlined, ClearOutlined, UploadOutlined, PictureOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FilePdfOutlined, EditOutlined, CheckOutlined, ClearOutlined, UploadOutlined, PictureOutlined, ExpandOutlined } from '@ant-design/icons';
 import SignatureCanvas from 'react-signature-canvas';
 import { locationApi } from '../../api/api';
 import { createAccountApi } from '../../App/EVMAdmin/CreateAccount';
@@ -61,95 +61,121 @@ const ContractDisplay = ({
   contractSigned, 
   onSign, 
   onDownload, 
-  onNewContract 
-}) => (
-  <Card 
-    className="bg-green-50 border-green-200 mb-6"
-    title={
-      <span className="flex items-center text-green-600">
-        <ShopOutlined className="mr-2" />
-        Hợp đồng đã được tạo thành công
-      </span>
-    }
-  >
-    <div className="space-y-4">
-      <p><strong>Số hợp đồng:</strong> {contractNo}</p>
-      
-      {contractSigned && (
-        <Alert
-          message={
-            <span className="text-green-600 font-semibold">
-              ✅ Hợp đồng đã được ký thành công!
-            </span>
-          }
-          type="success"
-          className="mb-4"
-        />
-      )}
-      
-      {/* PDF Viewer */}
-      <div className="mt-6 mb-6">
-        <div className="border border-gray-300 rounded-lg overflow-hidden h-96">
-          <iframe
-            src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(contractLink)}`}
-            title="PDF Viewer"
-            className="w-full h-full border-0"
-            allowFullScreen
+  onNewContract,
+  viewerLink
+}) => {
+  const [pdfModalVisible, setPdfModalVisible] = useState(false);
+  const embedUrl = viewerLink || contractLink;
+  
+  return (
+  <>
+    <Card 
+      className="bg-green-50 border-green-200 mb-6"
+      title={
+        <span className="flex items-center text-green-600">
+          <ShopOutlined className="mr-2" />
+          Hợp đồng đã được tạo thành công
+        </span>
+      }
+    >
+      <div className="space-y-4">
+        <p><strong>Số hợp đồng:</strong> {contractNo}</p>
+        
+        {contractSigned && (
+          <Alert
+                message={<span className="text-green-600 font-semibold">✅ Hợp đồng đã được ký thành công!</span>}
+            type="success"
+            className="mb-4"
           />
+        )}
+        
+        {/* PDF Display */}
+        <div className="mt-6 mb-6">
+          <div className="border border-gray-300 rounded-lg overflow-hidden min-h-[720px] h-[88vh]">
+            <object data={embedUrl} type="application/pdf" className="w-full h-full">
+              <iframe
+                src={embedUrl}
+                title="PDF"
+                className="w-full h-full border-0"
+              />
+              <div className="p-4 text-center text-sm text-gray-600">
+                Không thể hiển thị PDF trực tiếp. Bạn có thể
+                {' '}<a href={contractLink} target="_blank" rel="noreferrer" className="text-blue-600">mở trong tab mới</a>.
+              </div>
+            </object>
+          </div>
         </div>
-      </div>
-      
-      {/* Action buttons */}
-      <div className="flex justify-between items-center mt-4">
-        <Space>
-          <Button 
-            type="primary" 
-            href={contractLink} 
-            target="_blank"
-            icon={<EnvironmentOutlined />}
-            className="bg-green-500 border-green-500 hover:bg-green-600"
-          >
-            Mở trong trang mới
-          </Button>
-          
-          <Button
-            type="default"
-            icon={<FilePdfOutlined />}
-            onClick={onDownload}
-          >
-            Tải hợp đồng PDF
-          </Button>
-
-          {!contractSigned && (
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={onSign}
+        
+        {/* Action buttons */}
+        <div className="flex justify-between items-center mt-4">
+          <Space>
+            <Button 
+              type="primary" 
+              icon={<PictureOutlined />}
+              onClick={() => setPdfModalVisible(true)}
               className="bg-blue-500 border-blue-500 hover:bg-blue-600"
             >
-              Ký Hợp Đồng
+              Xem PDF phóng to
             </Button>
-          )}
-
-          {contractSigned && (
-            <Button
-              type="primary"
-              icon={<CheckOutlined />}
-              disabled
-              className="bg-green-500 border-green-500"
+            
+            <Button 
+              type="primary" 
+              href={contractLink} 
+              target="_blank"
+              icon={<EnvironmentOutlined />}
+              className="bg-green-500 border-green-500 hover:bg-green-600"
             >
-              Đã Ký
+              Mở trong trang mới
             </Button>
-          )}
-        </Space>
-        
-        <Button onClick={onNewContract}>
-          Tạo hợp đồng mới
-        </Button>
+            
+            <Button
+              type="default"
+              icon={<FilePdfOutlined />}
+              onClick={onDownload}
+            >
+              Tải hợp đồng PDF
+            </Button>
+
+            {!contractSigned && (
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={onSign}
+                className="bg-blue-500 border-blue-500 hover:bg-blue-600"
+              >
+                Ký Hợp Đồng
+              </Button>
+            )}
+
+            {contractSigned && (
+              <Button
+                type="primary"
+                icon={<CheckOutlined />}
+                disabled
+                className="bg-green-500 border-green-500"
+              >
+                Đã Ký
+              </Button>
+            )}
+          </Space>
+          
+          <Button onClick={onNewContract}>
+            Tạo hợp đồng mới
+          </Button>
+        </div>
       </div>
-    </div>
-  </Card>
-);
+    </Card>
+    
+    {/* PDF Viewer Modal */}
+    <PDFViewerModal
+      visible={pdfModalVisible}
+      onCancel={() => setPdfModalVisible(false)}
+      contractLink={contractLink}
+      contractNo={contractNo}
+      viewerLink={viewerLink}
+    />
+  </>
+)};
 
 // Signature modal component
 const SignatureModal = ({ 
@@ -245,9 +271,162 @@ const SignatureModal = ({
   );
 };
 
+// PDF Viewer Modal component - Hiển thị PDF giống Adobe Acrobat
+const PDFViewerModal = ({ 
+  visible, 
+  onCancel, 
+  contractLink, 
+  contractNo,
+  viewerLink 
+}) => {
+  const [currentService, setCurrentService] = useState(0);
+  const [imageError, setImageError] = useState(false);
+  
+  const services = [
+    {
+      name: "Google Docs Viewer",
+      url: `https://docs.google.com/gview?url=${encodeURIComponent(contractLink)}&embedded=true`,
+    },
+    {
+      name: "PDF.js Viewer", 
+      url: `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(contractLink)}`,
+    },
+    {
+      name: "Original PDF",
+      url: contractLink,
+    }
+  ];
+
+  const currentUrl = viewerLink || services[currentService].url;
+  
+  const handleServiceChange = () => {
+    setCurrentService((prev) => (prev + 1) % services.length);
+    setImageError(false);
+  };
+  
+  return (
+    <Modal
+      title={
+        <div className="flex items-center justify-between bg-gray-100 -mx-6 -mt-4 px-6 py-3 border-b">
+          <span className="flex items-center">
+            <FilePdfOutlined className="text-red-500 mr-2" />
+            <span className="font-medium">{contractNo}</span>
+          </span>
+          <div className="flex items-center space-x-2">
+            <Button size="small" onClick={handleServiceChange} className="text-xs">
+              Viewer: {services[currentService].name}
+            </Button>
+            {imageError && <span className="text-red-500 text-xs">❌ Lỗi tải</span>}
+          </div>
+        </div>
+      }
+      open={visible}
+      onCancel={onCancel}
+      footer={[
+        <Button key="close" onClick={onCancel}>
+          Đóng
+        </Button>,
+        <Button 
+          key="download" 
+          type="primary" 
+          icon={<FilePdfOutlined />}
+          href={contractLink} 
+          target="_blank"
+          className="bg-red-500 border-red-500 hover:bg-red-600"
+        >
+          Tải xuống PDF
+        </Button>
+      ]}
+      width="98vw"
+      style={{ top: 10 }}
+      styles={{
+        body: { 
+          height: 'calc(95vh - 120px)', 
+          padding: '0',
+          backgroundColor: '#525659'
+        }
+      }}
+      destroyOnClose={true}
+    >
+      <div className="w-full h-full flex flex-col" style={{ backgroundColor: '#525659' }}>
+        {/* PDF Display - Acrobat Style */}
+        <div 
+          className="flex-1 overflow-auto flex justify-center"
+          style={{
+            backgroundColor: '#525659',
+            padding: '20px 0'
+          }}
+        >
+          <div className="bg-white shadow-lg" style={{ maxWidth: '100%' }}>
+            {currentService === 2 ? (
+              // Hiển thị PDF trực tiếp
+              <object 
+                data={currentUrl} 
+                type="application/pdf" 
+                style={{ 
+                  width: '100%', 
+                  height: '85vh',
+                  minWidth: '800px',
+                  display: 'block'
+                }}
+                onError={() => setImageError(true)}
+              >
+                <iframe
+                  src={currentUrl}
+                  title={`Hợp đồng ${contractNo}`}
+                  style={{ 
+                    width: '100%', 
+                    height: '85vh',
+                    minWidth: '800px',
+                    border: 'none',
+                    display: 'block'
+                  }}
+                  onError={() => setImageError(true)}
+                />
+                <div className="p-8 text-center text-gray-600 bg-white">
+                  <FilePdfOutlined className="text-4xl text-red-500 mb-4" />
+                  <p className="text-lg mb-4">Không thể hiển thị PDF trực tiếp</p>
+                  <Button 
+                    type="primary" 
+                    icon={<EnvironmentOutlined />}
+                    href={contractLink} 
+                    target="_blank"
+                    className="bg-blue-500 border-blue-500"
+                  >
+                    Mở trong tab mới
+                  </Button>
+                </div>
+              </object>
+            ) : (
+              // Hiển thị qua iframe với các service viewer
+              <iframe
+                src={currentUrl}
+                title={`Hợp đồng ${contractNo}`}
+                style={{ 
+                  width: '100%', 
+                  height: '85vh',
+                  minWidth: '800px',
+                  border: 'none',
+                  display: 'block'
+                }}
+                onError={() => setImageError(true)}
+                onLoad={() => setImageError(false)}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* Hướng dẫn sử dụng - Acrobat style */}
+      <div className="text-center text-gray-300 text-xs py-2" style={{ backgroundColor: '#525659' }}>
+        <p>💡 PDF Viewer - Sử dụng scroll để xem toàn bộ tài liệu</p>
+      </div>
+    </Modal>
+  );
+};
+
 const CreateAccount = () => {
   const [form] = Form.useForm();
-  const signatureRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
@@ -265,6 +444,21 @@ const CreateAccount = () => {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [uploadedImageBase64, setUploadedImageBase64] = useState('');
   const signatureRef = useRef(null);
+
+  // Build a display URL for PDF (use dev proxy to avoid CORS/X-Frame in development)
+  const getPdfDisplayUrl = (url) => {
+    if (!url) return url;
+    try {
+      const u = new URL(url);
+      const token = u.searchParams.get('token');
+      if (import.meta && import.meta.env && import.meta.env.DEV && token) {
+        return `/pdf-proxy?token=${encodeURIComponent(token)}`;
+      }
+      return url;
+    } catch (e) {
+      return url;
+    }
+  };
 
   // Load provinces on component mount
   useEffect(() => {
@@ -638,6 +832,33 @@ const CreateAccount = () => {
     document.body.removeChild(a);
   };
 
+  // Reset form and related state
+  const resetForm = () => {
+    Modal.confirm({
+      title: 'Làm mới biểu mẫu? ',
+      content: 'Thao tác này sẽ xóa dữ liệu đã nhập và bắt đầu hợp đồng mới.',
+      okText: 'Xác nhận',
+      cancelText: 'Hủy',
+      onOk: () => {
+        form.resetFields();
+        setContractLink(null);
+        setContractNo(null);
+        setContractId(null);
+        setWaitingProcessData(null);
+        setContractSigned(false);
+        setShowSignatureModal(false);
+        setSigningLoading(false);
+        setSignatureDisplayMode(2);
+        setSignatureMethod('draw');
+        setUploadedImage(null);
+        setUploadedImageBase64('');
+        setWards([]);
+        clearAllSignatureData();
+        message.success('Đã làm mới biểu mẫu');
+      }
+    });
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans">
       <div className="max-w-6xl mx-auto">
@@ -668,6 +889,7 @@ const CreateAccount = () => {
                 onSign={() => setShowSignatureModal(true)}
                 onDownload={handleDownload}
                 onNewContract={resetForm}
+                viewerLink={getPdfDisplayUrl(contractLink)}
               />
             )}
 
@@ -846,8 +1068,14 @@ const CreateAccount = () => {
         </Card>
 
         {/* Signature Modal */}
-        <SignatureModal
-          visible={showSignatureModal}
+        <Modal
+          title={
+            <span style={{ display: 'flex', alignItems: 'center' }}>
+              <EditOutlined style={{ color: '#1890ff', marginRight: '8px' }} />
+              Ký Hợp Đồng Điện Tử
+            </span>
+          }
+          open={showSignatureModal}
           onCancel={() => setShowSignatureModal(false)}
           footer={null}
           width={600}
