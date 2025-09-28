@@ -21,7 +21,7 @@ import {
 } from 'antd';
 import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FilePdfOutlined, EditOutlined, CheckOutlined, ClearOutlined, UploadOutlined, PictureOutlined, ExpandOutlined } from '@ant-design/icons';
 import SignatureCanvas from 'react-signature-canvas';
-import { locationApi } from '../../api/api';
+import { locationApi } from '../../Api/api';
 import { createAccountApi } from '../../App/EVMAdmin/CreateAccount';
 import { SignContract } from '../../App/EVMAdmin/SignContract';
 
@@ -746,10 +746,6 @@ const CreateAccount = () => {
   };
 
   // Legacy function for backward compatibility
-  const handleSignContract = async () => {
-    // This now just calls the digital signature step
-    await handleDigitalSignature();
-  };
 
   // Original signing logic (kept for reference, but modified)
   const _originalSigningLogic = async () => {
@@ -1495,7 +1491,6 @@ const CreateAccount = () => {
             </Button>
           </div>
         </Modal>
-
         {/* App Verification Modal - Step 2 */}
         <Modal
           title={
@@ -1513,102 +1508,7 @@ const CreateAccount = () => {
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <Alert
               message={
-                <div>
-                  <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
-                    ✅ Ký điện tử thành công!
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>
-                    📱 Bây giờ vui lòng vào ứng dụng di động để xác thực hợp đồng
-                  </div>
-                </div>
-              }
-              type="success"
-              style={{ marginBottom: '24px', textAlign: 'left' }}
-            />
-            
-            <div style={{
-              border: '2px dashed #52c41a',
-              borderRadius: '8px',
-              padding: '24px',
-              backgroundColor: '#f6ffed',
-              marginBottom: '24px'
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📲</div>
-              <div style={{ fontSize: '16px', fontWeight: '500', color: '#52c41a', marginBottom: '12px' }}>
-                Hướng dẫn xác thực:
-              </div>
-              <div style={{ fontSize: '14px', color: '#666', textAlign: 'left' }}>
-                <div style={{ marginBottom: '6px' }}>1. Mở ứng dụng trên điện thoại của bạn</div>
-                <div style={{ marginBottom: '6px' }}>2. Tìm hợp đồng số: <strong style={{ color: '#1890ff' }}>{contractNo}</strong></div>
-                <div style={{ marginBottom: '6px' }}>3. Thực hiện xác thực hợp đồng trong app</div>
-                <div style={{ marginBottom: '6px' }}>4. Quay lại đây và nhấn "Đã Xác Thực"</div>
-              </div>
-              
-              <div style={{
-                marginTop: '16px',
-                padding: '12px',
-                backgroundColor: '#fff',
-                borderRadius: '6px',
-                border: '1px solid #d9d9d9'
-              }}>
-                <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
-                  🔒 Trạng thái hiện tại:
-                </div>
-                <div style={{ fontSize: '14px', fontWeight: '500', color: '#52c41a' }}>
-                  ✓ Ký điện tử hoàn tất
-                </div>
-              </div>
-            </div>
-
-            <Space size="large">
-              <Button
-                onClick={() => setShowAppVerifyModal(false)}
-                style={{ minWidth: '120px' }}
-              >
-                Hủy
-              </Button>
-              
-              <Button
-                type="primary"
-                icon={<CheckOutlined />}
-                onClick={handleAppVerification}
-                loading={signingLoading}
-                style={{ 
-                  minWidth: '120px',
-                  backgroundColor: '#52c41a',
-                  borderColor: '#52c41a'
-                }}
-              >
-                {signingLoading ? 'Đang xác thực...' : 'Đã Xác Thực ✓'}
-              </Button>
-            </Space>
-          </div>
-        </Modal>
-
-        {/* App Verification Modal - Step 2 */}
-        <Modal
-          title={
-            <span style={{ display: 'flex', alignItems: 'center' }}>
-              <CheckOutlined style={{ color: '#52c41a', marginRight: '8px' }} />
-              Bước 2/2: Xác Thực Trên Ứng Dụng
-            </span>
-          }
-          open={showAppVerifyModal}
-          onCancel={() => setShowAppVerifyModal(false)}
-          footer={null}
-          width={500}
-          centered
-        >
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <Alert
-              message={
-                <div>
-                  <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
-                    ✅ Ký điện tử thành công!
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#666' }}>
-                    📱 Bây giờ vui lòng vào ứng dụng di động để xác thực hợp đồng
-                  </div>
+                <div>          
                 </div>
               }
               type="success"
@@ -1633,7 +1533,7 @@ const CreateAccount = () => {
                   🔒 Trạng thái hiện tại:
                 </div>
                 <div style={{ fontSize: '14px', fontWeight: '500', color: '#52c41a' }}>
-                  ✓ Ký điện tử hoàn tất
+                  ✓ Ký SmartCA hoàn tất
                 </div>
               </div>
             </div>
