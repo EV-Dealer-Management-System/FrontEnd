@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Form, 
   Input, 
@@ -11,11 +11,15 @@ import {
   Space,
   Typography,
   Divider,
-  Spin
+  Spin,
+  Modal,
+  Alert
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FilePdfOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FilePdfOutlined, EditOutlined, CheckOutlined, ClearOutlined } from '@ant-design/icons';
+import SignatureCanvas from 'react-signature-canvas';
 import { locationApi } from '../../api/api';
 import { createAccountApi } from '../../App/EVMAdmin/CreateAccount';
+import { SignContract } from '../../App/EVMAdmin/SignContract';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -29,7 +33,12 @@ const CreateAccount = () => {
   const [loadingWards, setLoadingWards] = useState(false);
   const [contractLink, setContractLink] = useState(null);
   const [contractNo, setContractNo] = useState(null);
-  const [pdfViewerUrl, setPdfViewerUrl] = useState(null);
+  const [contractId, setContractId] = useState(null);
+  const [waitingProcessData, setWaitingProcessData] = useState(null);
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [signingLoading, setSigningLoading] = useState(false);
+  const [contractSigned, setContractSigned] = useState(false);
+  const signatureRef = useRef(null);
 
   // Load danh sách tỉnh/thành phố khi component mount
   useEffect(() => {
@@ -132,25 +141,34 @@ const CreateAccount = () => {
         
         if (contractData) {
           // Lấy các trường từ cấu trúc JSON
-          const contractId = contractData.id;
+          const contractIdFromResponse = contractData.id;
           const downloadUrl = contractData.downloadUrl;
           const contractNo = contractData.no;
           
+          // Lấy processId từ waitingProcess.id
+          const processId = contractData.waitingProcess?.id || contractIdFromResponse;
+          
           // Log chi tiết để debug
           console.log('Contract data:', {
-            id: contractId,
+            id: contractIdFromResponse,
             no: contractNo,
-            downloadUrl: downloadUrl
+            downloadUrl: downloadUrl,
+            waitingProcessId: contractData.waitingProcess?.id,
+            processId: processId,
+            waitingProcess: contractData.waitingProcess
           });
+          
+          // Lưu processId từ waitingProcess để sử dụng cho việc ký
+          setContractId(processId);
+          // Lưu toàn bộ waitingProcess data
+          setWaitingProcessData(contractData.waitingProcess);
           
           if (downloadUrl) {
             // Lưu thông tin để hiển thị UI
             setContractLink(downloadUrl);
             setContractNo(contractNo || 'Không xác định');
             
-            // Tạo URL cho PDF.js Viewer để hiển thị PDF trực tiếp trên trang
-            const pdfJsUrl = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(downloadUrl)}`;
-            setPdfViewerUrl(pdfJsUrl);
+            // URL có sẵn để hiển thị PDF
             
             // Thông báo thành công với tùy chọn đi đến trang gốc
             message.success({
@@ -185,6 +203,143 @@ const CreateAccount = () => {
   const onFinishFailed = (errorInfo) => {
     console.log('Failed:', errorInfo);
     message.error('Vui lòng kiểm tra lại thông tin đã nhập');
+  };
+
+  // Xử lý ký hợp đồng
+  const handleSignContract = async () => {
+    if (!signatureRef.current || signatureRef.current.isEmpty()) {
+      message.error('Vui lòng vẽ chữ ký của bạn!');
+      return;
+    }
+
+    setSigningLoading(true);
+    try {
+      // Lấy chữ ký dưới dạng PNG base64 với format đầy đủ
+      const signatureDataURL = getSignatureAsFullDataURL();
+      
+      if (!signatureDataURL) {
+        message.error('Không thể tạo chữ ký. Vui lòng thử lại!');
+        setSigningLoading(false);
+        return;
+      }
+      
+      // Tạo instance của SignContract
+      const signContractApi = SignContract();
+      
+      // Chuẩn bị dữ liệu để ký
+      const signData = {
+        waitingProcess: waitingProcessData, // Toàn bộ waitingProcess object
+        reason: "Ký hợp đồng đại lý",
+        reject: false,
+        signatureImage: signatureDataURL, // Format: data:image/png;base64,iVBORw0KGgoAAAA...
+        signingPage: 0,
+        signingPosition: "bottom-right",
+        signatureText: "Test Signature",
+        fontSize: 12,
+        showReason: true,
+        confirmTermsConditions: true
+      };
+
+      // Log để debug
+      console.log('Signature data format:', {
+        fullDataURL: signatureDataURL.substring(0, 100) + '...',
+        dataURLLength: signatureDataURL.length,
+        processId: contractId,
+        waitingProcess: waitingProcessData,
+        hasCorrectPrefix: signatureDataURL.startsWith('data:image/png;base64,')
+      });
+
+      // Gọi API ký hợp đồng
+      const result = await signContractApi.handleSignContract(signData);
+      
+      console.log('Sign contract API result:', JSON.stringify(result, null, 2));
+      
+      if (result && (result.isSuccess || result.success)) {
+        message.success('Ký hợp đồng thành công!');
+        setContractSigned(true);
+        setShowSignatureModal(false);
+        
+        // Cập nhật URL hợp đồng đã ký nếu có downloadUrl mới
+        let signedContractData = null;
+        
+        if (result.result?.data) {
+          signedContractData = result.result.data;
+        } else if (result.data) {
+          signedContractData = result.data;
+        }
+        
+        if (signedContractData && signedContractData.downloadUrl) {
+          const newDownloadUrl = signedContractData.downloadUrl;
+          const newContractNo = signedContractData.no || contractNo;
+          
+          console.log('Updating contract with signed version:', {
+            oldUrl: contractLink,
+            newUrl: newDownloadUrl,
+            contractNo: newContractNo
+          });
+          
+          // Cập nhật link hợp đồng với phiên bản đã ký
+          setContractLink(newDownloadUrl);
+          setContractNo(newContractNo);
+          
+          message.success({
+            content: (
+              <span>
+                Hợp đồng đã được ký thành công! Đang hiển thị phiên bản đã ký.
+              </span>
+            ),
+            duration: 4
+          });
+        }
+      } else {
+        message.error('Có lỗi khi ký hợp đồng');
+      }
+    } catch (error) {
+      console.error('Error signing contract:', error);
+      message.error('Có lỗi không mong muốn khi ký hợp đồng');
+    } finally {
+      setSigningLoading(false);
+    }
+  };
+
+  // Helper function để chuyển đổi signature thành PNG base64 với format đầy đủ
+  const getSignatureAsFullDataURL = () => {
+    if (!signatureRef.current || signatureRef.current.isEmpty()) {
+      return null;
+    }
+    
+    // Lấy canvas element
+    const canvas = signatureRef.current.getCanvas();
+    
+    // Tạo một canvas mới với nền trắng để đảm bảo PNG có nền trắng
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    
+    // Vẽ nền trắng
+    tempCtx.fillStyle = 'white';
+    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    
+    // Vẽ chữ ký lên nền trắng
+    tempCtx.drawImage(canvas, 0, 0);
+    
+    // Chuyển thành PNG base64 với format đầy đủ: data:image/png;base64,iVBORw0KGgoAAAA...
+    const dataURL = tempCanvas.toDataURL('image/png', 1.0); // Chất lượng cao nhất
+    return dataURL; // Trả về format đầy đủ bao gồm prefix
+  };
+
+  // Clear chữ ký
+  const clearSignature = () => {
+    if (signatureRef.current) {
+      signatureRef.current.clear();
+    }
+  };
+
+  // Mở modal ký hợp đồng
+  const openSignatureModal = () => {
+    setShowSignatureModal(true);
   };
 
   return (
@@ -434,6 +589,18 @@ const CreateAccount = () => {
                       <div>
                         <p><strong>Số hợp đồng:</strong> {contractNo}</p>
                         
+                        {contractSigned && (
+                          <Alert
+                            message={
+                              <span style={{ color: '#52c41a', fontWeight: '600' }}>
+                                ✅ Hợp đồng đã được ký thành công!
+                              </span>
+                            }
+                            type="success"
+                            style={{ marginBottom: '16px' }}
+                          />
+                        )}
+                        
                         {/* PDF Viewer iframe sử dụng PDF.js */}
                         <div style={{ marginTop: '24px', marginBottom: '24px' }}>
                           <div style={{ 
@@ -489,13 +656,43 @@ const CreateAccount = () => {
                             >
                               Tải hợp đồng PDF
                             </Button>
+
+                            {!contractSigned && (
+                              <Button
+                                type="primary"
+                                icon={<EditOutlined />}
+                                onClick={openSignatureModal}
+                                style={{
+                                  backgroundColor: '#1890ff',
+                                  borderColor: '#1890ff'
+                                }}
+                              >
+                                Ký Hợp Đồng
+                              </Button>
+                            )}
+
+                            {contractSigned && (
+                              <Button
+                                type="primary"
+                                icon={<CheckOutlined />}
+                                disabled
+                                style={{
+                                  backgroundColor: '#52c41a',
+                                  borderColor: '#52c41a'
+                                }}
+                              >
+                                Đã Ký
+                              </Button>
+                            )}
                           </Space>
                           
                           <Button 
                             onClick={() => {
                               setContractLink(null);
                               setContractNo(null);
-                              setPdfViewerUrl(null);
+                              setContractId(null);
+                              setWaitingProcessData(null);
+                              setContractSigned(false);
                               form.resetFields();
                             }}
                           >
@@ -518,6 +715,9 @@ const CreateAccount = () => {
                         form.resetFields();
                         setContractLink(null);
                         setContractNo(null);
+                        setContractId(null);
+                        setWaitingProcessData(null);
+                        setContractSigned(false);
                       }}
                       style={{ 
                         borderRadius: '8px',
@@ -555,6 +755,97 @@ const CreateAccount = () => {
             </Form>
           </Space>
         </Card>
+
+        {/* Modal Ký Hợp Đồng */}
+        <Modal
+          title={
+            <span style={{ display: 'flex', alignItems: 'center' }}>
+              <EditOutlined style={{ color: '#1890ff', marginRight: '8px' }} />
+              Ký Hợp Đồng Điện Tử
+            </span>
+          }
+          open={showSignatureModal}
+          onCancel={() => setShowSignatureModal(false)}
+          footer={null}
+          width={600}
+          centered
+        >
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <Alert
+              message="Vui lòng vẽ chữ ký của bạn trong khung bên dưới"
+              type="info"
+              style={{ marginBottom: '20px' }}
+            />
+            
+            <div style={{
+              border: '2px dashed #d9d9d9',
+              borderRadius: '8px',
+              padding: '10px',
+              backgroundColor: '#fafafa',
+              marginBottom: '20px'
+            }}>
+              <SignatureCanvas
+                ref={signatureRef}
+                canvasProps={{
+                  width: 500,
+                  height: 200,
+                  className: 'signature-canvas',
+                  style: {
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '4px',
+                    backgroundColor: 'white'
+                  }
+                }}
+                backgroundColor="white"
+                penColor="black"
+                dotSize={2}
+                minWidth={1}
+                maxWidth={3}
+                velocityFilterWeight={0.7}
+              />
+            </div>
+
+            <div style={{ 
+              fontSize: '12px', 
+              color: '#666', 
+              marginBottom: '16px',
+              textAlign: 'left'
+            }}>
+              <strong>Lưu ý:</strong> Chữ ký sẽ được chuyển đổi thành định dạng <code>data:image/png;base64,...</code> để gửi lên server
+            </div>
+
+            <Space size="large">
+              <Button
+                icon={<ClearOutlined />}
+                onClick={clearSignature}
+                style={{ minWidth: '100px' }}
+              >
+                Xóa
+              </Button>
+              
+              <Button
+                onClick={() => setShowSignatureModal(false)}
+                style={{ minWidth: '100px' }}
+              >
+                Hủy
+              </Button>
+              
+              <Button
+                type="primary"
+                icon={<CheckOutlined />}
+                onClick={handleSignContract}
+                loading={signingLoading}
+                style={{ 
+                  minWidth: '100px',
+                  backgroundColor: '#52c41a',
+                  borderColor: '#52c41a'
+                }}
+              >
+                {signingLoading ? 'Đang ký...' : 'Ký Hợp Đồng'}
+              </Button>
+            </Space>
+          </div>
+        </Modal>
       </div>
     </div>
   );
