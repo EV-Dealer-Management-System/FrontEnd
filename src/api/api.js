@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
 
-  baseURL: "https://10b5fa7d09f7.ngrok-free.app/api",
+  baseURL: "http://52.220.139.2:5000/api",
 
 });
 
