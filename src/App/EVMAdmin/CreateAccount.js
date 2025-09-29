@@ -3,7 +3,7 @@ import api from '../../Api/api';
 // API functions cho CreateAccount
 export const createAccountApi = {
   // Tạo hợp đồng đại lý
-  createDealerContract: async (formData) => {
+  createDealerContract: async function(formData) {
     try {
       // Chuẩn bị dữ liệu gửi lên API
       const apiData = {
@@ -38,7 +38,7 @@ export const createAccountApi = {
   },
 
   // Validate dữ liệu trước khi gửi API
-  validateFormData: (formData) => {
+  validateFormData: function(formData) {
     const errors = [];
 
     if (!formData.brandName || formData.brandName.trim().length < 2) {
@@ -76,7 +76,7 @@ export const createAccountApi = {
   },
 
   // Format dữ liệu cho API
-  formatApiData: (formData) => {
+  formatApiData: function(formData) {
     return {
       dealerName: formData.brandName?.trim(),
       dealerAddress: formData.address?.trim(),

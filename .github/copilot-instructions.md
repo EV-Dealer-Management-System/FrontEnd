@@ -2,23 +2,17 @@
 
 This is a React-based web application for a service management system with authentication, user profiles, and service offerings. Built with *Vite*, *Ant Design Pro*, *TailwindCSS*, and *JavaScript*.
 
-## Architecture & Key Patterns
 
 ### Folder Structure (Critical Patterns)
 - /src/Pages/: Page components organized by user role (Admin, Customer, Home, Staff)
-- /src/App/: Legacy business logic modules (being migrated to /src/Pages/)
+- /src/App/: Api Legacy business logic modules (being migrated to /src/Pages/)
 - /src/Api/api.js: Centralized Axios configuration with JWT interceptors
 - /src/Router/: Route protection logic (ProtectedRoute.jsx, PublicRoute.jsx)
 
 ### Authentication Flow (Critical)
 - *JWT Storage*: Token stored in localStorage.getItem("jwt_token")
 - *Route Protection*: ProtectedRoute redirects to "/" if no token, PublicRoute redirects to "/customer" if token exists
-
-### Navigation Architecture
-- *Navbar Component*: Uses @ant-design/pro-components/ProLayout with conditional user actions
-- *Responsive Layout*: Full viewport width with calc(50% - 50vw) technique
-- *User State*: Displays login/register buttons OR user dropdown based on JWT token presence
-
+- *Axios Interceptors*: Automatically attach JWT to requests, handle 401 responses
 ### Page Components
 - Use PageContainer from @ant-design/pro-components for consistent layout
 - Wrap with Navbar component for navigation and user actions
@@ -58,11 +52,12 @@ This is a React-based web application for a service management system with authe
 - *Responsive Design*: Use Ant Design's Col with xs/sm/md/lg breakpoints + TailwindCSS utilities
 
 ## Code Simplicity Guidelines (Critical)
-- *Keep Code Simple*: Write straightforward, readable code that beginners can understand
-- *No Complex Patterns*: Avoid advanced React patterns, complex abstractions, or over-engineering
-- *Clear Variable Names*: Use descriptive Vietnamese or English names that explain purpose
-- *Basic Functions*: Use simple functions instead of complex arrow functions or closures
-- *Minimal Abstractions*: Don't create unnecessary wrapper functions or custom hooks
-- *Direct Approach*: Prefer direct, obvious solutions over clever or optimized code
-- *Explicit Logic*: Make code flow obvious - avoid implicit behaviors or "magic"
+- *Keep Code Simple*: Write the absolute simplest code possible that beginners can understand
+- *No Unnecessary Code*: Eliminate any redundant or extra code - focus absolutely on the project requirements only
+- *Direct Implementation*: Write code that directly solves the problem without any extra layers or complications
+- *No Over-Engineering*: Avoid advanced React patterns, complex abstractions, or clever solutions
+- *Basic Functions Only*: Use simple, straightforward functions - no complex logic or nested operations
+- *Minimal Code*: Write only what's needed for the feature - no extra utilities, helpers, or abstractions
+- *Project Focus*: Every line of code must serve a direct purpose for this specific project
+- *Clear and Simple*: Use descriptive Vietnamese or English names, keep logic obvious and explicit
 - *Comments in Vietnamese*: Add explanatory comments for business logic in Vietnamese
