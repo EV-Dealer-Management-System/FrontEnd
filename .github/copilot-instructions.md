@@ -1,11 +1,49 @@
 # Project Overview
 
-This is a React-based web application for a service management system with authentication, user profiles, and service offerings. Built with *Vite*, *Ant Design Pro*, *TailwindCSS*, and *JavaScript*.
+This is a React-based web application for an **Electric Vehicle Dealer Management System** with comprehensive authentication, user role management, and EV dealership operations. Built with *Vite*, *Ant Design Pro*, *TailwindCSS*, and *JavaScript*.
 
+
+## System Roles & Functionalities
+
+### 1. Dealer Functions (Dealer Staff, Dealer Manager)
+**a. Vehicle Information Management**
+- View vehicle catalog, configurations, and pricing
+- Compare vehicle models and features
+
+**b. Sales Management**
+- Create quotations, orders, and sales contracts
+- Manage promotions and discounts
+- Order vehicles from manufacturer based on demand
+- Track vehicle delivery status to customers
+- Manage payments (cash and installment plans)
+
+**c. Customer Management**
+- Store customer profiles and records
+- Manage test drive appointments
+- Record feedback and handle customer complaints
+
+**d. Reporting**
+- Sales reports by sales staff
+- Customer and manufacturer debt reports
+
+### 2. Manufacturer Functions (EVM Staff, Admin)
+**a. Product & Distribution Management**
+- Manage electric vehicle catalog (models, versions, colors)
+- Manage total inventory and allocate vehicles to dealers
+- Manage wholesale prices, discount policies, and dealer promotions
+
+**b. Dealer Management**
+- Manage contracts, sales targets, and dealer debts
+- Manage dealer accounts in the system
+
+**c. Reporting & Analytics**
+- Sales reports by region and dealer
+- Inventory and consumption rate analysis
+- AI forecasting for production and distribution planning
 
 ### Folder Structure (Critical Patterns)
 - /src/Pages/: Page components organized by user role (Admin, Customer, Home, Staff)
-- /src/App/: Api Legacy business logic modules (being migrated to /src/Pages/)
+- /src/App/: Legacy business logic modules (being migrated to /src/Pages/)
 - /src/Api/api.js: Centralized Axios configuration with JWT interceptors
 - /src/Router/: Route protection logic (ProtectedRoute.jsx, PublicRoute.jsx)
 
@@ -16,7 +54,7 @@ This is a React-based web application for a service management system with authe
 ### Page Components
 - Use PageContainer from @ant-design/pro-components for consistent layout
 - Wrap with Navbar component for navigation and user actions
-- Generate mock data with React.useMemo() for demonstrations
+- Generate mock EV data with React.useMemo() for demonstrations (vehicle models, pricing, dealer info)
 
 ### Form Handling
 - Use LoginForm and ProFormText from Pro Components
@@ -61,3 +99,4 @@ This is a React-based web application for a service management system with authe
 - *Project Focus*: Every line of code must serve a direct purpose for this specific project
 - *Clear and Simple*: Use descriptive Vietnamese or English names, keep logic obvious and explicit
 - *Comments in Vietnamese*: Add explanatory comments for business logic in Vietnamese
+- *EV Business Logic*: Focus on electric vehicle dealership operations - sales, inventory, dealer management
