@@ -19,7 +19,7 @@ import {
   Upload,
   Image
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FilePdfOutlined, EditOutlined, CheckOutlined, ClearOutlined, UploadOutlined, PictureOutlined, ExpandOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FilePdfOutlined, EditOutlined, CheckOutlined, ClearOutlined, UploadOutlined, PictureOutlined } from '@ant-design/icons';
 import SignatureCanvas from 'react-signature-canvas';
 import { locationApi } from '../../Api/api';
 import { createAccountApi } from '../../App/EVMAdmin/CreateAccount';
@@ -178,98 +178,7 @@ const ContractDisplay = ({
 )};
 
 // Signature modal component
-const SignatureModal = ({ 
-  visible, 
-  onCancel, 
-  onSign, 
-  onClear, 
-  loading,
-  signatureRef
-}) => {
-  const clearSignature = () => {
-    if (signatureRef && signatureRef.current) {
-      signatureRef.current.clear();
-    }
-    onClear();
-  };
 
-  return (
-    <Modal
-      title={
-        <span className="flex items-center">
-          <EditOutlined className="text-blue-500 mr-2" />
-          Ký Hợp Đồng Điện Tử
-        </span>
-      }
-      open={visible}
-      onCancel={onCancel}
-      footer={null}
-      width={600}
-      centered
-    >
-      <div className="text-center py-5">
-        <Alert
-          message="Vui lòng vẽ chữ ký của bạn trong khung bên dưới"
-          type="info"
-          className="mb-5"
-        />
-        
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-2 bg-gray-50 mb-5">
-          <SignatureCanvas
-            ref={signatureRef}
-            canvasProps={{
-              width: 500,
-              height: 200,
-              className: 'signature-canvas',
-              style: {
-                border: '1px solid #d9d9d9',
-                borderRadius: '4px',
-                backgroundColor: 'white'
-              }
-            }}
-            backgroundColor="white"
-            penColor="black"
-            dotSize={2}
-            minWidth={1}
-            maxWidth={3}
-            velocityFilterWeight={0.7}
-          />
-        </div>
-
-        <div className="text-xs text-gray-600 mb-4 text-left">
-          <strong>Lưu ý:</strong> Chữ ký sẽ được chuyển đổi thành định dạng <code>data:image/png;base64,...</code> để gửi lên server
-        </div>
-
-        <Space size="large">
-          <Button
-            icon={<ClearOutlined />}
-            onClick={clearSignature}
-            className="min-w-24"
-          >
-            Xóa
-          </Button>
-          
-          <Button
-            onClick={onCancel}
-            className="min-w-24"
-          >
-            Hủy
-          </Button>
-          
-          <Button
-            type="primary"
-            icon={<CheckOutlined />}
-            onClick={onSign}
-            loading={loading}
-            className="min-w-24 bg-blue-500 border-blue-500 hover:bg-blue-600"
-          >
-            {loading ? 'Đang ký...' : 'Ký Điện Tử'}
-          </Button>
-        </Space>
-      </div>
-    </Modal>
-  );
-};
 
 // PDF Viewer Modal component - Hiển thị PDF giống Adobe Acrobat
 const PDFViewerModal = ({ 
@@ -769,87 +678,7 @@ const CreateAccount = () => {
     }
   };
 
-  // Legacy function for backward compatibility
 
-  // Original signing logic (kept for reference, but modified)
-  const _originalSigningLogic = async () => {
-    try {
-      const result = {}; // Original API call would go here
-      
-      // Kiểm tra response theo cấu trúc mới: statusCode 200 và isSuccess true
-      if (result && result.statusCode === 200 && result.isSuccess) {
-        // Hiển thị thông báo từ API
-        const apiMessage = result.message || 'Ký hợp đồng thành công!';
-        message.success(apiMessage);
-        
-        setContractSigned(true);
-        setShowSignatureModal(false);
-        
-        // Lấy dữ liệu hợp đồng đã ký từ result.result.data
-        const signedContractData = result.result?.data;
-        
-        if (signedContractData && signedContractData.downloadUrl) {
-          const newDownloadUrl = signedContractData.downloadUrl;
-          const newContractNo = signedContractData.no || contractNo;
-          const contractId = signedContractData.id;
-          const contractStatus = signedContractData.status?.description || 'Processing';
-          
-          console.log('Updating contract with signed version:', {
-            id: contractId,
-            status: contractStatus,
-            oldUrl: contractLink,
-            newUrl: newDownloadUrl,
-            contractNo: newContractNo,
-            fileSize: signedContractData.file?.size,
-            fileName: signedContractData.file?.name
-          });
-          
-          // Cập nhật link hợp đồng với phiên bản đã ký
-          setContractLink(newDownloadUrl);
-          setContractNo(newContractNo);
-          
-          // Hiển thị thông báo chi tiết về việc ký thành công
-          message.success({
-            content: (
-              <div>
-                <div style={{ fontWeight: '600', marginBottom: '4px' }}>
-                  ✅ {apiMessage}
-                </div>
-                <div style={{ fontSize: '12px', color: '#666' }}>
-                  Hợp đồng số: {newContractNo} | Trạng thái: {contractStatus}
-                </div>
-                <div style={{ fontSize: '12px', color: '#666' }}>
-                  Đang hiển thị phiên bản đã ký
-                </div>
-              </div>
-            ),
-            duration: 5
-          });
-        } else {
-          // API thành công nhưng không có downloadUrl
-          message.warning('Ký hợp đồng thành công nhưng không tìm thấy link tải về');
-        }
-      } else {
-        // Xử lý lỗi - hiển thị message từ API nếu có
-        const errorMessage = result?.message || 
-                           result?.result?.messages?.[0] || 
-                           'Có lỗi khi ký hợp đồng';
-        message.error(errorMessage);
-        
-        console.error('Sign contract failed:', {
-          statusCode: result?.statusCode,
-          isSuccess: result?.isSuccess,
-          message: result?.message,
-          apiMessages: result?.result?.messages
-        });
-      }
-    } catch (error) {
-      console.error('Error signing contract:', error);
-      message.error('Có lỗi không mong muốn khi ký hợp đồng');
-    } finally {
-      setSigningLoading(false);
-    }
-  };
 
   // Function xử lý upload ảnh
   const handleImageUpload = (info) => {
@@ -1590,9 +1419,6 @@ const CreateAccount = () => {
                 )}
               </div>
             )}
-            
-
-
             <div style={{ 
               fontSize: '12px', 
               color: '#666', 
