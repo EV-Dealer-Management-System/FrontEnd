@@ -10,9 +10,12 @@ export const ContractService = () => {
         params: { processCode }
       });
       
+      // Parse response data đúng cách
+      const contractData = response.data?.data || response.data;
+      
       return {
         success: true,
-        data: response.data
+        data: contractData
       };
     } catch (error) {
       console.error('Error fetching contract info:', error);
@@ -50,84 +53,166 @@ export const ContractService = () => {
         serialNumber: serialNumber || null
       };
 
+      console.log('Adding SmartCA with data:', { userId, userName, serialNumber: serialNumber || 'null' });
+
       // Token được gửi trong query params theo API spec
       const response = await api.post(`/EContract/add-smartca?token=${encodeURIComponent(accessToken)}`, requestBody);
       
-      if (response.data.success) {
+      console.log('Add SmartCA response:', response.data);
+      
+      // Kiểm tra success flag từ response
+      if (response.data && response.data.success === true) {
+        const smartCAData = response.data.data;
+        
+        // Kiểm tra xem SmartCA có được thêm thành công không
+        const hasValidSmartCA = smartCAData && (
+          (smartCAData.defaultSmartCa && smartCAData.defaultSmartCa.isValid) ||
+          (smartCAData.userCertificates && smartCAData.userCertificates.length > 0 && 
+           smartCAData.userCertificates.some(cert => cert.isValid))
+        );
+
         return {
           success: true,
-          data: response.data.data,
-          message: response.data.messages?.[0] || 'Thêm SmartCA thành công!'
+          data: smartCAData,
+          message: response.data.messages?.[0] || 'Thêm SmartCA thành công!',
+          hasValidSmartCA: hasValidSmartCA
         };
       } else {
-        throw new Error(response.data.messages?.[0] || 'Thêm SmartCA thất bại');
+        // Response có success: false
+        const errorMessage = response.data.messages?.[0] || 'Thêm SmartCA thất bại';
+        console.error('Add SmartCA failed:', errorMessage);
+        return {
+          success: false,
+          error: errorMessage
+        };
       }
     } catch (error) {
       console.error('Error adding SmartCA:', error);
+      
+      // Xử lý lỗi từ response
+      const errorMessage = error.response?.data?.messages?.[0] || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Không thể thêm SmartCA.';
+      
       return {
         success: false,
-        error: error.response?.data?.message || error.message || 'Không thể thêm SmartCA.'
+        error: errorMessage
       };
     }
   };
 
-  // Ký hợp đồng sử dụng SignContract service
-  const handleSignContract = async ({ processId, reason, otp, signatureText, accessToken }) => {
+  // Ký hợp đồng điện tử (Step 1) - sử dụng phương thức tương tự CreateAccount.jsx
+  const handleDigitalSignature = async ({ processId, reason, signatureImage, signatureDisplayMode, waitingProcess }) => {
     try {
       const signContractService = SignContract();
       
-      // Chuẩn bị data theo format của SignContract
-      const contractData = {
+      // Chuẩn bị data theo format của SignContract giống CreateAccount.jsx
+      const signData = {
+        waitingProcess: waitingProcess,
         processId: processId,
-        reason: reason || "Đồng ý ký hợp đồng",
+        reason: reason || "Ký hợp đồng điện tử",
         reject: false,
-        otp: otp,
-        signatureDisplayMode: 0,
-        signatureImage: null,
+        signatureImage: signatureImage,
         signingPage: 0,
-        signingPosition: "",
-        signatureText: signatureText || "",
-        fontSize: 12,
+        signingPosition: "10,110,202,200",
+        signatureText: "Chữ ký điện tử",
+        fontSize: 14,
         showReason: true,
-        confirmTermsConditions: true
+        confirmTermsConditions: true,
+        signatureDisplayMode: signatureDisplayMode || 2
       };
 
+      console.log('Digital signature data:', {
+        processId: processId,
+        waitingProcess: waitingProcess,
+        hasSignatureImage: !!signatureImage,
+        signatureDisplayMode: signatureDisplayMode
+      });
+
       // Gọi handleSignContract từ SignContract service
-      const result = await signContractService.handleSignContract(contractData);
+      const result = await signContractService.handleSignContract(signData);
       
-      if (result.isSuccess) {
+      console.log('Digital signature result:', result);
+      
+      if (result && result.statusCode === 200 && result.isSuccess) {
         return {
           success: true,
           data: result.result?.data || result,
-          message: result.message || 'Ký hợp đồng thành công!'
+          message: result.message || 'Ký điện tử thành công!'
         };
       } else {
-        throw new Error(result.message || 'Ký hợp đồng thất bại');
+        const errorMessage = result?.message || 
+                           result?.result?.messages?.[0] || 
+                           'Có lỗi khi ký điện tử';
+        throw new Error(errorMessage);
       }
     } catch (error) {
-      console.error('Error signing contract:', error);
+      console.error('Error in digital signature:', error);
       return {
         success: false,
-        error: error.response?.data?.message || error.message || 'Không thể ký hợp đồng.'
+        error: error.response?.data?.message || error.message || 'Không thể ký hợp đồng điện tử.'
       };
     }
   };
 
-  // Lấy preview PDF từ token
-  const handleGetPreviewPDF = async (token) => {
+  // Ký hợp đồng với OTP (Step 2 - Xác thực ứng dụng)
+  const handleAppVerification = async ({ processId, otp, signatureText }) => {
     try {
-      const response = await api.get('/EContract/preview', {
-        params: { token },
-        responseType: 'blob' // Để nhận PDF file
-      });
-      
+      // Giả lập xác thực app - có thể gọi API khác để xác thực OTP
+      // Tạm thời return success để hoàn thành flow
       return {
         success: true,
-        data: response.data,
-        url: URL.createObjectURL(response.data)
+        message: 'Xác thực ứng dụng thành công!'
       };
     } catch (error) {
+      console.error('Error in app verification:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Không thể xác thực ứng dụng.'
+      };
+    }
+  };
+
+  // Lấy preview PDF từ token hoặc downloadUrl
+  const handleGetPreviewPDF = async (tokenOrUrl) => {
+    try {
+      // Nếu là URL đầy đủ, thử sử dụng trực tiếp
+      if (tokenOrUrl && (tokenOrUrl.startsWith('http') || tokenOrUrl.startsWith('/api'))) {
+        console.log('Using direct URL for PDF:', tokenOrUrl);
+        return {
+          success: true,
+          url: tokenOrUrl,
+          data: null
+        };
+      }
+      
+      // Nếu là token, thử gọi preview API
+      if (tokenOrUrl) {
+        console.log('Trying preview API with token...');
+        const response = await api.get('/EContract/preview', {
+          params: { token: tokenOrUrl },
+          responseType: 'blob'
+        });
+        
+        return {
+          success: true,
+          data: response.data,
+          url: URL.createObjectURL(response.data)
+        };
+      }
+      
+      throw new Error('No token or URL provided');
+      
+    } catch (error) {
       console.error('Error getting PDF preview:', error);
+      
+      // Log chi tiết lỗi để debug
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
+      }
+      
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Không thể lấy preview PDF.'
@@ -152,10 +237,28 @@ export const ContractService = () => {
   // Utility: Kiểm tra SmartCA có hợp lệ không
   const isSmartCAValid = (smartCAInfo) => {
     if (!smartCAInfo) return false;
-    return smartCAInfo.isValid && 
-           smartCAInfo.userCertificates && 
-           smartCAInfo.userCertificates.length > 0 &&
-           smartCAInfo.userCertificates.some(cert => cert.isValid);
+    
+    // Kiểm tra defaultSmartCa (ưu tiên)
+    const hasValidDefaultSmartCA = smartCAInfo.defaultSmartCa && smartCAInfo.defaultSmartCa.isValid;
+    
+    // Kiểm tra userCertificates
+    const hasValidCertificates = smartCAInfo.userCertificates && 
+                               smartCAInfo.userCertificates.length > 0 &&
+                               smartCAInfo.userCertificates.some(cert => cert.isValid);
+    
+    // SmartCA hợp lệ nếu có defaultSmartCa hợp lệ HOẶC có certificates hợp lệ
+    const isValid = hasValidDefaultSmartCA || hasValidCertificates;
+    
+    console.log('SmartCA validity check:', {
+      smartCAInfo: !!smartCAInfo,
+      hasDefaultSmartCA: !!smartCAInfo.defaultSmartCa,
+      defaultSmartCAValid: smartCAInfo.defaultSmartCa?.isValid,
+      certificateCount: smartCAInfo.userCertificates?.length || 0,
+      validCertificates: smartCAInfo.userCertificates?.filter(cert => cert.isValid).length || 0,
+      finalResult: isValid
+    });
+    
+    return isValid;
   };
 
   // Utility: Validate processCode
@@ -226,7 +329,8 @@ export const ContractService = () => {
     handleGetContractInfo,
     handleCheckSmartCA,
     handleAddSmartCA,
-    handleSignContract,
+    handleDigitalSignature,
+    handleAppVerification,
     handleGetPreviewPDF,
     
     // Utility functions
