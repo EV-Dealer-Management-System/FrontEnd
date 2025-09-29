@@ -19,11 +19,12 @@ import {
   Upload,
   Image
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FilePdfOutlined, EditOutlined, CheckOutlined, ClearOutlined, UploadOutlined, PictureOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FilePdfOutlined, EditOutlined, CheckOutlined, ClearOutlined, UploadOutlined, PictureOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import SignatureCanvas from 'react-signature-canvas';
 import { locationApi } from '../../Api/api';
 import { createAccountApi } from '../../App/EVMAdmin/CreateAccount';
 import { SignContract } from '../../App/EVMAdmin/SignContract';
+import SignaturePositioner from './SignContract/Components/SignaturePositioner';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -36,7 +37,7 @@ const FormField = ({
   rules, 
   children, 
   span = 12,
-  required = true 
+  required = true // This prop is used in rules if not explicitly provided
 }) => (
   <Col xs={24} md={span}>
     <Form.Item
@@ -47,7 +48,7 @@ const FormField = ({
           {label}
         </span>
       }
-      rules={rules}
+      rules={rules || (required ? [{ required: true, message: `${label} là bắt buộc` }] : [])}
     >
       {children}
     </Form.Item>
@@ -65,7 +66,6 @@ const ContractDisplay = ({
   viewerLink
 }) => {
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
-  const embedUrl = viewerLink || contractLink;
   
   return (
   <>
@@ -81,6 +81,14 @@ const ContractDisplay = ({
       <div className="space-y-4">
         <p><strong>Số hợp đồng:</strong> {contractNo}</p>
         
+        {!contractLink && (
+          <Alert
+            message={<span className="text-yellow-600 font-semibold">⚠️ Không thể tải PDF. Vui lòng thử lại hoặc tải xuống để xem.</span>}
+            type="warning"
+            className="mb-4"
+          />
+        )}
+        
         {contractSigned && (
           <Alert
                 message={<span className="text-green-600 font-semibold">✅ Hợp đồng đã được ký thành công!</span>}
@@ -91,18 +99,16 @@ const ContractDisplay = ({
         
         {/* PDF Display */}
         <div className="mt-6 mb-6">
-          <div className="border border-gray-300 rounded-lg overflow-hidden min-h-[720px] h-[88vh]">
-            <object data={embedUrl} type="application/pdf" className="w-full h-full">
-              <iframe
-                src={embedUrl}
-                title="PDF"
-                className="w-full h-full border-0"
-              />
-              <div className="p-4 text-center text-sm text-gray-600">
-                Không thể hiển thị PDF trực tiếp. Bạn có thể
-                {' '}<a href={contractLink} target="_blank" rel="noreferrer" className="text-blue-600">mở trong tab mới</a>.
-              </div>
-            </object>
+          <div className="border border-gray-300 rounded-lg overflow-hidden min-h-[750px] h-[calc(100vh-320px)]">
+            <iframe 
+              src={`https://docs.google.com/gview?url=${encodeURIComponent(contractLink)}&embedded=true`}
+              title="Google Docs PDF Viewer"
+              className="w-full h-full border-0"
+              onError={(e) => {
+                console.error('Google Docs Viewer failed to load:', e);
+                message.warning('Không thể tải PDF qua Google Docs. Thử tải trực tiếp...');
+              }}
+            />
           </div>
         </div>
         
@@ -114,8 +120,9 @@ const ContractDisplay = ({
               icon={<PictureOutlined />}
               onClick={() => setPdfModalVisible(true)}
               className="bg-blue-500 border-blue-500 hover:bg-blue-600"
+              title="Xem PDF toàn màn hình"
             >
-              Xem PDF phóng to
+              Xem toàn màn hình
             </Button>
             
             <Button 
@@ -188,7 +195,7 @@ const PDFViewerModal = ({
   contractNo,
   viewerLink 
 }) => {
-  const [currentService, setCurrentService] = useState(0);
+  const [currentService, setCurrentService] = useState(0); // Default to Google Docs Viewer
   const [imageError, setImageError] = useState(false);
   
   const services = [
@@ -197,7 +204,7 @@ const PDFViewerModal = ({
       url: `https://docs.google.com/gview?url=${encodeURIComponent(contractLink)}&embedded=true`,
     },
     {
-      name: "PDF.js Viewer", 
+      name: "PDF.js Viewer",
       url: `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(contractLink)}`,
     },
     {
@@ -225,6 +232,15 @@ const PDFViewerModal = ({
             <Button size="small" onClick={handleServiceChange} className="text-xs">
               Viewer: {services[currentService].name}
             </Button>
+            <Button 
+              type="primary" 
+              size="small" 
+              danger 
+              onClick={onCancel}
+              className="text-xs"
+            >
+              Thoát Toàn Màn Hình
+            </Button>
             {imageError && <span className="text-red-500 text-xs">❌ Lỗi tải</span>}
           </div>
         </div>
@@ -246,29 +262,50 @@ const PDFViewerModal = ({
           Tải xuống PDF
         </Button>
       ]}
-      width="98vw"
-      style={{ top: 10 }}
+      width="100vw"
+      style={{ 
+        top: 0,
+        margin: 0,
+        padding: 0,
+        maxWidth: '100vw'
+      }}
       styles={{
+        header: {
+          padding: '10px 16px',
+          background: '#333',
+          color: 'white',
+          borderBottom: '1px solid #222'
+        },
         body: { 
-          height: 'calc(95vh - 120px)', 
+          height: 'calc(100vh - 110px)', 
           padding: '0',
-          backgroundColor: '#525659'
+          backgroundColor: '#525659',
+          overflow: 'hidden'
+        },
+        mask: {
+          backgroundColor: 'rgba(0,0,0,0.85)'
+        },
+        wrapper: {
+          maxWidth: '100vw'
+        },
+        content: {
+          padding: 0
         }
       }}
       destroyOnClose={true}
     >
       <div className="w-full h-full flex flex-col" style={{ backgroundColor: '#525659' }}>
-        {/* PDF Display - Acrobat Style */}
+        {/* PDF Display - Acrobat Style Fullscreen */}
         <div 
-          className="flex-1 overflow-auto flex justify-center"
+          className="flex-1 overflow-hidden flex justify-center"
           style={{
             backgroundColor: '#525659',
-            padding: '20px 0'
+            padding: '0'
           }}
         >
-          <div className="bg-white shadow-lg" style={{ maxWidth: '100%' }}>
+          <div className="bg-white shadow-lg" style={{ width: '100%', height: '100%', maxWidth: '100%', display: 'flex', justifyContent: 'center' }}>
             {currentService === 2 ? (
-              // Hiển thị PDF trực tiếp
+              // Hiển thị PDF trực tiếp - sử dụng iframe với Mozilla PDF.js nếu browser không hỗ trợ
               <object 
                 data={currentUrl} 
                 type="application/pdf" 
@@ -281,12 +318,12 @@ const PDFViewerModal = ({
                 onError={() => setImageError(true)}
               >
                 <iframe
-                  src={currentUrl}
+                  src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(contractLink)}`}
                   title={`Hợp đồng ${contractNo}`}
                   style={{ 
                     width: '100%', 
-                    height: '85vh',
-                    minWidth: '800px',
+                    height: '90vh',
+                    minWidth: '100%',
                     border: 'none',
                     display: 'block'
                   }}
@@ -313,8 +350,9 @@ const PDFViewerModal = ({
                 title={`Hợp đồng ${contractNo}`}
                 style={{ 
                   width: '100%', 
-                  height: '85vh',
-                  minWidth: '800px',
+                  height: '90vh',
+                  minWidth: '100%',
+                  maxWidth: '100%',
                   border: 'none',
                   display: 'block'
                 }}
@@ -327,8 +365,14 @@ const PDFViewerModal = ({
       </div>
       
       {/* Hướng dẫn sử dụng - Acrobat style */}
-      <div className="text-center text-gray-300 text-xs py-2" style={{ backgroundColor: '#525659' }}>
-        <p>💡 PDF Viewer - Sử dụng scroll để xem toàn bộ tài liệu</p>
+      <div className="flex justify-between items-center text-gray-300 text-xs px-4 py-2" style={{ backgroundColor: '#333', borderTop: '1px solid #222' }}>
+        <div className="flex items-center">
+          <span className="mr-2">💡</span>
+          <span>Sử dụng scroll để xem toàn bộ tài liệu</span>
+        </div>
+        <div>
+          <span>Hợp đồng số: <strong>{contractNo}</strong></span>
+        </div>
       </div>
     </Modal>
   );
@@ -350,12 +394,119 @@ const CreateAccount = () => {
   const [contractSigned, setContractSigned] = useState(false);
   const [signatureDisplayMode, setSignatureDisplayMode] = useState(2); // 2: Văn bản và hình ảnh, 3: Kết hợp ảnh và chữ ký
   const [signatureMethod, setSignatureMethod] = useState('draw'); // 'draw' hoặc 'upload'
-  const [uploadedImage, setUploadedImage] = useState(null);
   const [uploadedImageBase64, setUploadedImageBase64] = useState('');
   const [showAppVerifyModal, setShowAppVerifyModal] = useState(false);
   const [signatureCompleted, setSignatureCompleted] = useState(false);
   const [showSmartCAModal, setShowSmartCAModal] = useState(false);
+  const [showSignaturePositioner, setShowSignaturePositioner] = useState(false);
+  const [signaturePosition, setSignaturePosition] = useState({
+    llx: 10,  // Tọa độ góc dưới cùng bên trái x
+    lly: 110, // Tọa độ góc dưới cùng bên trái y
+    width: 192, // Chiều rộng chữ ký
+    height: 90, // Chiều cao chữ ký
+  });
+  const [previewImage, setPreviewImage] = useState(null);
   const signatureRef = useRef(null);
+  
+  // Các biến trạng thái cho kéo thả chữ ký - vẫn cần vì được dùng ở các phần khác
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 }); // Used in event handlers
+  const previewContainerRef = useRef(null);
+  
+  // Helper function to set dragging state and offset - available for future drag handlers
+  // eslint-disable-next-line no-unused-vars
+  const startDragging = (clientX, clientY, element) => {
+    setIsDragging(true);
+    const rect = element.getBoundingClientRect();
+    setDragOffset({
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    });
+  };
+  
+  // Xử lý sự kiện di chuột toàn cục khi đang kéo chữ ký
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (isDragging && previewContainerRef.current) {
+        const iframeContainer = previewContainerRef.current.querySelector('.overflow-auto');
+        if (!iframeContainer) return;
+        
+        const iframeRect = iframeContainer.getBoundingClientRect();
+        
+        // Tính toán vị trí mới dựa trên vị trí chuột
+        let newX = e.clientX - iframeRect.left - dragOffset.x;
+        let newY = iframeRect.bottom - e.clientY - dragOffset.y;
+        
+        // Giới hạn trong khung iframe
+        newX = Math.max(0, Math.min(newX, iframeRect.width - signaturePosition.width));
+        newY = Math.max(0, Math.min(newY, iframeRect.height - signaturePosition.height));
+        
+        // Cập nhật vị trí mới
+        setSignaturePosition(prev => ({
+          ...prev,
+          llx: Math.round(newX),
+          lly: Math.round(newY)
+        }));
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+    
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset, signaturePosition.width, signaturePosition.height]);
+
+  // Thêm hỗ trợ cho cảm ứng (mobile)
+  useEffect(() => {
+    const handleTouchMove = (e) => {
+      if (isDragging && previewContainerRef.current && e.touches[0]) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const iframeContainer = previewContainerRef.current.querySelector('.overflow-auto');
+        if (!iframeContainer) return;
+        
+        const iframeRect = iframeContainer.getBoundingClientRect();
+        
+        // Tính toán vị trí mới dựa trên vị trí cảm ứng
+        let newX = touch.clientX - iframeRect.left - dragOffset.x;
+        let newY = iframeRect.bottom - touch.clientY - dragOffset.y;
+        
+        // Giới hạn trong khung iframe
+        newX = Math.max(0, Math.min(newX, iframeRect.width - signaturePosition.width));
+        newY = Math.max(0, Math.min(newY, iframeRect.height - signaturePosition.height));
+        
+        // Cập nhật vị trí mới
+        setSignaturePosition(prev => ({
+          ...prev,
+          llx: Math.round(newX),
+          lly: Math.round(newY)
+        }));
+      }
+    };
+    
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+    };
+    
+    if (isDragging) {
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
+    }
+    
+    return () => {
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isDragging, dragOffset, signaturePosition.width, signaturePosition.height]);
 
   // Build a display URL for PDF (use dev proxy to avoid CORS/X-Frame in development)
   const getPdfDisplayUrl = (url) => {
@@ -367,7 +518,7 @@ const CreateAccount = () => {
         return `/pdf-proxy?token=${encodeURIComponent(token)}`;
       }
       return url;
-    } catch (e) {
+    } catch {
       return url;
     }
   };
@@ -541,10 +692,6 @@ const CreateAccount = () => {
       }
     }
 
-    setSigningLoading(true);
-    setShowSignatureModal(false);
-    setShowSmartCAModal(true);
-    
     try {
       // Lấy signature data dựa trên method được chọn
       let signatureDataURL = '';
@@ -562,26 +709,65 @@ const CreateAccount = () => {
         
         if (!signatureDataURL) {
           message.error('Không thể lấy dữ liệu chữ ký. Vui lòng thử lại!');
-          setSigningLoading(false);
           return;
         }
+
+        // Set preview image for positioning
+        setPreviewImage(signatureDataURL);
+
+        // Display signature positioner modal
+        setShowSignatureModal(false);
+        setShowSignaturePositioner(true);
+        
       } catch (error) {
         console.error('Error getting signature data:', error);
         message.error(`Lỗi xử lý chữ ký: ${error.message}`);
-        setSigningLoading(false);
         return;
       }
+    } catch (error) {
+      console.error('Error in digital signature:', error);
+      message.error('Có lỗi không mong muốn khi ký điện tử');
+    }
+  };
+
+  // Handle signature positioning confirmation
+  const handleSignaturePositionConfirm = async () => {
+    try {
+      if (!contractId || !previewImage) {
+        message.error('Không thể xác nhận vị trí chữ ký. Thiếu thông tin hợp đồng hoặc chữ ký.');
+        return;
+      }
+
+      // Chuyển từ trạng thái chọn vị trí sang trạng thái xác thực
+      setShowSignaturePositioner(false);
+      setSigningLoading(true);
+      setShowSmartCAModal(true);
       
       const signContractApi = SignContract();
+      
+      // Chuyển đổi từ llx, lly, width, height sang llx, lly, urx, ury để tạo rectangle
+      const { llx, lly, width, height } = signaturePosition;
+      const urx = llx + width;
+      const ury = lly + height;
+      
+      // Định dạng chuỗi vị trí "llx,lly,urx,ury"
+      const positionString = `${llx},${lly},${urx},${ury}`;
+      
+      console.log('Rectangle coordinates:', {
+        llx, lly, // góc dưới bên trái
+        urx, ury, // góc trên bên phải
+        width, height,
+        positionString
+      });
       
       const signData = {
         waitingProcess: waitingProcessData,
         reason: "Ký hợp đồng đại lý",
         reject: false,
-        signatureImage: signatureDataURL,
+        signatureImage: previewImage,
         signingPage: 0,
-        signingPosition: "10,110,202,200",
-        signatureText: "Chữ ký điện tử",
+        signingPosition: positionString,
+        signatureText: "EVM COMPANY",
         fontSize: 14,
         showReason: true,
         confirmTermsConditions: true,
@@ -589,11 +775,12 @@ const CreateAccount = () => {
       };
 
       console.log('Signature data format:', {
-        fullDataURL: signatureDataURL.substring(0, 100) + '...',
-        dataURLLength: signatureDataURL.length,
+        fullDataURL: previewImage.substring(0, 100) + '...',
+        dataURLLength: previewImage.length,
         processId: contractId,
         waitingProcess: waitingProcessData,
-        hasCorrectPrefix: signatureDataURL.startsWith('data:image/png;base64,')
+        hasCorrectPrefix: previewImage.startsWith('data:image/png;base64,'),
+        position: positionString
       });
 
       const result = await signContractApi.handleSignContract(signData);
@@ -699,7 +886,6 @@ const CreateAccount = () => {
             base64Prefix: base64.substring(0, 50) + '...'
           });
           setUploadedImageBase64(base64);
-          setUploadedImage(file);
           message.success('Ảnh đã được tải lên thành công!');
         };
         reader.onerror = () => {
@@ -865,7 +1051,6 @@ const CreateAccount = () => {
 
   // Clear uploaded image
   const clearUploadedImage = () => {
-    setUploadedImage(null);
     setUploadedImageBase64('');
   };
 
@@ -884,6 +1069,88 @@ const CreateAccount = () => {
     a.click();
     document.body.removeChild(a);
   };
+
+  // Xử lý sự kiện di chuột toàn cục khi đang kéo chữ ký
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (isDragging && previewContainerRef.current) {
+        // We don't need containerRect anymore
+        const iframeContainer = previewContainerRef.current.querySelector('.overflow-auto');
+        const iframeRect = iframeContainer.getBoundingClientRect();
+        
+        // Tính toán vị trí mới dựa trên vị trí chuột
+        let newX = e.clientX - iframeRect.left - dragOffset.x;
+        let newY = iframeRect.bottom - e.clientY - dragOffset.y;
+        
+        // Giới hạn trong khung iframe
+        newX = Math.max(0, Math.min(newX, iframeRect.width - signaturePosition.width));
+        newY = Math.max(0, Math.min(newY, iframeRect.height - signaturePosition.height));
+        
+        // Cập nhật vị trí mới
+        setSignaturePosition(prev => ({
+          ...prev,
+          llx: Math.round(newX),
+          lly: Math.round(newY)
+        }));
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+    
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset, signaturePosition.width, signaturePosition.height]);
+
+  // Thêm hỗ trợ cho cảm ứng (mobile)
+  useEffect(() => {
+    const handleTouchMove = (e) => {
+      if (isDragging && previewContainerRef.current && e.touches[0]) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        // We don't need containerRect anymore
+        const iframeContainer = previewContainerRef.current.querySelector('.overflow-auto');
+        const iframeRect = iframeContainer.getBoundingClientRect();
+        
+        // Tính toán vị trí mới dựa trên vị trí cảm ứng
+        let newX = touch.clientX - iframeRect.left - dragOffset.x;
+        let newY = iframeRect.bottom - touch.clientY - dragOffset.y;
+        
+        // Giới hạn trong khung iframe
+        newX = Math.max(0, Math.min(newX, iframeRect.width - signaturePosition.width));
+        newY = Math.max(0, Math.min(newY, iframeRect.height - signaturePosition.height));
+        
+        // Cập nhật vị trí mới
+        setSignaturePosition(prev => ({
+          ...prev,
+          llx: Math.round(newX),
+          lly: Math.round(newY)
+        }));
+      }
+    };
+    
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+    };
+    
+    if (isDragging) {
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
+    }
+    
+    return () => {
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isDragging, dragOffset, signaturePosition.width, signaturePosition.height]);
 
   // Reset form and related state
   const resetForm = () => {
@@ -906,9 +1173,16 @@ const CreateAccount = () => {
         setSigningLoading(false);
         setSignatureDisplayMode(2);
         setSignatureMethod('draw');
-        setUploadedImage(null);
         setUploadedImageBase64('');
         setWards([]);
+        setShowSignaturePositioner(false);
+        setSignaturePosition({
+          llx: 10,
+          lly: 110,
+          width: 192,
+          height: 90
+        });
+        setPreviewImage(null);
         clearAllSignatureData();
         message.success('Đã làm mới biểu mẫu');
       }
@@ -1551,6 +1825,23 @@ const CreateAccount = () => {
             </Button>
           </div>
         </Modal>
+        {/* Sử dụng component SignaturePositioner để kéo thả chữ ký */}
+        <SignaturePositioner 
+          visible={showSignaturePositioner}
+          onCancel={() => {
+            setShowSignaturePositioner(false);
+            setShowSignatureModal(true);
+          }}
+          onConfirm={(position) => {
+            setSignaturePosition(position);
+            handleSignaturePositionConfirm();
+          }}
+          signatureImage={previewImage}
+          contractLink={contractLink}
+          initialPosition={signaturePosition}
+          loading={signingLoading}
+        />
+        
         {/* App Verification Modal - Step 2 */}
         <Modal
           title={
