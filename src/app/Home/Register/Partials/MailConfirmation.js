@@ -1,5 +1,5 @@
 // emailconfirmation.js
-import api from "../../../../api/api";
+import api from "../../../../Api/api";
 
 /**
  * Gửi email xác thực

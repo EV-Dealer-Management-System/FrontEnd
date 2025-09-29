@@ -1,4 +1,4 @@
-import api from "../../api/api";
+import api from "../../Api/api";
 
 export const getProfile = async () => {
     const response = await api.get("/Customer/get-customers-profile");

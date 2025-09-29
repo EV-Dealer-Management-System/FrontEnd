@@ -1,4 +1,4 @@
-import api from "../../api/api";
+import api from "../../Api/api";
 
 export const SignContract = () => {
   const handleSignContract = async (contractData) => {

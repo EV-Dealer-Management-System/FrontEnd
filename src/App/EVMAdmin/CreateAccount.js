@@ -1,4 +1,4 @@
-import api from '../../api/api';
+import api from '../../Api/api';
 
 // API functions cho CreateAccount
 export const createAccountApi = {
