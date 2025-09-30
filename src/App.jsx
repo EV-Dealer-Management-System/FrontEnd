@@ -11,7 +11,7 @@ import ResetPassword from "./Pages/Home/Login/Partial/ResetPassword";
 import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfirm";
 import ProtectedRoute from "./Router/ProtectedRoute";
 import PublicRoute from "./Router/PublicRoute";
-import CreateAccount from "./Pages/Admin/CreateAccount";
+import CreateAccount from "./Pages/Admin/CreateDealerAccount/CreateAccount";
 import ContractPage from "./Pages/ContractPage";
 
 function App() {
