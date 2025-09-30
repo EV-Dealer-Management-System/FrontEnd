@@ -1,6 +1,6 @@
 // Contract.js - Business logic cho xử lý hợp đồng điện tử
 import api from "../../Api/api";
-import { SignContract } from "../EVMAdmin/SignContract";
+import { SignContract } from "../EVMAdmin/SignContractEVM/SignContractEVM";
 
 export const ContractService = () => {
   // Lấy thông tin hợp đồng bằng processCode
