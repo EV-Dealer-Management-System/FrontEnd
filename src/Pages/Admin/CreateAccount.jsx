@@ -24,7 +24,6 @@ import SignatureCanvas from 'react-signature-canvas';
 import { locationApi } from '../../Api/api';
 import { createAccountApi } from '../../App/EVMAdmin/CreateAccount';
 import { SignContract } from '../../App/EVMAdmin/SignContract';
-import SignaturePositioner from './SignContract/Components/SignaturePositioner';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -398,115 +397,14 @@ const CreateAccount = () => {
   const [showAppVerifyModal, setShowAppVerifyModal] = useState(false);
   const [signatureCompleted, setSignatureCompleted] = useState(false);
   const [showSmartCAModal, setShowSmartCAModal] = useState(false);
-  const [showSignaturePositioner, setShowSignaturePositioner] = useState(false);
-  const [signaturePosition, setSignaturePosition] = useState({
-    llx: 10,  // Tọa độ góc dưới cùng bên trái x
-    lly: 110, // Tọa độ góc dưới cùng bên trái y
-    width: 192, // Chiều rộng chữ ký
-    height: 90, // Chiều cao chữ ký
-  });
   const [previewImage, setPreviewImage] = useState(null);
   const signatureRef = useRef(null);
   
-  // Các biến trạng thái cho kéo thả chữ ký - vẫn cần vì được dùng ở các phần khác
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 }); // Used in event handlers
-  const previewContainerRef = useRef(null);
-  
-  // Helper function to set dragging state and offset - available for future drag handlers
-  // eslint-disable-next-line no-unused-vars
-  const startDragging = (clientX, clientY, element) => {
-    setIsDragging(true);
-    const rect = element.getBoundingClientRect();
-    setDragOffset({
-      x: clientX - rect.left,
-      y: clientY - rect.top
-    });
-  };
-  
-  // Xử lý sự kiện di chuột toàn cục khi đang kéo chữ ký
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (isDragging && previewContainerRef.current) {
-        const iframeContainer = previewContainerRef.current.querySelector('.overflow-auto');
-        if (!iframeContainer) return;
-        
-        const iframeRect = iframeContainer.getBoundingClientRect();
-        
-        // Tính toán vị trí mới dựa trên vị trí chuột
-        let newX = e.clientX - iframeRect.left - dragOffset.x;
-        let newY = iframeRect.bottom - e.clientY - dragOffset.y;
-        
-        // Giới hạn trong khung iframe
-        newX = Math.max(0, Math.min(newX, iframeRect.width - signaturePosition.width));
-        newY = Math.max(0, Math.min(newY, iframeRect.height - signaturePosition.height));
-        
-        // Cập nhật vị trí mới
-        setSignaturePosition(prev => ({
-          ...prev,
-          llx: Math.round(newX),
-          lly: Math.round(newY)
-        }));
-      }
-    };
-    
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-    
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-    
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, dragOffset, signaturePosition.width, signaturePosition.height]);
 
-  // Thêm hỗ trợ cho cảm ứng (mobile)
-  useEffect(() => {
-    const handleTouchMove = (e) => {
-      if (isDragging && previewContainerRef.current && e.touches[0]) {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const iframeContainer = previewContainerRef.current.querySelector('.overflow-auto');
-        if (!iframeContainer) return;
-        
-        const iframeRect = iframeContainer.getBoundingClientRect();
-        
-        // Tính toán vị trí mới dựa trên vị trí cảm ứng
-        let newX = touch.clientX - iframeRect.left - dragOffset.x;
-        let newY = iframeRect.bottom - touch.clientY - dragOffset.y;
-        
-        // Giới hạn trong khung iframe
-        newX = Math.max(0, Math.min(newX, iframeRect.width - signaturePosition.width));
-        newY = Math.max(0, Math.min(newY, iframeRect.height - signaturePosition.height));
-        
-        // Cập nhật vị trí mới
-        setSignaturePosition(prev => ({
-          ...prev,
-          llx: Math.round(newX),
-          lly: Math.round(newY)
-        }));
-      }
-    };
-    
-    const handleTouchEnd = () => {
-      setIsDragging(false);
-    };
-    
-    if (isDragging) {
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', handleTouchEnd);
-    }
-    
-    return () => {
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [isDragging, dragOffset, signaturePosition.width, signaturePosition.height]);
+  
+
+
+
 
   // Build a display URL for PDF (use dev proxy to avoid CORS/X-Frame in development)
   const getPdfDisplayUrl = (url) => {
@@ -712,12 +610,11 @@ const CreateAccount = () => {
           return;
         }
 
-        // Set preview image for positioning
+        // Set preview image
         setPreviewImage(signatureDataURL);
-
-        // Display signature positioner modal
-        setShowSignatureModal(false);
-        setShowSignaturePositioner(true);
+        
+        // Tiến hành ký trực tiếp
+        handleSignature(signatureDataURL);
         
       } catch (error) {
         console.error('Error getting signature data:', error);
@@ -730,41 +627,31 @@ const CreateAccount = () => {
     }
   };
 
-  // Handle signature positioning confirmation
-  const handleSignaturePositionConfirm = async () => {
+  // Handle signature directly
+  const handleSignature = async (signatureData) => {
     try {
       if (!contractId || !previewImage) {
         message.error('Không thể xác nhận vị trí chữ ký. Thiếu thông tin hợp đồng hoặc chữ ký.');
         return;
       }
 
-      // Chuyển từ trạng thái chọn vị trí sang trạng thái xác thực
-      setShowSignaturePositioner(false);
+      // Chuyển sang trạng thái xác thực
+      setShowSignatureModal(false);
       setSigningLoading(true);
       setShowSmartCAModal(true);
       
       const signContractApi = SignContract();
       
-      // Chuyển đổi từ llx, lly, width, height sang llx, lly, urx, ury để tạo rectangle
-      const { llx, lly, width, height } = signaturePosition;
-      const urx = llx + width;
-      const ury = lly + height;
+      // Sử dụng vị trí cố định thay vì chọn vị trí
+      const positionString = "32,472,202,562";
       
-      // Định dạng chuỗi vị trí "llx,lly,urx,ury"
-      const positionString = `${llx},${lly},${urx},${ury}`;
-      
-      console.log('Rectangle coordinates:', {
-        llx, lly, // góc dưới bên trái
-        urx, ury, // góc trên bên phải
-        width, height,
-        positionString
-      });
+      console.log('Signature position:', positionString);
       
       const signData = {
         waitingProcess: waitingProcessData,
         reason: "Ký hợp đồng đại lý",
         reject: false,
-        signatureImage: previewImage,
+        signatureImage: signatureData,
         signingPage: 0,
         signingPosition: positionString,
         signatureText: "EVM COMPANY",
@@ -816,16 +703,11 @@ const CreateAccount = () => {
       message.error('Vui lòng hoàn thành ký điện tử trước!');
       return;
     }
-
+    
     setSigningLoading(true);
     try {
-      // Giả lập việc xác thực từ app (có thể gọi API khác để kiểm tra)
-      // Ở đây chúng ta sẽ hiển thị kết quả thành công
-      
-      // Đóng modal xác thực app
       setShowAppVerifyModal(false);
       setContractSigned(true);
-      
       // Hiển thị popup thành công cuối cùng
       Modal.success({
         title: (
@@ -1070,87 +952,7 @@ const CreateAccount = () => {
     document.body.removeChild(a);
   };
 
-  // Xử lý sự kiện di chuột toàn cục khi đang kéo chữ ký
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (isDragging && previewContainerRef.current) {
-        // We don't need containerRect anymore
-        const iframeContainer = previewContainerRef.current.querySelector('.overflow-auto');
-        const iframeRect = iframeContainer.getBoundingClientRect();
-        
-        // Tính toán vị trí mới dựa trên vị trí chuột
-        let newX = e.clientX - iframeRect.left - dragOffset.x;
-        let newY = iframeRect.bottom - e.clientY - dragOffset.y;
-        
-        // Giới hạn trong khung iframe
-        newX = Math.max(0, Math.min(newX, iframeRect.width - signaturePosition.width));
-        newY = Math.max(0, Math.min(newY, iframeRect.height - signaturePosition.height));
-        
-        // Cập nhật vị trí mới
-        setSignaturePosition(prev => ({
-          ...prev,
-          llx: Math.round(newX),
-          lly: Math.round(newY)
-        }));
-      }
-    };
-    
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-    
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-    
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, dragOffset, signaturePosition.width, signaturePosition.height]);
 
-  // Thêm hỗ trợ cho cảm ứng (mobile)
-  useEffect(() => {
-    const handleTouchMove = (e) => {
-      if (isDragging && previewContainerRef.current && e.touches[0]) {
-        e.preventDefault();
-        const touch = e.touches[0];
-        // We don't need containerRect anymore
-        const iframeContainer = previewContainerRef.current.querySelector('.overflow-auto');
-        const iframeRect = iframeContainer.getBoundingClientRect();
-        
-        // Tính toán vị trí mới dựa trên vị trí cảm ứng
-        let newX = touch.clientX - iframeRect.left - dragOffset.x;
-        let newY = iframeRect.bottom - touch.clientY - dragOffset.y;
-        
-        // Giới hạn trong khung iframe
-        newX = Math.max(0, Math.min(newX, iframeRect.width - signaturePosition.width));
-        newY = Math.max(0, Math.min(newY, iframeRect.height - signaturePosition.height));
-        
-        // Cập nhật vị trí mới
-        setSignaturePosition(prev => ({
-          ...prev,
-          llx: Math.round(newX),
-          lly: Math.round(newY)
-        }));
-      }
-    };
-    
-    const handleTouchEnd = () => {
-      setIsDragging(false);
-    };
-    
-    if (isDragging) {
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', handleTouchEnd);
-    }
-    
-    return () => {
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [isDragging, dragOffset, signaturePosition.width, signaturePosition.height]);
 
   // Reset form and related state
   const resetForm = () => {
@@ -1175,13 +977,7 @@ const CreateAccount = () => {
         setSignatureMethod('draw');
         setUploadedImageBase64('');
         setWards([]);
-        setShowSignaturePositioner(false);
-        setSignaturePosition({
-          llx: 10,
-          lly: 110,
-          width: 192,
-          height: 90
-        });
+
         setPreviewImage(null);
         clearAllSignatureData();
         message.success('Đã làm mới biểu mẫu');
@@ -1825,22 +1621,7 @@ const CreateAccount = () => {
             </Button>
           </div>
         </Modal>
-        {/* Sử dụng component SignaturePositioner để kéo thả chữ ký */}
-        <SignaturePositioner 
-          visible={showSignaturePositioner}
-          onCancel={() => {
-            setShowSignaturePositioner(false);
-            setShowSignatureModal(true);
-          }}
-          onConfirm={(position) => {
-            setSignaturePosition(position);
-            handleSignaturePositionConfirm();
-          }}
-          signatureImage={previewImage}
-          contractLink={contractLink}
-          initialPosition={signaturePosition}
-          loading={signingLoading}
-        />
+
         
         {/* App Verification Modal - Step 2 */}
         <Modal
