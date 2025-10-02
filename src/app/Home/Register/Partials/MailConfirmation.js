@@ -1,48 +1,80 @@
-import api from "../../../../api/api";
+// emailconfirmation.js
+import api from "../../../../Api/api";
 
+/**
+ * Gửi email xác thực
+ */
 export const mailConfirmation = async (email) => {
-  const response = await api.post("/Auth/send-verification-email", { email });
-  return response.data;
+  const res = await api.post("/Auth/send-verification-email", { email });
+  return res.data;
 };
 
-export const verifyEmail = async (userId, token) => {
-  try {
-    // Kiểm tra tham số đầu vào
-    if (!userId || !token) {
-      throw new Error("userId và token là bắt buộc");
-    }
-
-    console.log("Sending request with:", {
-      userId,
-      token,
-    });
-
-    // Gửi request xác thực email
-    try {
-      const response = await api.post(
-        `/Auth/verify-email?userId=${encodeURIComponent(
-          userId
-        )}&token=${encodeURIComponent(token)}`
-      );
-      return response.data;
-    } catch (error) {
-      // Nếu email đã được xác thực, trả về response với message phù hợp
-      if (error.response?.data?.message === "Email is already verified") {
-        return {
-          isSuccess: true,
-          message: "Email is already verified",
-          statusCode: 200,
-          result: null,
-        };
-      }
-      throw error;
-    }
-  } catch (error) {
-    // Nếu là lỗi từ API
-    if (error.response?.data) {
-      throw new Error(error.response.data.message || "Xác thực email thất bại");
-    }
-    // Nếu là lỗi khác
-    throw error;
+/**
+ * Lớp lỗi API chuẩn hoá
+ */
+class ApiError extends Error {
+  constructor(message, status = 500) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
   }
+}
+
+/**
+ * Xác thực email theo userId + token
+ * Trả về object nhất quán:
+ * - ok: boolean
+ * - outcome: "success" | "already_verified" (khi ok === true)
+ * - message: string
+ * - status: number
+ * - data: any (tuỳ backend)
+ */
+export const verifyEmail = async (userId, token) => {
+  // Kiểm tra tham số bắt buộc
+  if (!userId || !token) {
+    throw new ApiError("userId và token là bắt buộc", 400);
+  }
+
+  // Gửi request; cho phép 4xx để tự phân luồng (không throw tự động)
+  const res = await api.post(
+    "/Auth/verify-email",
+    null,
+    {
+      params: { userId, token },
+      validateStatus: (s) => s < 500, // chỉ coi 5xx là lỗi mạng/serverside cần throw tự động
+    }
+  );
+
+  const status = res.status;
+  const body = res.data || {};
+  const msg = typeof body.message === "string" ? body.message : "";
+
+  // Case 1: xác thực lần đầu thành công (thường 200)
+  if (status === 200) {
+    return {
+      ok: true,
+      outcome: "success",
+      message: msg || "Verified",
+      status,
+      data: body.result,
+    };
+  }
+
+  // Case 2: đã xác thực trước đó (tuỳ backend có thể trả 200/400/409)
+  if (
+    msg === "Email is already verified" ||
+    status === 409 ||
+    (status === 400 && /already verified/i.test(msg))
+  ) {
+    return {
+      ok: true,
+      outcome: "already_verified",
+      message: msg || "Email is already verified",
+      status,
+      data: body.result,
+    };
+  }
+
+  // Các lỗi còn lại: ném ApiError để UI hiển thị thông báo lỗi
+  throw new ApiError(msg || "Xác thực email thất bại", status);
 };

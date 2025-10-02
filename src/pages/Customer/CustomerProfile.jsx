@@ -1,29 +1,46 @@
 import { useEffect, useState } from "react";
-import { Button, Card, DatePicker, Form, Input, Descriptions } from "antd";
+import { Button, Card, DatePicker, Form, Input, Descriptions, Select, message } from "antd";
 import dayjs from "dayjs";
 import { PageContainer } from "@ant-design/pro-components";
 import Header from "../../components/Header";
+import { getProfile } from "../../app/User/Profile";
 
 function CustomerProfile() {
   const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [form] = Form.useForm();
   const onChange = (date, dateString) => {
     console.log(date, dateString);
   };
   const DatePickerDemo = () => <DatePicker onChange={onChange} needConfirm />;
 
+
   useEffect(() => {
-    const mockData = {
-      name: "John Doe",
-      date: "2004-05-15",
-      email: "johndoe@gmail.com",
-      phone: "0123456789",
-      address: "123 Main St, City, Country",
+    const fetchProfile = async () => {
+      try {
+        const data = await getProfile();
+        setProfile(data.result);
+      } catch (err) {
+        console.log(err);
+        message.error("Không tải được hồ sơ khách hàng");
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchProfile();
+  }, []);
+  /* useEffect(() => {
+  //   const mockData = {
+  //     name: "John Doe",
+  //     date: "2004-05-15",
+  //     email: "johndoe@gmail.com",
+  //     phone: "0123456789",
+  //     address: "123 Main St, City, Country",
+  //   };
     setTimeout(() => {
       setProfile(mockData);
     }, 500);
-  }, []);
+  }, []); */
   const [profileEdit, setProfileEdit] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const format = "YYYY-MM-DD";
@@ -34,7 +51,12 @@ function CustomerProfile() {
     );
   };
 
-  if (!profile) return <div>Loading...</div>;
+  if (loading) return <div>Loading...</div>;
+  if (!profile){
+ 
+
+   return <div>Không tải được hồ sơ khách hàng</div>;
+  }
 
   return (
     <Header title="Hồ sơ khách hàng">
@@ -85,8 +107,8 @@ function CustomerProfile() {
                   style={{ maxWidth: 640, margin: "0 auto" }}
                   initialValues={{
                     ...profileEdit,
-                    date: profileEdit.date
-                      ? dayjs(profileEdit.date, "YYYY-MM-DD")
+                    dateOfBirth: profileEdit.dateOfBirth
+                      ? dayjs(profileEdit.dateOfBirth, "YYYY-MM-DD")
                       : null,
                   }}
                   onFinish={(values) => {
@@ -101,7 +123,7 @@ function CustomerProfile() {
                 >
                   <Form.Item
                     label="Họ và tên"
-                    name="name"
+                    name="fullName"
                     rules={[
                       {
                         required: true,
@@ -114,8 +136,15 @@ function CustomerProfile() {
                     <Input.TextArea autoSize={{ minRows: 1, maxRows: 2 }} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }} />
                   </Form.Item>
                   <Form.Item
+                    label="Giới tính"
+                    name="sex"
+                    rules={[{ required: true, message: "Vui lòng chọn giới tính" }]}
+                  >
+                    <Select options={[{ label: "Nam", value: "Nam" }, { label: "Nữ", value: "Nữ" }]} />
+                  </Form.Item>
+                  <Form.Item
                     label="Ngày Sinh"
-                    name="date"
+                    name="dateOfBirth"
                     style={{ textAlign: "left" }}
                     rules={[{ required: true, message: "Vui lòng chọn ngày sinh" }]}
                   >
@@ -134,7 +163,7 @@ function CustomerProfile() {
                   >
                     <Input.TextArea autoSize={{ minRows: 1, maxRows: 2 }} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }} />
                   </Form.Item>
-                  <Form.Item
+                  {/* <Form.Item
                     label="Số điện thoại"
                     name="phone"
                     rules={[
@@ -146,7 +175,7 @@ function CustomerProfile() {
                     ]}
                   >
                     <Input.TextArea autoSize={{ minRows: 1, maxRows: 2 }} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }} />
-                  </Form.Item>
+                  </Form.Item> */}
                   <Form.Item label="Địa chỉ" name="address">
                     <Input.TextArea rows={2} autoSize={{ minRows: 2, maxRows: 4 }} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }} />
                   </Form.Item>
@@ -161,19 +190,22 @@ function CustomerProfile() {
                 <>
                   <Descriptions column={1} bordered size="middle">
                     <Descriptions.Item label="Họ và tên">
-                      {profile.name}
+                      {profile.fullName}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Giới tính">
+                      {profile.sex||"Chưa có giới tính"}
                     </Descriptions.Item>
                     <Descriptions.Item label="Ngày Sinh">
-                      {profile.date}
+                      {profile.dateOfBirth||"Chưa có ngày sinh"}
                     </Descriptions.Item>
                     <Descriptions.Item label="Email">
                       {profile.email}
                     </Descriptions.Item>
-                    <Descriptions.Item label="Số điện thoại">
+                    {/* <Descriptions.Item label="Số điện thoại">
                       {profile.phone}
-                    </Descriptions.Item>
+                    </Descriptions.Item> */}
                     <Descriptions.Item label="Địa chỉ">
-                      {profile.address}
+                      {profile.address||"Chưa có địa chỉ"}
                     </Descriptions.Item>
                   </Descriptions>
                   <div style={{ marginTop: 16, textAlign: "right" }}>
@@ -182,8 +214,8 @@ function CustomerProfile() {
                         setProfileEdit(profile);
                         form.setFieldsValue({
                           ...profile,
-                          date: profile.date
-                            ? dayjs(profile.date, "YYYY-MM-DD")
+                          dateOfBirth: profile.dateOfBirth
+                            ? dayjs(profile.dateOfBirth, "YYYY-MM-DD")
                             : null,
                         });
                         setIsEditing(true);
