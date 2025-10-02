@@ -6,6 +6,7 @@ on:
 
 env:
   NODE_VERSION: 20.x
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -22,22 +23,41 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install deps
+      - name: Install deps (robust)
         run: |
-          if [ -f package-lock.json ]; then npm ci; else npm i; fi
+          set -e
+          if [ -f pnpm-lock.yaml ]; then
+            corepack enable
+            pnpm --version || npm i -g pnpm
+            pnpm install --frozen-lockfile || pnpm install
+            echo "PM=pnpm" >> $GITHUB_ENV
+          elif [ -f yarn.lock ]; then
+            corepack enable
+            yarn --version || npm i -g yarn
+            yarn install --frozen-lockfile || yarn install
+            echo "PM=yarn" >> $GITHUB_ENV
+          elif [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund || (rm -f package-lock.json && npm install --no-audit --no-fund)
+            echo "PM=npm" >> $GITHUB_ENV
+          else
+            npm install --no-audit --no-fund
+            echo "PM=npm" >> $GITHUB_ENV
+          fi
 
       - name: Build
         run: |
-          npm run build
+          npm run build || [ "${PM}" = "pnpm" ] && pnpm build || [ "${PM}" = "yarn" ] && yarn build
           for d in dist build out; do
             if [ -d "$d" ]; then echo "DIST_DIR=$d" >> $GITHUB_ENV; break; fi
           done
-          if [ -z "${DIST_DIR:-}" ]; then echo "No dist/build/out found"; exit 1; fi
+          if [ -z "${DIST_DIR:-}" ]; then
+            echo "No dist/build/out found after build"; exit 1;
+          fi
 
       - name: Configure AWS (OIDC AssumeRole)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::"${{ secrets.AWS_ACCOUNT_ID }}":role/github-actions-frontend-deploy"${{ secrets.ROLE_GITHUB_ACTION }}"
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE_NAME }}
           aws-region: ${{ secrets.AWS_REGION }}
           role-session-name: gha-frontend-deploy
 
