@@ -1,9 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-
-  baseURL: "http://api.metrohcmc.xyz/api",
-
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
 // API cho địa danh Việt Nam - sử dụng proxy để tránh CORS
