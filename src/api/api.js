@@ -4,16 +4,6 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
-// API cho địa danh Việt Nam - sử dụng proxy để tránh CORS
-const provincesApi = axios.create({
-  baseURL: "/api/provinces", // Sử dụng proxy local
-  timeout: 10000,
-  headers: {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-  }
-});
-
 // Request interceptor để tự động thêm JWT token
 api.interceptors.request.use(
   (config) => {
@@ -46,38 +36,42 @@ api.interceptors.response.use(
 // Cache để lưu dữ liệu đã load
 let cachedData = null;
 
-// API functions cho địa danh Việt Nam - ĐƠN GIẢN HÓA
+// API functions cho địa danh Việt Nam - SỬ DỤNG BACKEND ENDPOINTS
 export const locationApi = {
-  // Lấy tất cả tỉnh với wards (gọi API một lần duy nhất)
+  // Lấy danh sách tỉnh từ backend API
   getProvinces: async () => {
-    if (cachedData) {
-      return cachedData;
-    }
-    
     try {
-      const response = await provincesApi.get('/?depth=2');
+      const response = await api.get('/GHN/provinces-open-get-province');
       
-      // API trả về array, đảm bảo luôn là array để tránh lỗi .map()
-      const provinces = Array.isArray(response.data) ? response.data : [];
-      cachedData = provinces; // Cache để tránh gọi lại
+      // Kiểm tra response structure từ backend
+      if (response.data?.isSuccess && Array.isArray(response.data.result)) {
+        console.log('Loaded provinces from backend:', response.data.result.length);
+        return response.data.result;
+      }
       
-      console.log('Loaded provinces:', provinces.length);
-      return provinces;
+      console.warn('Backend response không hợp lệ:', response.data);
+      return [];
     } catch (error) {
-      console.error('Error loading provinces:', error);
-      return []; // Trả về array rỗng khi lỗi thay vì throw
+      console.error('Lỗi khi tải danh sách tỉnh từ backend:', error);
+      return [];
     }
   },
 
-  // Lấy wards theo province code (từ data đã cache, không gọi API)
-  getWardsByProvinceCode: (provinces, provinceCode) => {
+  // Lấy wards theo province code từ backend API
+  getWardsByProvinceCode: async (provinceCode) => {
     try {
-      const province = provinces.find(p => p.code === parseInt(provinceCode));
-      const wards = province?.wards || [];
-      console.log(`Found ${wards.length} wards for province code:`, provinceCode);
-      return wards;
+      const response = await api.get(`/GHN/provinces-open-get-ward?provinceCode=${provinceCode}`);
+      
+      // Kiểm tra response và lấy wards
+      if (response.data?.isSuccess && response.data.result?.wards) {
+        console.log(`Loaded ${response.data.result.wards.length} wards for province ${provinceCode}`);
+        return response.data.result.wards;
+      }
+      
+      console.warn('Backend wards response không hợp lệ:', response.data);
+      return [];
     } catch (error) {
-      console.error('Error getting wards for province:', provinceCode, error);
+      console.error('Lỗi khi tải danh sách phường/xã từ backend:', error);
       return [];
     }
   },
@@ -94,9 +88,10 @@ export const locationApi = {
     return ward?.name || '';
   },
 
-  // Clear cache (nếu cần refresh dữ liệu)
+  // Clear cache nếu cần
   clearCache: () => {
-    cachedData = null;
+    // Backend API không cần cache riêng
+    console.log('Cache cleared (using backend API)');
   }
 };
 

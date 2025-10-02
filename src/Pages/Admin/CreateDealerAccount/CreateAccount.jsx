@@ -122,8 +122,8 @@ const CreateAccount = () => {
     loadProvinces();
   }, []);
 
-  // Load wards when province changes
-  const handleProvinceChange = (provinceCode) => {
+  // Load wards when province changes - GỌI API backend
+  const handleProvinceChange = async (provinceCode) => {
     if (!provinceCode) {
       setWards([]);
       form.setFieldsValue({ ward: undefined });
@@ -132,13 +132,13 @@ const CreateAccount = () => {
 
     try {
       setLoadingWards(true);
-      // Lấy wards từ data đã load, không cần gọi API
-      const provinceWards = locationApi.getWardsByProvinceCode(provinces, provinceCode);
+      // Gọi API backend để lấy wards theo provinceCode
+      const wardsList = await locationApi.getWardsByProvinceCode(provinceCode);
       
-      if (Array.isArray(provinceWards)) {
-        setWards(provinceWards);
+      if (Array.isArray(wardsList)) {
+        setWards(wardsList);
       } else {
-        console.warn('Wards data is not an array:', provinceWards);
+        console.warn('Wards data is not an array:', wardsList);
         setWards([]);
         message.warning('Dữ liệu phường/xã không hợp lệ');
       }
