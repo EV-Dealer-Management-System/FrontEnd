@@ -3,7 +3,7 @@ import { Card, Form, Input, Button, Row, Col, Typography, Steps, Space, Tag, Div
 import { FileTextOutlined, SafetyOutlined, EditOutlined, CheckCircleOutlined, FilePdfOutlined, ReloadOutlined } from '@ant-design/icons';
 
 // Reuse service
-import { ContractService } from '../App/Home/SignContractCustomer';
+import { ContractService } from '../App/Home/SignContractCustomer.js';
 
 // Reuse components từ CreateAccount
 import SignatureModal from './Admin/SignContract/Components/SignatureModal';

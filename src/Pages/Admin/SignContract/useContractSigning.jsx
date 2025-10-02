@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { message, Modal } from 'antd';
 import { CheckOutlined } from '@ant-design/icons';
-import { SignContract } from '../../../App/EVMAdmin/SignContractEVM/SignContractEVM';
+import { SignContract } from '../../../App/EVMAdmin/SignContractEVM/SignContractEVM.js';
 
 // Custom hook để quản lý logic ký hợp đồng
 const useContractSigning = () => {
