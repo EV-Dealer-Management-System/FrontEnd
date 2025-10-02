@@ -52,8 +52,6 @@ const FormField = ({
   </Col>
 );
 
-
-
 const CreateAccount = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -82,12 +80,6 @@ const CreateAccount = () => {
     resetSigningState
   } = useContractSigning();
   
-
-  
-
-
-
-
   // Build a display URL for PDF (use dev proxy to avoid CORS/X-Frame in development)
   const getPdfDisplayUrl = (url) => {
     if (!url) return url;
@@ -258,8 +250,6 @@ const CreateAccount = () => {
     a.click();
     document.body.removeChild(a);
   };
-
-
 
   // Reset form and related state
   const resetForm = () => {
