@@ -15,8 +15,8 @@ import {
   Modal
 } from 'antd';
 import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
-import { locationApi } from '../../../Api/api.js';
-import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount.js';
+import { locationApi } from '../../../Api/Api';
+import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount';
 import ContractViewer from '../SignContract/Components/ContractViewer';
 import SignatureModal from '../SignContract/Components/SignatureModal';
 import SmartCAModal from '../SignContract/Components/SmartCAModal';

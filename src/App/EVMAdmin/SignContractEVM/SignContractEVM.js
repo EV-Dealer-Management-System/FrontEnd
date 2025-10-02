@@ -1,4 +1,4 @@
-import api from "../../../Api/api";
+import api from "../../../Api/Api";
 
 export const SignContract = () => {
   // Hàm lấy access token cho EVC
