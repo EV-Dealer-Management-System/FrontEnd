@@ -48,93 +48,57 @@ api.interceptors.response.use(
 // Cache để lưu dữ liệu đã load
 let cachedData = null;
 
-// API functions cho địa danh Việt Nam
+// API functions cho địa danh Việt Nam - ĐƠN GIẢN HÓA
 export const locationApi = {
-  // Load tất cả dữ liệu một lần với depth=2
-  loadAllData: async () => {
+  // Lấy tất cả tỉnh với wards (gọi API một lần duy nhất)
+  getProvinces: async () => {
     if (cachedData) {
       return cachedData;
     }
     
     try {
-      const response = await provincesApi.get('/', { params: { depth: 2 } });
-      cachedData = response.data;
-      return cachedData;
+      const response = await provincesApi.get('/?depth=2');
+      
+      // API trả về array, đảm bảo luôn là array để tránh lỗi .map()
+      const provinces = Array.isArray(response.data) ? response.data : [];
+      cachedData = provinces; // Cache để tránh gọi lại
+      
+      console.log('Loaded provinces:', provinces.length);
+      return provinces;
     } catch (error) {
-      console.error('Error fetching all location data:', error);
-      throw error;
+      console.error('Error loading provinces:', error);
+      return []; // Trả về array rỗng khi lỗi thay vì throw
     }
   },
 
-  // Lấy danh sách tất cả tỉnh/thành phố
-  getProvinces: async () => {
+  // Lấy wards theo province code (từ data đã cache, không gọi API)
+  getWardsByProvinceCode: (provinces, provinceCode) => {
     try {
-      const allData = await locationApi.loadAllData();
-      return allData.map(province => ({
-        code: province.code,
-        name: province.name
-      }));
+      const province = provinces.find(p => p.code === parseInt(provinceCode));
+      const wards = province?.wards || [];
+      console.log(`Found ${wards.length} wards for province code:`, provinceCode);
+      return wards;
     } catch (error) {
-      console.error('Error fetching provinces:', error);
-      throw error;
+      console.error('Error getting wards for province:', provinceCode, error);
+      return [];
     }
   },
 
-  // Lấy danh sách phường/xã theo tỉnh/thành phố (API v2 bỏ quận/huyện)
-  getWards: async (provinceCode) => {
-    try {
-      const allData = await locationApi.loadAllData();
-      const province = allData.find(p => p.code === parseInt(provinceCode));
-      console.log('Found province:', province?.name, 'wards count:', province?.wards?.length);
-      return province ? province.wards || [] : [];
-    } catch (error) {
-      console.error('Error fetching wards:', error);
-      throw error;
-    }
+  // Helper: Lấy tên province theo code
+  getProvinceNameByCode: (provinces, provinceCode) => {
+    const province = provinces.find(p => p.code === parseInt(provinceCode));
+    return province?.name || '';
   },
 
-  // Lấy tất cả dữ liệu với depth=2 (tỉnh + quận/huyện + phường/xã)
-  getAllLocations: async () => {
-    try {
-      const response = await provincesApi.get('/', { params: { depth: 2 } });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching all locations:', error);
-      throw error;
-    }
+  // Helper: Lấy tên ward theo code
+  getWardNameByCode: (wards, wardCode) => {
+    const ward = wards.find(w => w.code === parseInt(wardCode));
+    return ward?.name || '';
   },
 
-  // Lấy thông tin chi tiết tỉnh/thành phố theo code
-  getProvinceByCode: async (provinceCode) => {
-    try {
-      const response = await provincesApi.get(`/provinces/${provinceCode}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching province details:', error);
-      throw error;
-    }
-  },
-
-  // Lấy thông tin chi tiết quận/huyện theo code
-  getDistrictByCode: async (districtCode) => {
-    try {
-      const response = await provincesApi.get(`/districts/${districtCode}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching district details:', error);
-      throw error;
-    }
-  },
-
-  // Lấy thông tin chi tiết phường/xã theo code
-  getWardByCode: async (wardCode) => {
-    try {
-      const response = await provincesApi.get(`/wards/${wardCode}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching ward details:', error);
-      throw error;
-    }
+  // Clear cache (nếu cần refresh dữ liệu)
+  clearCache: () => {
+    cachedData = null;
   }
 };
 

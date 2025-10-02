@@ -101,10 +101,19 @@ const CreateAccount = () => {
       try {
         setLoadingProvinces(true);
         const data = await locationApi.getProvinces();
-        setProvinces(data);
+        
+        // Đảm bảo data là array trước khi set
+        if (Array.isArray(data)) {
+          setProvinces(data);
+        } else {
+          console.warn('Provinces data is not an array:', data);
+          setProvinces([]);
+          message.warning('Dữ liệu tỉnh/thành phố không hợp lệ');
+        }
       } catch (error) {
         message.error('Không thể tải danh sách tỉnh/thành phố');
         console.error('Error loading provinces:', error);
+        setProvinces([]); // Đảm bảo set array rỗng khi có lỗi
       } finally {
         setLoadingProvinces(false);
       }
@@ -114,7 +123,7 @@ const CreateAccount = () => {
   }, []);
 
   // Load wards when province changes
-  const handleProvinceChange = async (provinceCode) => {
+  const handleProvinceChange = (provinceCode) => {
     if (!provinceCode) {
       setWards([]);
       form.setFieldsValue({ ward: undefined });
@@ -123,12 +132,22 @@ const CreateAccount = () => {
 
     try {
       setLoadingWards(true);
-      const data = await locationApi.getWards(provinceCode);
-      setWards(data);
+      // Lấy wards từ data đã load, không cần gọi API
+      const provinceWards = locationApi.getWardsByProvinceCode(provinces, provinceCode);
+      
+      if (Array.isArray(provinceWards)) {
+        setWards(provinceWards);
+      } else {
+        console.warn('Wards data is not an array:', provinceWards);
+        setWards([]);
+        message.warning('Dữ liệu phường/xã không hợp lệ');
+      }
+      
       form.setFieldsValue({ ward: undefined });
     } catch (error) {
       message.error('Không thể tải danh sách phường/xã');
       console.error('Error loading wards:', error);
+      setWards([]); // Đảm bảo set array rỗng khi có lỗi
     } finally {
       setLoadingWards(false);
     }
@@ -144,11 +163,12 @@ const CreateAccount = () => {
       const wardCode = values.ward;
       let fullAddress = values.address || '';
 
-      const selectedProvince = provinces.find(p => p.code === provinceCode);
-      const selectedWard = wards.find(w => w.code === wardCode);
+      // Sử dụng helper functions để lấy tên
+      const provinceName = locationApi.getProvinceNameByCode(provinces, provinceCode);
+      const wardName = locationApi.getWardNameByCode(wards, wardCode);
 
-      if (selectedWard && selectedProvince) {
-        fullAddress = `${fullAddress}, ${selectedWard.name}, ${selectedProvince.name}`.trim().replace(/^,\s+/, '');
+      if (wardName && provinceName) {
+        fullAddress = `${fullAddress}, ${wardName}, ${provinceName}`.trim().replace(/^,\s+/, '');
         values.address = fullAddress;
         console.log('Địa chỉ đầy đủ đã được cập nhật:', values.address);
       } else {
