@@ -11,10 +11,14 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     environment: SWP391
-
     permissions:
       id-token: write
       contents: read
+
+    # Nếu project FE nằm trong subfolder, bật dòng dưới:
+    # defaults:
+    #   run:
+    #     working-directory: ./FrontEnd/FrontEnd
 
     steps:
       - uses: actions/checkout@v4
@@ -23,36 +27,57 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install deps (robust)
+      - name: Install deps (lockfile-aware)
         run: |
-          set -e
+          set -euo pipefail
           if [ -f pnpm-lock.yaml ]; then
             corepack enable
-            pnpm --version || npm i -g pnpm
-            pnpm install --frozen-lockfile || pnpm install
+            corepack prepare pnpm@latest --activate
+            pnpm -v
+            pnpm install --frozen-lockfile
             echo "PM=pnpm" >> $GITHUB_ENV
           elif [ -f yarn.lock ]; then
             corepack enable
-            yarn --version || npm i -g yarn
-            yarn install --frozen-lockfile || yarn install
+            corepack prepare yarn@stable --activate
+            yarn -v
+            yarn install --frozen-lockfile
             echo "PM=yarn" >> $GITHUB_ENV
-          elif [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund || (rm -f package-lock.json && npm install --no-audit --no-fund)
-            echo "PM=npm" >> $GITHUB_ENV
           else
-            npm install --no-audit --no-fund
+            npm ci --no-audit --no-fund
             echo "PM=npm" >> $GITHUB_ENV
           fi
 
-      - name: Build
+      - name: Build (theo PM)
         run: |
-          npm run build || [ "${PM}" = "pnpm" ] && pnpm build || [ "${PM}" = "yarn" ] && yarn build
-          for d in dist build out; do
-            if [ -d "$d" ]; then echo "DIST_DIR=$d" >> $GITHUB_ENV; break; fi
+          set -euo pipefail
+          case "${PM}" in
+            pnpm) pnpm build ;;
+            yarn) yarn build ;;
+            *)    npm run build ;;
+          esac
+
+          # Auto tìm dist/build/out cả khi ở repo root hoặc subfolder
+          DIST_DIR=""
+          for p in \
+            "dist" "build" "out" \
+            "FrontEnd/FrontEnd/dist" "FrontEnd/dist" "frontend/dist" \
+            "./dist" "./build" "./out"
+          do
+            if [ -d "$p" ]; then DIST_DIR="$p"; break; fi
           done
-          if [ -z "${DIST_DIR:-}" ]; then
-            echo "No dist/build/out found after build"; exit 1;
+
+          # fallback: search sâu tối đa 3 cấp cho chắc
+          if [ -z "$DIST_DIR" ]; then
+            DIST_DIR=$(find . -maxdepth 3 -type d -name dist | head -n1 || true)
           fi
+
+          if [ -z "${DIST_DIR}" ]; then
+            echo "No dist/build/out found after build"; exit 1
+          fi
+
+          echo "DIST_DIR=$DIST_DIR" >> $GITHUB_ENV
+          echo "Using DIST_DIR=$DIST_DIR"
+          ls -la "$DIST_DIR"
 
       - name: Configure AWS (OIDC AssumeRole)
         uses: aws-actions/configure-aws-credentials@v4
@@ -73,8 +98,8 @@ jobs:
           aws s3 cp "$DIST_DIR/index.html" "s3://${{ secrets.S3_BUCKET }}/index.html" \
             --cache-control max-age=0,no-cache,no-store,must-revalidate
 
-      - name: Invalidate CloudFront
+      - name: Invalidate CloudFront (chỉ cần index)
         run: |
           aws cloudfront create-invalidation \
             --distribution-id "${{ secrets.CF_DIST_ID }}" \
-            --paths "/*"
+            --paths "/index.html"
