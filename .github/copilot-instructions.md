@@ -73,7 +73,7 @@ This is a React-based web application for an **Electric Vehicle Dealer Managemen
 2. Add route to /src/App.jsx with proper route protection
 
 ### API Integration
-1. Add service functions to /src/App/[Module]/ (following existing pattern)
+1. Add service functions to /src/App/[Role]/[Module]/ (following existing pattern)
 2. Use centralized api instance from /src/Api/api.js
 3. Handle errors in components with try/catch and user-friendly messages
 
