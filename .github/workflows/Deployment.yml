@@ -28,16 +28,19 @@ jobs:
 
       - name: Build
         run: |
+          set -e
           npm run build
+          found=""
           for d in dist build out; do
-            if [ -d "$d" ]; then echo "DIST_DIR=$d" >> $GITHUB_ENV; break; fi
+            if [ -d "$d" ]; then found="$d"; break; fi
           done
-          if [ -z "${DIST_DIR:-}" ]; then echo "No dist/build/out found"; exit 1; fi
+          if [ -z "$found" ]; then echo "No dist/build/out found"; exit 1; fi
+          echo "DIST_DIR=$found" >> $GITHUB_ENV
 
       - name: Configure AWS (OIDC AssumeRole)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::"${{ secrets.AWS_ACCOUNT_ID }}":role/"${{ secrets.ROLE_GITHUB_ACTION }}"
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.ROLE_GITHUB_ACTION }}
           aws-region: ${{ secrets.AWS_REGION }}
           role-session-name: gha-frontend-deploy
 
