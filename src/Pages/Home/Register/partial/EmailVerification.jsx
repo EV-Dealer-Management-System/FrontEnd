@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Result, Button, Spin, notification } from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { verifyEmail } from "../../../../App/Home/Register/Partials/MailConfirmation";
+import { verifyEmail } from "../../../../App/Home/Register/Partials/MailConfirmation.js";
 import { PageContainer } from "@ant-design/pro-components";
 import { SmileOutlined, FrownOutlined } from "@ant-design/icons";
 
