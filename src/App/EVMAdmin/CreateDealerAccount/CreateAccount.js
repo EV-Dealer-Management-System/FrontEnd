@@ -5,13 +5,13 @@ export const createAccountApi = {
   // Tạo hợp đồng đại lý
   createDealerContract: async function(formData) {
     try {
-      // Chuẩn bị dữ liệu gửi lên API
+      // Chuẩn bị dữ liệu gửi lên API - SỬA MAPPING ĐÚNG
       const apiData = {
-        dealerName: formData.brandName,
-        dealerAddress: formData.address,
-        fullNameManager: formData.representativeName,
-        emailManager: formData.email,
-        phoneNumberManager: formData.phone
+        dealerName: formData.dealerName || formData.brandName || '',
+        dealerAddress: formData.dealerAddress || formData.address || '',
+        fullNameManager: formData.fullNameManager || formData.representativeName || '',
+        emailManager: formData.emailManager || formData.email || '',
+        phoneNumberManager: formData.phoneNumberManager || formData.phone || ''
       };
 
       console.log('Dữ liệu gửi lên API:', apiData);
