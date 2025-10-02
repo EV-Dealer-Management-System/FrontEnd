@@ -8,7 +8,7 @@ import {
 import { message, Typography, Space, Avatar } from "antd";
 import { useNavigate } from "react-router-dom";
 import { MailOutlined, ArrowLeftOutlined } from "@ant-design/icons";
-import { handleResetPassword } from "../../../../App/Home/Login/ResetPassword/ResetPassword.js";
+import { handleResetPassword } from "../../../../utils/auth";
 
 const { Title, Text, Link } = Typography;
 

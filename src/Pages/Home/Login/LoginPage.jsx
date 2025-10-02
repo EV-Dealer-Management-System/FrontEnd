@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Typography, Avatar, Space, message, Alert } from "antd";
-import { Login } from "../../../App/Home/Login/Login.js"
+import { login } from "../../../utils/auth";
 import { useNavigate, Link } from "react-router-dom";
 import {
   GoogleOutlined,
@@ -32,7 +32,7 @@ function LoginPage() {
 
     try {
       setLoading(true);
-      const response = await Login(email, password, autoLogin);
+      const response = await login(email, password, autoLogin);
       // Save JWT token
       localStorage.setItem("jwt_token", response.token);
       localStorage.setItem("userFullName", response.result.userData?.fullName ||"");

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Typography, Avatar, Space, message, notification } from "antd";
-import { register } from "../../../App/Home/Register/Register.js";
+import { register } from "../../../utils/auth";
 import { useNavigate } from "react-router-dom";
 import {
   GoogleOutlined,

@@ -3,7 +3,7 @@ import { Result, Button, Spin, notification, Form, Input } from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageContainer } from "@ant-design/pro-components";
 import { SmileOutlined, FrownOutlined, LockOutlined } from "@ant-design/icons";
-import { handleConfirmResetPassword } from "../../../../App/Home/Login/ResetPassword/ResetPassword.js";
+import { handleConfirmResetPassword } from "../../../../utils/auth";
 
 const ResetPasswordConfirm = () => {
   const [searchParams] = useSearchParams();
