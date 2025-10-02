@@ -1,6 +1,5 @@
 // Contract.js - Business logic cho xử lý hợp đồng điện tử
 import api from "../../Api/api";
-import { SignContract } from "../EVMAdmin/SignContractEVM/SignContractEVM";
 
 export const ContractService = () => {
   // Lấy thông tin hợp đồng bằng processCode
@@ -102,20 +101,17 @@ export const ContractService = () => {
     }
   };
 
-  // Ký hợp đồng điện tử (Step 1) - sử dụng phương thức tương tự CreateAccount.jsx
-  const handleDigitalSignature = async ({ processId, reason, signatureImage, signatureDisplayMode, waitingProcess }) => {
+  // Ký hợp đồng điện tử (Step 1) - sử dụng token từ contractInfo.accessToken
+  const handleDigitalSignature = async ({ processId, reason, signatureImage, signatureDisplayMode, waitingProcess, accessToken }) => {
     try {
-      const signContractService = SignContract();
-      
       // Chuẩn bị data theo format của SignContract giống CreateAccount.jsx
       const signData = {
-        waitingProcess: waitingProcess,
         processId: processId,
         reason: reason || "Ký hợp đồng điện tử",
         reject: false,
         signatureImage: signatureImage,
         signingPage: 0,
-        signingPosition: "10,110,202,200",
+        signingPosition: "393,472,563,562",
         signatureText: "Chữ ký điện tử",
         fontSize: 14,
         showReason: true,
@@ -125,30 +121,45 @@ export const ContractService = () => {
 
       console.log('Digital signature data:', {
         processId: processId,
-        waitingProcess: waitingProcess,
         hasSignatureImage: !!signatureImage,
-        signatureDisplayMode: signatureDisplayMode
+        signatureDisplayMode: signatureDisplayMode,
+        hasAccessToken: !!accessToken
       });
 
-      // Gọi handleSignContract từ SignContract service
-      const result = await signContractService.handleSignContract(signData);
+      // Gọi API ký trực tiếp với token từ contractInfo.accessToken
+      const response = await api.post('/EContract/sign-process', signData, {
+        params: {
+          token: accessToken // Sử dụng token từ get-info-to-sign-process-by-code
+        }
+      });
       
-      console.log('Digital signature result:', result);
+      console.log('Digital signature result:', response.data);
       
-      if (result && result.statusCode === 200 && result.isSuccess) {
+      if (response.data && response.data.statusCode === 200 && response.data.isSuccess) {
         return {
           success: true,
-          data: result.result?.data || result,
-          message: result.message || 'Ký điện tử thành công!'
+          data: response.data.result?.data || response.data,
+          message: response.data.message || 'Ký điện tử thành công!'
         };
       } else {
-        const errorMessage = result?.message || 
-                           result?.result?.messages?.[0] || 
-                           'Có lỗi khi ký điện tử';
+        const errorMessage = response.data?.message || 
+                         response.data?.result?.messages?.[0] || 
+                         'Có lỗi khi ký điện tử';
         throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('Error in digital signature:', error);
+      
+      // Xử lý các lỗi cụ thể từ server giống SignContract.js
+      if (error.response?.data?.message) {
+        const errorMessage = error.response.data.message;
+        if (errorMessage.includes("User has not confirmed yet")) {
+          throw new Error("Người dùng chưa xác nhận. Vui lòng kiểm tra OTP hoặc xác nhận điều khoản trước khi ký.");
+        } else if (errorMessage.includes("Lỗi ký số")) {
+          throw new Error(`Lỗi ký số: ${errorMessage}`);
+        }
+      }
+      
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Không thể ký hợp đồng điện tử.'
