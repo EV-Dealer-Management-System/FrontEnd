@@ -1,18 +1,18 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
-import HomePage from "./Pages/Home/HomePage";
-import LoginPage from "./Pages/Home/Login/LoginPage";
-import RegisterPage from "./Pages/Home/Register/RegisterPage";
-import CustomerProfile from "./Pages/Customer/CustomerProfile";
-import { MailConfirmation } from "./Pages/Home/Register/partial/MailConfirmation";
-import Customer from "./Pages/Customer/Customer";
-import EmailVerification from "./Pages/Home/Register/partial/EmailVerification";
-import ResetPassword from "./Pages/Home/Login/Partial/ResetPassword";
-import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfirm";
+import HomePage from "./pages/Home/HomePage";
+import LoginPage from "./pages/Home/Login/LoginPage";
+import RegisterPage from "./pages/Home/Register/RegisterPage";
+import CustomerProfile from "./pages/Customer/CustomerProfile";
+import { MailConfirmation } from "./pages/Home/Register/partial/MailConfirmation";
+import Customer from "./pages/Customer/Customer";
+import EmailVerification from "./pages/Home/Register/partial/EmailVerification";
+import ResetPassword from "./pages/Home/Login/Partial/ResetPassword";
+import ResetPasswordConfirm from "./pages/Home/Login/Partial/ResetPasswordConfirm";
 import ProtectedRoute from "./Router/ProtectedRoute";
 import PublicRoute from "./Router/PublicRoute";
-import Admin from "./Pages/Admin/Admin";
+import Admin from "./pages/Admin/Admin";
 
 function App() {
   return (
