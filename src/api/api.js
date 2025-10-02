@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
 
-  baseURL: "http://52.220.139.2:5000/api",
+  baseURL: "http://api.metrohcmc.xyz/api",
 
 });
 
