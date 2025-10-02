@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  // baseURL: import.meta.env.VITE_API_URL,
+  baseURL: "http://api.metrohcmc.xyz/api",
 });
 
 // Request interceptor để tự động thêm JWT token
