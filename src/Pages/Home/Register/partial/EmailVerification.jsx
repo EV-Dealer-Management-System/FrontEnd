@@ -1,4 +1,4 @@
-// EmailVerification.jsx
+
 import React, { useEffect, useRef, useState } from "react";
 import { Result, Button, Spin, notification } from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
