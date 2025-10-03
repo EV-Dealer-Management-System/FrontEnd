@@ -112,7 +112,7 @@ export const ContractService = () => {
         signatureImage: signatureImage,
         signingPage: 0,
         signingPosition: "393,472,563,562",
-        signatureText: "Chữ ký điện tử",
+        signatureText: "Đại diện Đại lý ký",
         fontSize: 14,
         showReason: true,
         confirmTermsConditions: true,
