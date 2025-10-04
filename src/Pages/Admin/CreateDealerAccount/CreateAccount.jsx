@@ -12,7 +12,8 @@ import {
   Typography,
   Divider,
   Spin,
-  Modal
+  Modal,
+  Layout
 } from 'antd';
 import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
@@ -22,9 +23,11 @@ import SignatureModal from '../SignContract/Components/SignatureModal';
 import SmartCAModal from '../SignContract/Components/SmartCAModal';
 import AppVerifyModal from '../SignContract/Components/AppVerifyModal';
 import useContractSigning from '../SignContract/useContractSigning';
+import AdminLayout from '../../../Components/Admin/AdminLayout';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { Content } = Layout;
 
 // Custom form field component with consistent styling
 const FormField = ({ 
@@ -292,7 +295,7 @@ const CreateAccount = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen font-sans">
+    <AdminLayout>
       <div className="max-w-6xl mx-auto">
         <Card className="shadow-lg rounded-xl mb-6">
           <Space direction="vertical" size="large" className="w-full">
@@ -527,7 +530,7 @@ const CreateAccount = () => {
           signatureCompleted={signatureCompleted}
         />
       </div>
-    </div>
+    </AdminLayout>
   );
 };
 

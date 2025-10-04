@@ -1,0 +1,225 @@
+import React, { useState } from 'react';
+import { Button, Badge, Space, Typography, Tooltip } from 'antd';
+import { ProLayout, ProConfigProvider } from '@ant-design/pro-components';
+import {
+  UserAddOutlined,
+  FileTextOutlined,
+  DashboardOutlined,
+  SettingOutlined,
+  TeamOutlined,
+  ShopOutlined,
+  CarOutlined,
+  BarChartOutlined,
+  BellOutlined,
+  LogoutOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  DatabaseOutlined,
+  DeploymentUnitOutlined,
+  SolutionOutlined,
+  LineChartOutlined,
+  GlobalOutlined,
+  QuestionCircleOutlined
+} from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+
+const { Text } = Typography;
+
+function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const navigate = useNavigate();
+  
+  // Sử dụng collapsed từ props hoặc internal state
+  const collapsed = propCollapsed !== undefined ? propCollapsed : internalCollapsed;
+  const setCollapsed = onCollapse || setInternalCollapsed;
+
+  // Menu items cho EVM Admin với Pro Layout structure
+  const route = {
+    path: '/admin',
+    routes: [
+      {
+        path: '/admin/dashboard',
+        name: 'Tổng quan',
+        icon: <DashboardOutlined />,
+        component: './Dashboard',
+      },
+      {
+        path: '/admin/dealer',
+        name: 'Quản lý đại lý',
+        icon: <ShopOutlined />,
+        routes: [
+          {
+            path: '/admin/dealer/create',
+            name: 'Tạo tài khoản đại lý',
+            icon: <UserAddOutlined />,
+            component: './CreateAccount',
+          },
+          {
+            path: '/admin/dealer/list',
+            name: 'Danh sách đại lý',
+            icon: <TeamOutlined />,
+            component: './DealerList',
+          },
+          {
+            path: '/admin/dealer/contracts',
+            name: 'Hợp đồng đại lý',
+            icon: <FileTextOutlined />,
+            component: './DealerContracts',
+          },
+          {
+            path: '/admin/dealer/performance',
+            name: 'Hiệu suất đại lý',
+            icon: <LineChartOutlined />,
+            component: './DealerPerformance',
+          },
+        ],
+      },
+      {
+        path: '/admin/vehicle',
+        name: 'Quản lý xe điện',
+        icon: <CarOutlined />,
+        routes: [
+          {
+            path: '/admin/vehicle/catalog',
+            name: 'Danh mục xe',
+            icon: <DatabaseOutlined />,
+            component: './VehicleCatalog',
+          },
+          {
+            path: '/admin/vehicle/inventory',
+            name: 'Kho xe',
+            icon: <DeploymentUnitOutlined />,
+            component: './Inventory',
+          },
+          {
+            path: '/admin/vehicle/allocation',
+            name: 'Phân bổ xe cho đại lý',
+            icon: <GlobalOutlined />,
+            component: './VehicleAllocation',
+          },
+        ],
+      },
+      {
+        path: '/admin/reports',
+        name: 'Báo cáo & Phân tích',
+        icon: <BarChartOutlined />,
+        routes: [
+          {
+            path: '/admin/reports/sales',
+            name: 'Báo cáo bán hàng',
+            icon: <LineChartOutlined />,
+            component: './SalesReport',
+          },
+          {
+            path: '/admin/reports/inventory',
+            name: 'Báo cáo tồn kho',
+            icon: <DatabaseOutlined />,
+            component: './InventoryReport',
+          },
+          {
+            path: '/admin/reports/forecast',
+            name: 'Dự báo AI',
+            icon: <SolutionOutlined />,
+            component: './AIForecast',
+          },
+        ],
+      },
+      {
+        path: '/admin/settings',
+        name: 'Cài đặt hệ thống',
+        icon: <SettingOutlined />,
+        component: './Settings',
+      },
+       {
+        path: '/admin/settings',
+        name: 'Đăng Xuất',
+        icon: <LogoutOutlined />,
+        component: './Settings',
+      },
+    ],
+  };
+
+
+
+  return (
+    <ProConfigProvider hashed={false}>
+      <div
+        style={{
+          height: '100vh',
+          width: collapsed ? 64 : 280,
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          zIndex: isMobile ? 1000 : 100,
+          transition: 'all 0.2s ease',
+          transform: isMobile && collapsed ? 'translateX(-100%)' : 'translateX(0)',
+        }}
+      >
+        <ProLayout
+          route={route}
+          location={{ pathname: '/admin/dealer/create' }}
+          collapsed={collapsed}
+          onCollapse={setCollapsed}
+          fixSiderbar
+          siderWidth={280}
+          collapsedWidth={64}
+          logo={
+            <div className="flex items-center gap-2">
+              <CarOutlined className="text-2xl text-blue-500" />
+              {!collapsed && (
+                <Text strong className="text-lg text-gray-800">
+                  EV Management System
+                </Text>
+              )}
+            </div>
+          }
+          title="EV Dealer Management"
+          layout="side"
+          navTheme="light"
+          headerTheme="light"
+          primaryColor="#1890ff"
+          siderMenuType="sub"
+          menuHeaderRender={(logo) => (
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                {logo}
+              </div>
+            </div>
+          )}
+          menuItemRender={(item, dom) => (
+            <div
+              onClick={() => {
+                if (item.path) {
+                  navigate(item.path);
+                }
+              }}
+              className="cursor-pointer"
+            >
+              {dom}
+            </div>
+          )}
+          rightContentRender={() => (
+            <div className="flex items-center"></div>
+          )}
+          avatarProps={{
+            size: 'small',
+            render: (props, dom) => dom,
+          }}
+         
+          menuProps={{
+            defaultSelectedKeys: ['/admin/dealer/create'],
+            defaultOpenKeys: ['/admin/dealer'],
+          }}
+          style={{
+            backgroundColor: '#fff',
+            boxShadow: '2px 0 8px 0 rgba(29,35,41,.05)',
+          }}
+        >
+          {/* Content sẽ được render bởi parent component */}
+        </ProLayout>
+      </div>
+    </ProConfigProvider>
+  );
+}
+
+export default NavigationBar;
