@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { message, Modal } from 'antd';
 import { CheckOutlined } from '@ant-design/icons';
 import { SignContract } from '../../../App/EVMAdmin/SignContractEVM/SignContractEVM';
+import AddSmartCA from './Components/AddSmartCA';
 
 // Custom hook để quản lý logic ký hợp đồng
 const useContractSigning = () => {
@@ -12,6 +13,7 @@ const useContractSigning = () => {
   const [showSmartCAModal, setShowSmartCAModal] = useState(false);
   const [showAppVerifyModal, setShowAppVerifyModal] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [showAddSmartCA, setShowAddSmartCA] = useState(false);
 
   // Handle signature directly
   const handleSignature = async (signatureData, signatureDisplayMode, contractId, waitingProcessData) => {
@@ -136,6 +138,19 @@ const useContractSigning = () => {
     }
   };
 
+  // Handle SmartCA success
+  const handleSmartCASuccess = (smartCAData) => {
+    console.log('SmartCA added:', smartCAData);
+    setShowAddSmartCA(false);
+    
+    // Hiển thị thông báo thành công với thông tin chi tiết
+    if (smartCAData.hasValidSmartCA) {
+      message.success('SmartCA đã được thêm và kích hoạt thành công!');
+    } else {
+      message.warning('SmartCA đã được thêm nhưng chưa được kích hoạt. Vui lòng kiểm tra lại.');
+    }
+  };
+
   // Reset signing state
   const resetSigningState = () => {
     setContractSigned(false);
@@ -145,6 +160,7 @@ const useContractSigning = () => {
     setSignatureCompleted(false);
     setSigningLoading(false);
     setPreviewImage(null);
+    setShowAddSmartCA(false);
   };
 
   return {
@@ -158,9 +174,20 @@ const useContractSigning = () => {
     showAppVerifyModal,
     setShowAppVerifyModal,
     previewImage,
+    showAddSmartCA,
+    setShowAddSmartCA,
     handleSignature,
     handleAppVerification,
-    resetSigningState
+    handleSmartCASuccess,
+    resetSigningState,
+    AddSmartCAComponent: (contractInfo) => (
+      <AddSmartCA
+        visible={showAddSmartCA}
+        onCancel={() => setShowAddSmartCA(false)}
+        onSuccess={handleSmartCASuccess}
+        contractInfo={contractInfo}
+      />
+    )
   };
 };
 
