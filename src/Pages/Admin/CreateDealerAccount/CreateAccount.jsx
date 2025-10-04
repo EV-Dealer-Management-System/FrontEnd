@@ -15,7 +15,7 @@ import {
   Modal,
   Layout
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
 import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount';
 import ContractViewer from '../SignContract/Components/ContractViewer';
@@ -366,6 +366,25 @@ const CreateAccount = () => {
                   <Input 
                     placeholder="Nhập họ tên quản lý"
                     className="rounded-lg"
+                  />
+                </FormField>
+
+                <FormField
+                  name="taxNo"
+                  label="Mã Số Thuế"
+                  icon={<FileTextOutlined />}
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập mã số thuế!' },
+                    { 
+                      pattern: /^[0-9]{10}$|^[0-9]{13}$/, 
+                      message: 'Mã số thuế phải có 10 hoặc 13 chữ số!' 
+                    }
+                  ]}
+                >
+                  <Input 
+                    placeholder="Nhập mã số thuế (10 hoặc 13 chữ số)"
+                    className="rounded-lg"
+                    maxLength={13}
                   />
                 </FormField>
 

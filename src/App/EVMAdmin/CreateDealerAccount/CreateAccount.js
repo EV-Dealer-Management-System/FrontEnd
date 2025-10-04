@@ -9,6 +9,7 @@ export const createAccountApi = {
       const apiData = {
         dealerName: formData.dealerName || formData.brandName || '',
         dealerAddress: formData.dealerAddress || formData.address || '',
+        taxNo: formData.taxNo || '',
         fullNameManager: formData.fullNameManager || formData.representativeName || '',
         emailManager: formData.emailManager || formData.email || '',
         phoneNumberManager: formData.phoneNumberManager || formData.phone || ''
@@ -69,6 +70,10 @@ export const createAccountApi = {
       errors.push('Vui lòng chọn phường/xã');
     }
 
+    if (!formData.taxNo || !/^[0-9]{10}$|^[0-9]{13}$/.test(formData.taxNo)) {
+      errors.push('Mã số thuế phải có 10 hoặc 13 chữ số');
+    }
+
     return {
       isValid: errors.length === 0,
       errors
@@ -80,6 +85,7 @@ export const createAccountApi = {
     return {
       dealerName: formData.brandName?.trim(),
       dealerAddress: formData.address?.trim(),
+      taxNo: formData.taxNo?.trim(),
       dealerEmail: null, // Mặc định null
       dealerPhoneNumber: null, // Mặc định null
       fullNameManager: formData.representativeName?.trim(),

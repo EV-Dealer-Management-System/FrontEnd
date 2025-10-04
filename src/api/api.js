@@ -1,8 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  // baseURL: import.meta.env.VITE_API_URL,
-  baseURL: "https://api.metrohcmc.xyz/api",
+baseURL: import.meta.env.VITE_API_URL,
 });
 
 // Request interceptor để tự động thêm JWT token
@@ -34,8 +33,6 @@ api.interceptors.response.use(
   }
 );
 
-// Cache để lưu dữ liệu đã load
-let cachedData = null;
 
 // API functions cho địa danh Việt Nam - SỬ DỤNG BACKEND ENDPOINTS
 export const locationApi = {

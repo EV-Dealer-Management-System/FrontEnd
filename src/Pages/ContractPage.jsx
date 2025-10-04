@@ -136,17 +136,6 @@ function ContractPage() {
   }
 
   // Mở modal ký
-  function signContract() {
-    if (contractSigned) {
-      message.info('Hợp đồng đã được ký thành công!');
-      return;
-    }
-    if (!contractService.isSmartCAValid(smartCAInfo)) {
-      message.error('SmartCA chưa sẵn sàng. Vui lòng thêm SmartCA trước khi ký!');
-      return;
-    }
-    setShowSignatureModal(true);
-  }
 
   // Nhận dữ liệu chữ ký từ SignatureModal và gọi API ký
   async function handleSignatureFromModal(signatureDataURL, displayMode = 2) {

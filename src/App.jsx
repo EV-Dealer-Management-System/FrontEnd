@@ -37,7 +37,7 @@ function App() {
         <Route path="/email-verification" element={<EmailVerification />} />
         <Route path="/forgot-password" element={<ResetPassword />} />
         <Route path="/api/reset-password" element={<ResetPasswordConfirm />} />
-        <Route path="/create-account" element={<CreateAccount />} />
+        <Route path="/admin/dealer/create-account" element={<CreateAccount />} />
         <Route path="/contract" element={<ContractPage />} />
         <Route 
           path="/admin" 
