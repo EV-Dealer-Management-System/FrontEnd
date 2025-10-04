@@ -21,13 +21,14 @@ import {
   GlobalOutlined,
   QuestionCircleOutlined
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const { Text } = Typography;
 
 function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Sử dụng collapsed từ props hoặc internal state
   const collapsed = propCollapsed !== undefined ? propCollapsed : internalCollapsed;
@@ -157,7 +158,9 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
       >
         <ProLayout
           route={route}
-          location={{ pathname: '/admin/dealer/create' }}
+          location={{ 
+            pathname: location.pathname === '/admin' ? '/admin/dashboard' : location.pathname 
+          }}
           collapsed={collapsed}
           onCollapse={setCollapsed}
           fixSiderbar
@@ -190,7 +193,11 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             <div
               onClick={() => {
                 if (item.path) {
-                  navigate(item.path);
+                  if (item.path === '/admin/dashboard') {
+                    navigate('/admin');
+                  } else {
+                    navigate(item.path);
+                  }
                 }
               }}
               className="cursor-pointer"
@@ -207,7 +214,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           }}
          
           menuProps={{
-            defaultSelectedKeys: ['/admin/dealer/create'],
+            selectedKeys: [location.pathname === '/admin' ? '/admin/dashboard' : location.pathname],
             defaultOpenKeys: ['/admin/dealer'],
           }}
           style={{
