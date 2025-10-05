@@ -50,7 +50,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         icon: <ShopOutlined />,
         routes: [
           {
-            path: '/admin/dealer/create',
+            path: '/admin/dealer/create-account',
             name: 'Tạo tài khoản đại lý',
             icon: <UserAddOutlined />,
             component: './CreateAccount',
