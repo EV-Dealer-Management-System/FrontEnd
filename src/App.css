@@ -51,6 +51,63 @@
   font-weight: 600;
 }
 
+/* Vehicle Management specific styles */
+.vehicle-modal .ant-modal-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.vehicle-modal .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.vehicle-modal .ant-input-number {
+  width: 100%;
+}
+
+/* Custom statistic cards */
+.ant-statistic-content {
+  color: #262626;
+}
+
+.ant-statistic-content-value {
+  font-weight: 600;
+}
+
+/* Image preview styles */
+.ant-image-preview-mask {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* Table hover effects */
+.custom-table .ant-table-tbody > tr {
+  transition: all 0.2s ease;
+}
+
+.custom-table .ant-table-tbody > tr:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Card hover effects */
+.ant-card {
+  transition: all 0.3s ease;
+}
+
+.ant-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Progress bar customization */
+.ant-progress-line {
+  font-size: 12px;
+}
+
+/* Badge positioning */
+.ant-badge {
+  line-height: 1;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .custom-table .ant-table-tbody > tr > td {
@@ -61,5 +118,14 @@
   .custom-table .ant-table-thead > tr > th {
     padding: 8px 4px;
     font-size: 12px;
+  }
+  
+  .vehicle-modal {
+    margin: 0;
+    padding: 0;
+  }
+  
+  .vehicle-modal .ant-modal-content {
+    border-radius: 0;
   }
 }
