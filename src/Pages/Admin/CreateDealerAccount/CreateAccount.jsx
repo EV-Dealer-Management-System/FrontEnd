@@ -17,7 +17,7 @@ import {
 } from 'antd';
 import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
-import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount';
+import { ContractService } from'../../../App/Home/SignContractCustomer'
 import ContractViewer from '../SignContract/Components/ContractViewer';
 import SignatureModal from '../SignContract/Components/SignatureModal';
 import SmartCAModal from '../SignContract/Components/SmartCAModal';
@@ -26,6 +26,7 @@ import AddSmartCA from '../SignContract/Components/AddSmartCA';
 import SmartCASelector from '../SignContract/Components/SmartCASelector';
 import SmartCAStatusChecker from '../SignContract/Components/SmartCAStatusChecker';
 import useContractSigning from '../SignContract/useContractSigning';
+import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount';
 const FIXED_USER_ID = "18858";
 import AdminLayout from '../../../Components/Admin/AdminLayout';
 
@@ -236,8 +237,8 @@ const CreateAccount = () => {
               ),
               duration: 3
             });
-            // Sau khi tạo hợp đồng, mở modal thêm SmartCA cho hãng
-            setShowAddSmartCA(true);
+            // Sau khi tạo hợp đồng, kiểm tra trạng thái SmartCA trước
+            setCheckingSmartCA(true);
           } else {
             message.warning('Không tìm thấy đường dẫn hợp đồng');
             console.error('Download URL không tồn tại trong phản hồi');
@@ -605,16 +606,19 @@ const CreateAccount = () => {
           }}
         />
 
-        {/* Kiểm tra sự tồn tại SmartCA sau khi thêm */}
+        {/* Kiểm tra sự tồn tại SmartCA sau khi tạo hợp đồng hoặc thêm mới */}
         {checkingSmartCA && (
           <SmartCAStatusChecker
             userId={FIXED_USER_ID}
-            contractService={createAccountApi}
+            contractService={ContractService()}
             onChecked={(data) => {
               setSmartCAInfo(data);
               setCheckingSmartCA(false);
-              if (data && (data.defaultSmartCa || (data.userCertificates && data.userCertificates.length > 0))) {
+              const hasValidSmartCA = data && (data.defaultSmartCa || (data.userCertificates && data.userCertificates.length > 0));
+              if (hasValidSmartCA) {
                 setShowSmartCASelector(true);
+              } else {
+                setShowAddSmartCA(true);
               }
             }}
           />
