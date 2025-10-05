@@ -17,12 +17,17 @@ import {
 } from 'antd';
 import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
-import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount';
+import { ContractService } from'../../../App/Home/SignContractCustomer'
 import ContractViewer from '../SignContract/Components/ContractViewer';
 import SignatureModal from '../SignContract/Components/SignatureModal';
 import SmartCAModal from '../SignContract/Components/SmartCAModal';
 import AppVerifyModal from '../SignContract/Components/AppVerifyModal';
+import AddSmartCA from '../SignContract/Components/AddSmartCA';
+import SmartCASelector from '../SignContract/Components/SmartCASelector';
+import SmartCAStatusChecker from '../SignContract/Components/SmartCAStatusChecker';
 import useContractSigning from '../SignContract/useContractSigning';
+import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount';
+const FIXED_USER_ID = "18858";
 import AdminLayout from '../../../Components/Admin/AdminLayout';
 
 const { Title, Text } = Typography;
@@ -66,7 +71,14 @@ const CreateAccount = () => {
   const [contractNo, setContractNo] = useState(null);
   const [contractId, setContractId] = useState(null);
   const [waitingProcessData, setWaitingProcessData] = useState(null);
-  
+
+  // SmartCA flow
+  const [showAddSmartCA, setShowAddSmartCA] = useState(false);
+  const [showSmartCASelector, setShowSmartCASelector] = useState(false);
+  const [smartCAInfo, setSmartCAInfo] = useState(null);
+  const [selectedSmartCA, setSelectedSmartCA] = useState(null);
+  const [checkingSmartCA, setCheckingSmartCA] = useState(false);
+
   // Sử dụng custom hook để quản lý logic ký hợp đồng
   const {
     showSignatureModal,
@@ -210,23 +222,13 @@ const CreateAccount = () => {
           const downloadUrl = contractData.downloadUrl;
           const contractNo = contractData.no;
           const processId = contractData.waitingProcess?.id || contractIdFromResponse;
-          
-          console.log('Contract data:', {
-            id: contractIdFromResponse,
-            no: contractNo,
-            downloadUrl: downloadUrl,
-            waitingProcessId: contractData.waitingProcess?.id,
-            processId: processId,
-            waitingProcess: contractData.waitingProcess
-          });
-          
+
           setContractId(processId);
           setWaitingProcessData(contractData.waitingProcess);
-          
+
           if (downloadUrl) {
             setContractLink(downloadUrl);
             setContractNo(contractNo || 'Không xác định');
-            
             message.success({
               content: (
                 <span>
@@ -235,6 +237,8 @@ const CreateAccount = () => {
               ),
               duration: 3
             });
+            // Sau khi tạo hợp đồng, kiểm tra trạng thái SmartCA trước
+            setCheckingSmartCA(true);
           } else {
             message.warning('Không tìm thấy đường dẫn hợp đồng');
             console.error('Download URL không tồn tại trong phản hồi');
@@ -315,17 +319,84 @@ const CreateAccount = () => {
 
             <Divider className="my-6" />
 
+
             {/* Contract Display */}
             {contractLink && (
-              <ContractViewer
-                contractLink={contractLink}
-                contractNo={contractNo}
-                contractSigned={contractSigned}
-                onSign={() => setShowSignatureModal(true)}
-                onDownload={handleDownload}
-                onNewContract={resetForm}
-                viewerLink={getPdfDisplayUrl(contractLink)}
-              />
+              <>
+                <ContractViewer
+                  contractLink={contractLink}
+                  contractNo={contractNo}
+                  contractSigned={contractSigned}
+                  onSign={() => {
+                    // Kiểm tra đã có SmartCA và có chứng thư số hợp lệ chưa
+                    const hasValidSmartCA = smartCAInfo && (
+                      smartCAInfo.defaultSmartCa ||
+                      (smartCAInfo.userCertificates && smartCAInfo.userCertificates.length > 0)
+                    );
+                    if (!hasValidSmartCA) {
+                      message.warning('Bạn chưa có SmartCA hoặc chưa có chứng thư số hợp lệ. Vui lòng thêm SmartCA trước khi ký!');
+                      setShowAddSmartCA(true);
+                      return;
+                    }
+                    if (!selectedSmartCA) {
+                      message.warning('Vui lòng chọn chứng thư số SmartCA trước khi ký hợp đồng!');
+                      setShowSmartCASelector(true);
+                      return;
+                    }
+                    setShowSignatureModal(true);
+                  }}
+                  onDownload={handleDownload}
+                  onNewContract={resetForm}
+                  viewerLink={getPdfDisplayUrl(contractLink)}
+                />
+
+                {/* Card trạng thái SmartCA giống ContractPage */}
+                <Card className="mb-6 mt-6">
+                  <Title level={4} className="flex items-center">
+                    <SmartCAModal />
+                    Trạng thái SmartCA
+                  </Title>
+                  {!smartCAInfo ? (
+                    <div className="text-center">
+                      <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded p-3 mb-3">
+                        <div className="font-medium">SmartCA chưa sẵn sàng</div>
+                        <div className="text-sm">Bạn cần thêm SmartCA để có thể ký hợp đồng</div>
+                      </div>
+                      <Button type="primary" danger onClick={() => setShowAddSmartCA(true)}>
+                        Thêm SmartCA
+                      </Button>
+                    </div>
+                  ) : !selectedSmartCA ? (
+                    <div className="text-center">
+                      <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded p-3 mb-3">
+                        <div className="font-medium">Đã có SmartCA</div>
+                        <div className="text-sm">Vui lòng chọn chứng thư số để ký hợp đồng</div>
+                      </div>
+                      <Button type="primary" onClick={() => setShowSmartCASelector(true)}>
+                        Chọn Chứng Thư
+                      </Button>
+                      <Button className="ml-2" onClick={() => setShowAddSmartCA(true)}>
+                        Thêm SmartCA Khác
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="bg-green-50 border border-green-200 text-green-700 rounded p-3 mb-3">
+                        <div className="font-medium">SmartCA sẵn sàng</div>
+                        <div className="text-sm">
+                          Sử dụng: {selectedSmartCA.commonName} ({selectedSmartCA.uid})
+                        </div>
+                      </div>
+                      <Button type="primary" onClick={() => setShowSignatureModal(true)}>
+                        Ký Hợp Đồng
+                      </Button>
+                      <Button className="ml-2" onClick={() => setShowSmartCASelector(true)}>
+                        Đổi Chứng Thư
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              </>
             )}
 
             {/* Form */}
@@ -520,6 +591,53 @@ const CreateAccount = () => {
             </Form>
           </Space>
         </Card>
+
+        {/* Modal thêm SmartCA cho hãng sau khi tạo hợp đồng */}
+        <AddSmartCA
+          visible={showAddSmartCA}
+          onCancel={() => setShowAddSmartCA(false)}
+          onSuccess={() => {
+            setShowAddSmartCA(false);
+            setCheckingSmartCA(true);
+          }}
+          contractInfo={{
+            userId: FIXED_USER_ID,
+            accessToken: localStorage.getItem('jwt_token')
+          }}
+        />
+
+        {/* Kiểm tra sự tồn tại SmartCA sau khi tạo hợp đồng hoặc thêm mới */}
+        {checkingSmartCA && (
+          <SmartCAStatusChecker
+            userId={FIXED_USER_ID}
+            contractService={ContractService()}
+            onChecked={(data) => {
+              setSmartCAInfo(data);
+              setCheckingSmartCA(false);
+              const hasValidSmartCA = data && (data.defaultSmartCa || (data.userCertificates && data.userCertificates.length > 0));
+              if (hasValidSmartCA) {
+                setShowSmartCASelector(true);
+              } else {
+                setShowAddSmartCA(true);
+              }
+            }}
+          />
+        )}
+
+        {/* Modal chọn chứng thư số SmartCA */}
+        <SmartCASelector
+          visible={showSmartCASelector}
+          onCancel={() => setShowSmartCASelector(false)}
+          onSelect={(cert) => {
+            setSelectedSmartCA(cert);
+            setShowSmartCASelector(false);
+            message.success(`Đã chọn chứng thư: ${cert.commonName}`);
+          }}
+          smartCAData={smartCAInfo}
+          loading={false}
+          isExistingSmartCA={true}
+          currentSelectedId={selectedSmartCA?.id}
+        />
 
         {/* Signature Modal */}
         <SignatureModal

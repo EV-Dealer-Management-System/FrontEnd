@@ -10,6 +10,8 @@ import SignatureModal from './Admin/SignContract/Components/SignatureModal';
 import AppVerifyModal from './Admin/SignContract/Components/AppVerifyModal';
 import PDFViewerModal from './Admin/SignContract/Components/PDFViewerModal';
 import SmartCAModal from './Admin/SignContract/Components/SmartCAModal';
+import SmartCASelector from './Admin/SignContract/Components/SmartCASelector';
+import AddSmartCA from './Admin/SignContract/Components/AddSmartCA';
 
 const { Title, Text, Paragraph } = Typography;
 const { Step } = Steps;
@@ -33,16 +35,32 @@ function ContractPage() {
   const [signingLoading, setSigningLoading] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [showAppVerifyModal, setShowAppVerifyModal] = useState(false);
-  const [signatureCompleted, setSignatureCompleted] = useState(false); // FIX: state bị thiếu
-  const [contractSigned, setContractSigned] = useState(false); // FIX: state bị thiếu
+  const [signatureCompleted, setSignatureCompleted] = useState(false);
+  const [contractSigned, setContractSigned] = useState(false);
 
   // Modal Thêm SmartCA
   const [smartCAVisible, setSmartCAVisible] = useState(false);
   const [addingSmartCA, setAddingSmartCA] = useState(false);
   const [smartCAForm] = Form.useForm();
 
-  // Thêm state cho modal chờ ký điện tử
+  // States SmartCA Selector
   const [showSmartCAModal, setShowSmartCAModal] = useState(false);
+  const [showSmartCASelector, setShowSmartCASelector] = useState(false);
+  const [showExistingSmartCASelector, setShowExistingSmartCASelector] = useState(false);
+  const [selectedSmartCA, setSelectedSmartCA] = useState(null);
+
+  function showCertificateSelector() {
+    if (smartCAInfo) {
+      const certificates = getAllCertificatesFromData(smartCAInfo);
+      if (certificates.length > 0) {
+        setShowExistingSmartCASelector(true);
+      } else {
+        message.warning('Không có chứng thư số hợp lệ để chọn');
+      }
+    } else {
+      message.warning('Chưa có SmartCA trong hệ thống');
+    }
+  }
 
   // Lấy thông tin hợp đồng theo processCode
   async function getContractInfo(processCode) {
@@ -58,7 +76,6 @@ function ContractPage() {
         message.error(result.error || 'Không lấy được thông tin hợp đồng');
       }
     } catch (e) {
-      console.error(e);
       message.error('Có lỗi khi lấy thông tin hợp đồng');
     } finally {
       setLoading(false);
@@ -79,50 +96,18 @@ function ContractPage() {
         message.error(result.error || 'Không kiểm tra được SmartCA');
       }
     } catch (e) {
-      console.error(e);
       setCurrentStep(2);
       message.error('Có lỗi khi kiểm tra SmartCA');
     }
   }
 
-  // Thêm SmartCA (token lấy từ contractInfo.accessToken)
-  async function addSmartCA(values) {
-    if (!contractInfo?.processedByUserId || !contractInfo?.accessToken) {
-      message.error('Thiếu thông tin user/token để thêm SmartCA');
-      return;
-    }
-    try {
-      setSigningLoading(true);
-      const result = await contractService.handleAddSmartCA({
-        userId: contractInfo.processedByUserId,
-        userName: values.cccd,
-        serialNumber: values.serialNumber,
-        accessToken: contractInfo.accessToken
-      });
-      if (result.success) {
-        setSmartCAInfo(result.data);
-        const ok = contractService.isSmartCAValid(result.data);
-        setCurrentStep(ok ? 3 : 2);
-        message.success(result.message || 'Thêm SmartCA thành công');
-      } else {
-        message.error(result.error || 'Thêm SmartCA thất bại');
-      }
-    } catch (e) {
-      console.error(e);
-      message.error('Có lỗi khi thêm SmartCA');
-    } finally {
-      setSigningLoading(false);
-    }
-  }
-
-  // Ép reload PDF (không gọi lại API info) bằng cache-busting
+  // Ép reload PDF bằng cache-busting
   function refreshPdfCache(reason = '') {
     if (!contractInfo?.downloadUrl) return;
     const base = contractInfo.downloadUrl;
     const freshUrl = `${base}${base.includes('?') ? '&' : '?'}_ts=${Date.now()}`;
     setPdfBlob(freshUrl);
     setPdfKey(k => k + 1);
-    // console.log('PDF refreshed:', { reason, freshUrl });
   }
 
   // Mở modal PDF
@@ -135,37 +120,21 @@ function ContractPage() {
     setPdfModalVisible(true);
   }
 
-  // Mở modal ký
-
   // Nhận dữ liệu chữ ký từ SignatureModal và gọi API ký
   async function handleSignatureFromModal(signatureDataURL, displayMode = 2) {
     if (!contractInfo?.processId || !contractInfo?.accessToken) {
       message.error('Thiếu thông tin process hoặc token để ký.');
       return;
     }
+
+    if (!selectedSmartCA) {
+      message.error('Vui lòng chọn chứng thư số để ký.');
+      return;
+    }
     
     setSigningLoading(true);
     setShowSignatureModal(false);
-    
-    // Hiển thị modal chờ ký điện tử
     setShowSmartCAModal(true);
-    
-    // Log dữ liệu trước khi gửi API
-    console.log('=== DỮ LIỆU GỬI KHI KÝ HỢP ĐỒNG ===');
-    console.log('1. Thông tin cơ bản:', {
-      processId: contractInfo.processId,
-      accessToken: contractInfo.accessToken ? `${contractInfo.accessToken.substring(0, 30)}...` : 'null',
-      reason: 'Ký hợp đồng điện tử',
-      displayMode: displayMode,
-      hasSignatureImage: !!signatureDataURL,
-      signatureImageSize: signatureDataURL ? signatureDataURL.length : 0
-    });
-    
-    console.log('2. Contract Info đầy đủ:', contractInfo);
-    
-    console.log('3. Signature Data (50 ký tự đầu):', 
-      signatureDataURL ? signatureDataURL.substring(0, 50) + '...' : 'null'
-    );
     
     try {
       const result = await contractService.handleDigitalSignature({
@@ -173,14 +142,10 @@ function ContractPage() {
         reason: 'Ký hợp đồng điện tử',
         signatureImage: signatureDataURL,
         signatureDisplayMode: displayMode,
-        accessToken: contractInfo.accessToken
+        accessToken: contractInfo.accessToken,
+        selectedCertificate: selectedSmartCA
       });
       
-      // Log kết quả từ API
-      console.log('=== KẾT QUẢ TRẢ VỀ TỪ API ===');
-      console.log('Result:', result);
-      
-      // Đóng modal chờ ký điện tử
       setShowSmartCAModal(false);
       
       if (result.success) {
@@ -192,12 +157,6 @@ function ContractPage() {
         message.error(result.error || 'Ký thất bại.');
       }
     } catch (e) {
-      console.error('=== LỖI KHI GỬI API KÝ ===');
-      console.error('Error:', e);
-      console.error('Error message:', e.message);
-      console.error('Error response:', e.response?.data);
-      
-      // Đóng modal chờ ký điện tử khi có lỗi
       setShowSmartCAModal(false);
       message.error('Có lỗi không mong muốn khi ký điện tử');
     } finally {
@@ -205,7 +164,7 @@ function ContractPage() {
     }
   }
 
-  // Xác thực ứng dụng (Step 2)
+  // Xác thực ứng dụng
   async function handleAppVerification() {
     if (!signatureCompleted) {
       message.error('Vui lòng hoàn thành ký điện tử trước!');
@@ -219,7 +178,7 @@ function ContractPage() {
       if (result.success) {
         setShowAppVerifyModal(false);
         setCurrentStep(4);
-        setContractSigned(true); // FIX: cập nhật trạng thái đã ký
+        setContractSigned(true);
         refreshPdfCache('afterVerify');
 
         Modal.success({
@@ -250,7 +209,6 @@ function ContractPage() {
         message.error(result.error || 'Xác thực thất bại.');
       }
     } catch (e) {
-      console.error(e);
       message.error('Có lỗi khi xác thực từ ứng dụng');
     } finally {
       setSigningLoading(false);
@@ -277,9 +235,11 @@ function ContractPage() {
     setShowAppVerifyModal(false);
     setShowSmartCAModal(false);
     setSigningLoading(false);
+    setShowSmartCASelector(false);
+    setSelectedSmartCA(null);
   }
 
-  // Mở modal nhập thông tin SmartCA (đơn giản, không phụ thuộc Form instance)
+  // Mở modal nhập thông tin SmartCA
   function openAddSmartCA() {
     smartCAForm.resetFields();
     setSmartCAVisible(true);
@@ -305,23 +265,73 @@ function ContractPage() {
       if (result.success) {
         message.success(result.message || 'Thêm SmartCA thành công');
         setSmartCAInfo(result.data);
-
-        const ok = contractService.isSmartCAValid(result.data);
-        setCurrentStep(ok ? 3 : 2);
         setSmartCAVisible(false);
+
+        const certificates = getAllCertificatesFromData(result.data);
+        if (certificates.length > 0) {
+          setShowSmartCASelector(true);
+        } else {
+          message.warning('Không có chứng thư số hợp lệ để sử dụng');
+        }
       } else {
         message.error(result.error || 'Thêm SmartCA thất bại');
       }
     } catch (e) {
-      if (e?.errorFields) {
-        // lỗi validate form, không log
-      } else {
-        console.error('Add SmartCA error:', e);
+      if (!e?.errorFields) {
         message.error('Có lỗi khi thêm SmartCA');
       }
     } finally {
       setAddingSmartCA(false);
     }
+  }
+
+  // Lấy tất cả certificates từ smartCA data
+  function getAllCertificatesFromData(smartCAData) {
+    const certificates = [];
+    
+    if (smartCAData?.defaultSmartCa) {
+      certificates.push({
+        ...smartCAData.defaultSmartCa,
+        isDefault: true
+      });
+    }
+    
+    if (smartCAData?.userCertificates?.length > 0) {
+      smartCAData.userCertificates.forEach(cert => {
+        if (!certificates.find(c => c.id === cert.id)) {
+          certificates.push({
+            ...cert,
+            isDefault: false
+          });
+        }
+      });
+    }
+    
+    const validCertificates = certificates.filter(cert => {
+      const isNotExpired = !isExpired(cert.validTo);
+      const hasValidStatus = cert.status?.value === 1 || cert.isValid === true;
+      return isNotExpired && hasValidStatus;
+    });
+    
+    return validCertificates;
+  }
+
+  // Kiểm tra certificate hết hạn
+  function isExpired(validTo) {
+    if (!validTo) return false;
+    try {
+      return new Date(validTo) < new Date();
+    } catch {
+      return false;
+    }
+  }
+
+  // Xử lý chọn SmartCA certificate
+  function handleSelectSmartCA(certificate) {
+    setSelectedSmartCA(certificate);
+    setShowSmartCASelector(false);
+    setCurrentStep(3);
+    message.success(`Đã chọn chứng thư: ${certificate.commonName}`);
   }
 
   return (
@@ -423,6 +433,8 @@ function ContractPage() {
                 onSign={() => setShowSignatureModal(true)}
                 signingLoading={signingLoading}
                 contractSigned={contractSigned}
+                selectedSmartCA={selectedSmartCA}
+                onSelectCertificate={showCertificateSelector}
               />
             </Col>
           </Row>
@@ -445,7 +457,7 @@ function ContractPage() {
           </Card>
         )}
 
-        {/* PDF Modal – reuse PDFViewerModal (không bắt buộc Google Docs) */}
+        {/* PDF Modal */}
         {contractInfo && (
           <PDFViewerModal
             key={pdfKey}
@@ -456,7 +468,7 @@ function ContractPage() {
           />
         )}
 
-        {/* Signature Modal – reuse */}
+        {/* Signature Modal */}
         <SignatureModal
           visible={showSignatureModal}
           onCancel={() => setShowSignatureModal(false)}
@@ -464,7 +476,7 @@ function ContractPage() {
           loading={signingLoading}
         />
 
-        {/* App Verify Modal – reuse */}
+        {/* App Verify Modal */}
         <AppVerifyModal
           visible={showAppVerifyModal}
           onCancel={() => setShowAppVerifyModal(false)}
@@ -473,32 +485,25 @@ function ContractPage() {
           signatureCompleted={signatureCompleted}
         />
 
-        {/* Modal Thêm SmartCA (Form đơn giản) */}
-        <Modal
-          open={smartCAVisible}
-          title="Thêm SmartCA"
+        {/* Modal Thêm SmartCA - sử dụng component nghiệp vụ */}
+        <AddSmartCA
+          visible={smartCAVisible}
           onCancel={() => setSmartCAVisible(false)}
-          onOk={submitSmartCA}
-          confirmLoading={addingSmartCA}
-          okText="Thêm"
-          cancelText="Hủy"
-          destroyOnClose
-        >
-          <Form form={smartCAForm} layout="vertical">
-            <Form.Item
-              name="cccd"
-              label="CCCD/CMND"
-              rules={[{ required: true, message: 'Vui lòng nhập CCCD/CMND' }]}
-            >
-              <Input placeholder="Nhập CCCD/CMND" />
-            </Form.Item>
-            <Form.Item name="serialNumber" label="Serial Number (tuỳ chọn)">
-              <Input placeholder="Serial Number nếu có" />
-            </Form.Item>
-          </Form>
-        </Modal>
+          onSuccess={(result) => {
+            setSmartCAInfo(result.smartCAData);
+            setSmartCAVisible(false);
+            // Nếu có chứng thư hợp lệ thì mở selector
+            if (result.hasValidSmartCA) {
+              setShowSmartCASelector(true);
+            }
+          }}
+          contractInfo={{
+            userId: contractInfo?.processedByUserId,
+            accessToken: contractInfo?.accessToken
+          }}
+        />
 
-        {/* SmartCA Modal chờ ký điện tử - reuse từ CreateAccount */}
+        {/* SmartCA Modal chờ ký điện tử */}
         <SmartCAModal
           visible={showSmartCAModal}
           onCancel={() => {
@@ -507,23 +512,49 @@ function ContractPage() {
           }}
           contractNo={contractInfo?.processId?.substring(0, 8) || 'HĐ-Unknown'}
         />
+
+        {/* SmartCA Selector Modal */}
+        <SmartCASelector
+          visible={showSmartCASelector}
+          onCancel={() => setShowSmartCASelector(false)}
+          onSelect={handleSelectSmartCA}
+          smartCAData={smartCAInfo}
+          loading={signingLoading}
+        />
+
+        {/* SmartCA Selector Modal cho existing SmartCA */}
+        <SmartCASelector
+          visible={showExistingSmartCASelector}
+          onCancel={() => setShowExistingSmartCASelector(false)}
+          onSelect={(cert) => {
+            setSelectedSmartCA(cert);
+            setShowExistingSmartCASelector(false);
+            setCurrentStep(3);
+            message.success(`Đã chọn chứng thư: ${cert.commonName}`);
+          }}
+          smartCAData={smartCAInfo}
+          loading={signingLoading}
+          isExistingSmartCA={true}
+          currentSelectedId={selectedSmartCA?.id}
+        />
       </div>
     </div>
   );
 }
 
-// Component hiển thị thông tin SmartCA (giữ lại phiên bản ngắn gọn)
-const SmartCACard = ({ smartCAInfo, onAddSmartCA, onSign, signingLoading, contractSigned }) => {
-  const ready =
-    !!smartCAInfo?.defaultSmartCa?.isValid ||
-    (smartCAInfo?.userCertificates || []).some(c => c.isValid);
+// Component hiển thị thông tin SmartCA
+const SmartCACard = ({ smartCAInfo, onAddSmartCA, onSign, signingLoading, contractSigned, selectedSmartCA, onSelectCertificate }) => {
+  const hasSmartCA = !!smartCAInfo?.defaultSmartCa || 
+    (smartCAInfo?.userCertificates && smartCAInfo.userCertificates.length > 0);
+  
+  const ready = !!selectedSmartCA;
 
   return (
     <Card
       title={<span className="flex items-center"><SafetyOutlined className="text-blue-500 mr-2" />SmartCA</span>}
       extra={!ready && <Tag color="orange">Chưa sẵn sàng</Tag>}
     >
-      {!ready ? (
+      {!hasSmartCA ? (
         <div className="text-center">
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded p-3 mb-3">
             <div className="font-medium">SmartCA chưa sẵn sàng</div>
@@ -533,23 +564,45 @@ const SmartCACard = ({ smartCAInfo, onAddSmartCA, onSign, signingLoading, contra
             Thêm SmartCA
           </Button>
         </div>
+      ) : !ready ? (
+        <div className="text-center">
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded p-3 mb-3">
+            <div className="font-medium">Đã có SmartCA</div>
+            <div className="text-sm">Vui lòng chọn chứng thư số để ký hợp đồng</div>
+          </div>
+          <Space>
+            <Button type="primary" onClick={onSelectCertificate} disabled={contractSigned}>
+              Chọn Chứng Thư
+            </Button>
+            <Button onClick={onAddSmartCA} disabled={contractSigned}>
+              Thêm SmartCA Khác
+            </Button>
+          </Space>
+        </div>
       ) : (
         <div className="text-center">
           <div className="bg-green-50 border border-green-200 text-green-700 rounded p-3 mb-3">
             <div className="font-medium">{contractSigned ? "Đã ký thành công" : "SmartCA sẵn sàng"}</div>
             <div className="text-sm">
-              {smartCAInfo?.defaultSmartCa?.commonName || 'Đã có chứng chỉ hợp lệ'}
+              Sử dụng: {selectedSmartCA.commonName} ({selectedSmartCA.uid})
             </div>
           </div>
-          <Button 
-            type="primary" 
-            onClick={onSign} 
-            loading={signingLoading} 
-            disabled={contractSigned}
-            className={contractSigned ? "bg-green-500" : "bg-blue-500"}
-          >
-            {contractSigned ? "Đã Ký Thành Công" : "Ký Hợp Đồng"}
-          </Button>
+          <Space>
+            <Button 
+              type="primary" 
+              onClick={onSign} 
+              loading={signingLoading} 
+              disabled={contractSigned}
+              className={contractSigned ? "bg-green-500" : "bg-blue-500"}
+            >
+              {contractSigned ? "Đã Ký Thành Công" : "Ký Hợp Đồng"}
+            </Button>
+            {!contractSigned && (
+              <Button onClick={onSelectCertificate}>
+                Đổi Chứng Thư
+              </Button>
+            )}
+          </Space>
         </div>
       )}
     </Card>
