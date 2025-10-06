@@ -60,7 +60,7 @@ const FormField = ({
   </Col>
 );
 
-const CreateAccount = () => {
+const CreateContract = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [provinces, setProvinces] = useState([]);
@@ -728,4 +728,4 @@ const CreateAccount = () => {
   );
 };
 
-export default CreateAccount;
+export default CreateContract;
