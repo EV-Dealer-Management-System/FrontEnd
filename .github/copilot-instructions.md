@@ -66,8 +66,6 @@ This is a React-based web application for an **Electric Vehicle Dealer Managemen
 - *TailwindCSS*: Utility classes for spacing, gradients (bg-gradient-to-br), and responsive design
 - *Custom Classes*: Minimal custom CSS, leverage Ant Design's token system
 
-## Critical Developer Workflows
-
 ### Adding New Pages
 1. Create component in appropriate /src/Pages/[Role]/ directory
 2. Add route to /src/App.jsx with proper route protection
