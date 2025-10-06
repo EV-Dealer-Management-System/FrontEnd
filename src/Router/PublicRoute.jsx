@@ -5,7 +5,7 @@ const PublicRoute = ({ children }) => {
 
   if (token) {
     // If user is logged in, redirect to customer dashboard
-    return <Navigate to="/customer" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   return children;

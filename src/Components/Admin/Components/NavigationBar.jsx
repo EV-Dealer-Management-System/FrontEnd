@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Badge, Space, Typography, Tooltip } from 'antd';
+import { Button, Badge, Space, Typography, Tooltip, message } from 'antd';
 import { ProLayout, ProConfigProvider } from '@ant-design/pro-components';
 import {
   UserAddOutlined,
@@ -33,6 +33,18 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
   // Sử dụng collapsed từ props hoặc internal state
   const collapsed = propCollapsed !== undefined ? propCollapsed : internalCollapsed;
   const setCollapsed = onCollapse || setInternalCollapsed;
+
+  // Hàm xử lý logout
+  const handleLogout = () => {
+    // Xóa JWT token khỏi localStorage
+    localStorage.removeItem('jwt_token');
+    // Xóa thông tin user nếu có
+    localStorage.removeItem('user');
+    // Hiển thị thông báo logout thành công
+    message.success('Đăng xuất thành công!');
+    // Chuyển về trang login
+    navigate('/');
+  };
 
   // Menu items cho EVM Admin với Pro Layout structure
   const route = {
@@ -81,7 +93,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         icon: <CarOutlined />,
         routes: [
           {
-            path: '/admin/vehicle/model',
+            path: '/admin/vehicle/catalog',
             name: 'Danh mục xe',
             icon: <DatabaseOutlined />,
             component: './VehicleCatalog',
@@ -132,7 +144,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         component: './Settings',
       },
        {
-        path: '/admin/settings',
+        path: '/',
         name: 'Đăng Xuất',
         icon: <LogoutOutlined />,
         component: './Settings',
@@ -193,7 +205,10 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             <div
               onClick={() => {
                 if (item.path) {
-                  if (item.path === '/admin/dashboard') {
+                  if (item.path === '/') {
+                    // Xử lý logout
+                    handleLogout();
+                  } else if (item.path === '/admin/dashboard') {
                     navigate('/admin');
                   } else {
                     navigate(item.path);
