@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Typography, Avatar, Space, message, Alert } from "antd";
+import { Typography, Avatar, Space, Alert, App } from "antd";
+const { useApp } = App;
 import { login } from "../../../utils/auth";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -22,6 +23,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
+  const { message } = useApp();
 
   const handleLogin = async (values) => {
     const { email, password, autoLogin } = values;
@@ -103,12 +105,7 @@ const message = err.response?.data?.message || "";
         );
       }
 
-      // Hiển thị thông báo lỗi dưới dạng message toàn cục
-      message.error({
-        content: "Đăng nhập thất bại",
-        description: loginError,
-        duration: 5,
-      });
+      // Error will be displayed in the Alert component below the form
     } finally {
       setLoading(false);
     }

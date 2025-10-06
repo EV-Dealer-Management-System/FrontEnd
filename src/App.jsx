@@ -43,9 +43,9 @@ function App() {
         <Route 
           path="/admin" 
           element={
-         <PublicRoute>
+         <ProtectedRoute>
            <EVMAdmin />
-         </PublicRoute>
+         </ProtectedRoute>
           
           } 
         />
