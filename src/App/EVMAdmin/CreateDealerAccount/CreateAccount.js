@@ -5,14 +5,17 @@ export const createAccountApi = {
   // Tạo hợp đồng đại lý
   createDealerContract: async function(formData) {
     try {
-      // Chuẩn bị dữ liệu gửi lên API - SỬA MAPPING ĐÚNG
+      // Chuẩn bị dữ liệu gửi lên API theo schema mới
       const apiData = {
-        dealerName: formData.dealerName || formData.brandName || '',
-        dealerAddress: formData.dealerAddress || formData.address || '',
+        dealerName: formData.dealerName || '',
+        dealerAddress: formData.dealerAddress || '',
         taxNo: formData.taxNo || '',
-        fullNameManager: formData.fullNameManager || formData.representativeName || '',
-        emailManager: formData.emailManager || formData.email || '',
-        phoneNumberManager: formData.phoneNumberManager || formData.phone || ''
+        dealerLevel: formData.dealerLevel || 1,
+        additionalTerm: formData.additionalTerm || null,
+        regionDealer: formData.regionDealer || null,
+        fullNameManager: formData.fullNameManager || '',
+        emailManager: formData.emailManager || '',
+        phoneNumberManager: formData.phoneNumberManager || ''
       };
 
       console.log('Dữ liệu gửi lên API:', apiData);
@@ -42,37 +45,35 @@ export const createAccountApi = {
   validateFormData: function(formData) {
     const errors = [];
 
-    if (!formData.brandName || formData.brandName.trim().length < 2) {
-      errors.push('Tên hãng phải có ít nhất 2 ký tự');
+    if (!formData.dealerName || formData.dealerName.trim().length < 2) {
+      errors.push('Tên đại lý phải có ít nhất 2 ký tự');
     }
 
-    if (!formData.representativeName || formData.representativeName.trim().length < 2) {
+    if (!formData.fullNameManager || formData.fullNameManager.trim().length < 2) {
       errors.push('Họ tên quản lý phải có ít nhất 2 ký tự');
     }
 
-    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (!formData.emailManager || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailManager)) {
       errors.push('Email quản lý không hợp lệ');
     }
 
-    if (!formData.phone || !/^0[1-9]{9}$/.test(formData.phone)) {
+    if (!formData.phoneNumberManager || !/^0[1-9]{9}$/.test(formData.phoneNumberManager)) {
       errors.push('Số điện thoại quản lý phải bắt đầu bằng 0 và có đúng 10 chữ số');
     }
 
-    if (!formData.address || formData.address.trim().length < 5) {
+    if (!formData.dealerAddress || formData.dealerAddress.trim().length < 5) {
       errors.push('Địa chỉ đại lý phải có ít nhất 5 ký tự');
-    }
-
-    if (!formData.province) {
-      errors.push('Vui lòng chọn tỉnh/thành phố');
-    }
-
-    if (!formData.ward) {
-      errors.push('Vui lòng chọn phường/xã');
     }
 
     if (!formData.taxNo || !/^[0-9]{10}$|^[0-9]{13}$/.test(formData.taxNo)) {
       errors.push('Mã số thuế phải có 10 hoặc 13 chữ số');
     }
+
+    if (!formData.dealerLevel || ![1, 2, 3].includes(formData.dealerLevel)) {
+      errors.push('Cấp độ đại lý phải từ 1 đến 3');
+    }
+
+    // additionalTerm và regionDealer có thể null nên không cần validate
 
     return {
       isValid: errors.length === 0,
@@ -83,14 +84,15 @@ export const createAccountApi = {
   // Format dữ liệu cho API
   formatApiData: function(formData) {
     return {
-      dealerName: formData.brandName?.trim(),
-      dealerAddress: formData.address?.trim(),
+      dealerName: formData.dealerName?.trim(),
+      dealerAddress: formData.dealerAddress?.trim(),
       taxNo: formData.taxNo?.trim(),
-      dealerEmail: null, // Mặc định null
-      dealerPhoneNumber: null, // Mặc định null
-      fullNameManager: formData.representativeName?.trim(),
-      emailManager: formData.email?.trim(),
-      phoneNumberManager: formData.phone?.trim()
+      dealerLevel: formData.dealerLevel || 1,
+      additionalTerm: formData.additionalTerm?.trim() || null,
+      regionDealer: formData.regionDealer?.trim() || null,
+      fullNameManager: formData.fullNameManager?.trim(),
+      emailManager: formData.emailManager?.trim(),
+      phoneNumberManager: formData.phoneNumberManager?.trim()
     };
   }
 };

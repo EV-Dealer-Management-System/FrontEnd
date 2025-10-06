@@ -7,7 +7,7 @@ import { MailConfirmation } from "./Pages/Home/Register/partial/MailConfirmation
 import EmailVerification from "./Pages/Home/Register/partial/EmailVerification";
 import ResetPassword from "./Pages/Home/Login/Partial/ResetPassword";
 import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfirm";
-import ProtectedRoute from "./Router/ProtectedRoute"; 
+import ProtectedRoute from "./Router/ProtectedRoute";
 import PublicRoute from "./Router/PublicRoute";
 import CreateAccount from "./Pages/Admin/CreateDealerAccount/CreateAccount";
 import ContractPage from "./Pages/ContractPage";
@@ -38,26 +38,32 @@ function App() {
         <Route path="/email-verification" element={<EmailVerification />} />
         <Route path="/forgot-password" element={<ResetPassword />} />
         <Route path="/api/reset-password" element={<ResetPasswordConfirm />} />
-        <Route path="/admin/dealer/create-account" element={<CreateAccount />} />
         <Route path="/contract" element={<ContractPage />} />
-        <Route 
-          path="/admin" 
+        <Route
+          path="/admin"
           element={
-         <ProtectedRoute>
-           <EVMAdmin />
-         </ProtectedRoute>
-          
-          } 
+            <ProtectedRoute>
+              <EVMAdmin />
+            </ProtectedRoute>
+
+          }
         />
-        <Route 
-          path="/admin/vehicle/model" 
+        <Route
+          path="/admin/vehicle/model"
           element={
-         <PublicRoute>
-           <VehicleManagement />
-         </PublicRoute>
-          
-          } 
-        /> 
+            <PublicRoute>
+              <VehicleManagement />
+            </PublicRoute>
+
+          }
+        />
+        <Route path="/admin/dealer/create-account" 
+        element={
+          <ProtectedRoute>
+            <CreateAccount />
+          </ProtectedRoute>
+        }
+        />
         {/* Redirect to login page by default */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

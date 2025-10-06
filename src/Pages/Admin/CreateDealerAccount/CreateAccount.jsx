@@ -15,7 +15,7 @@ import {
   Modal,
   Layout
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
 import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount';
 import ContractViewer from '../SignContract/Components/ContractViewer';
@@ -183,24 +183,35 @@ const CreateAccount = () => {
 
       if (wardName && provinceName) {
         fullAddress = `${fullAddress}, ${wardName}, ${provinceName}`.trim().replace(/^,\s+/, '');
-        values.address = fullAddress;
-        console.log('Địa chỉ đầy đủ đã được cập nhật:', values.address);
       } else {
         console.error('Không thể tìm thấy thông tin phường/xã hoặc tỉnh/thành phố');
       }
 
+      // Chuẩn bị dữ liệu theo schema API mới
+      const dealerData = {
+        dealerName: values.brandName,
+        dealerAddress: fullAddress,
+        taxNo: values.taxNo,
+        dealerLevel: values.dealerLevel,
+        additionalTerm: values.additionalTerm || null,
+        regionDealer: values.regionDealer || null,
+        fullNameManager: values.representativeName,
+        emailManager: values.email,
+        phoneNumberManager: values.phone
+      };
+
       // Validate form data
-      const validation = createAccountApi.validateFormData(values);
+      const validation = createAccountApi.validateFormData(dealerData);
       if (!validation.isValid) {
         message.error(validation.errors[0]);
         setLoading(false);
         return;
       }
 
-      console.log('Dữ liệu gửi đi:', values);
+      console.log('Dữ liệu gửi đi:', dealerData);
       
       // Create dealer contract
-      const result = await createAccountApi.createDealerContract(values);
+      const result = await createAccountApi.createDealerContract(dealerData);
       
       if (result.isSuccess || result.success) {
         message.success('Tạo hợp đồng thành công!');
@@ -546,6 +557,37 @@ const CreateAccount = () => {
                 </FormField>
 
                 <FormField
+                  name="dealerLevel"
+                  label="Cấp Độ Đại Lý"
+                  icon={<ApartmentOutlined />}
+                  rules={[
+                    { required: true, message: 'Vui lòng chọn cấp độ đại lý!' }
+                  ]}
+                >
+                  <Select 
+                    placeholder="Chọn cấp độ đại lý"
+                    className="rounded-lg"
+                  >
+                    <Option value={1}>Đại lý cấp 1</Option>
+                    <Option value={2}>Đại lý cấp 2</Option>
+                    <Option value={3}>Đại lý cấp 3</Option>
+                  </Select>
+                </FormField>
+
+                <FormField
+                  name="regionDealer"
+                  label="Khu Vực Đại Lý"
+                  icon={<GlobalOutlined />}
+                  required={false}
+                  rules={[]}
+                >
+                  <Input 
+                    placeholder="Nhập khu vực đại lý (có thể bỏ trống)"
+                    className="rounded-lg"
+                  />
+                </FormField>
+
+                <FormField
                   name="address"
                   label="Địa Chỉ Đại Lý"
                   icon={<EnvironmentOutlined />}
@@ -557,6 +599,21 @@ const CreateAccount = () => {
                   <Input.TextArea 
                     placeholder="Nhập địa chỉ đại lý (số nhà, tên đường, ...)"
                     rows={3}
+                    className="rounded-lg"
+                  />
+                </FormField>
+
+                <FormField
+                  name="additionalTerm"
+                  label="Điều Khoản Bổ Sung"
+                  icon={<FileTextOutlined />}
+                  span={24}
+                  required={false}
+                  rules={[]}
+                >
+                  <Input.TextArea 
+                    placeholder="Nhập điều khoản bổ sung (có thể bỏ trống)"
+                    rows={4}
                     className="rounded-lg"
                   />
                 </FormField>
