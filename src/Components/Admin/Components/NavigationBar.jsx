@@ -50,7 +50,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         icon: <ShopOutlined />,
         routes: [
           {
-            path: '/admin/dealer/create',
+            path: '/admin/dealer/create-account',
             name: 'Tạo tài khoản đại lý',
             icon: <UserAddOutlined />,
             component: './CreateAccount',
@@ -81,7 +81,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         icon: <CarOutlined />,
         routes: [
           {
-            path: '/admin/vehicle/catalog',
+            path: '/admin/vehicle/model',
             name: 'Danh mục xe',
             icon: <DatabaseOutlined />,
             component: './VehicleCatalog',
