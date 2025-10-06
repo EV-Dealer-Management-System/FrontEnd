@@ -12,7 +12,8 @@ import PublicRoute from "./Router/PublicRoute";
 import CreateAccount from "./Pages/Admin/CreateDealerAccount/CreateAccount";
 import ContractPage from "./Pages/ContractPage";
 import EVMAdmin from "./Pages/Admin/EVMAdmin";
-import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
+import Managemodel from "./Pages/Admin/VehicleManagement/Components/Managemodel";
+
 
 function App() {
   return (
@@ -51,10 +52,9 @@ function App() {
         <Route
           path="/admin/vehicle/model"
           element={
-            <PublicRoute>
-              <VehicleManagement />
-            </PublicRoute>
-
+            <ProtectedRoute>
+              <Managemodel />
+            </ProtectedRoute>
           }
         />
         <Route path="/admin/dealer/create-account" 
