@@ -1,10 +1,10 @@
 import React, { Suspense, lazy } from 'react';
 import { Spin } from 'antd';
-import PDFErrorBoundary from '../SignContract/Components/PDF/PDFErrorBoundary';
+import PDFErrorBoundary from './PDFErrorBoundary';
 
 // Phase 5: Lazy load PDFViewer để giảm initial bundle size
 const LazyPDFViewer = lazy(() => 
-  import('../SignContract/Components/PDF/PDFViewer').then(module => ({
+  import('./PDFViewer').then(module => ({
     default: module.default
   }))
 );

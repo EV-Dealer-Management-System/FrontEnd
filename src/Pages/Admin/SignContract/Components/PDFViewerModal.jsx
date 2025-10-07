@@ -6,7 +6,7 @@ import {
   Tabs 
 } from 'antd';
 import { FilePdfOutlined, ClearOutlined, EnvironmentOutlined, FileTextOutlined } from '@ant-design/icons';
-import PDFViewer from '../../CreateDealerAccount/PDFViewer';
+import PDFViewer from './PDF/PDFViewer';
 
 // PDF Viewer Modal component - Hiển thị PDF giống Adobe Acrobat
 const PDFViewerModal = ({ 

@@ -15,7 +15,7 @@ import {
   Modal,
   Layout
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined, BugOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
 import { ContractService } from '../../../App/Home/SignContractCustomer'
 import ContractViewer from '../SignContract/Components/ContractViewer';
@@ -28,7 +28,6 @@ import SmartCASelector from '../SignContract/Components/SmartCASelector';
 import SmartCAStatusChecker from '../SignContract/Components/SmartCAStatusChecker';
 import useContractSigning from '../SignContract/useContractSigning';
 import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount';
-import PDFTestPanel from './PDFTestPanel';
 const FIXED_USER_ID = "18858";
 import AdminLayout from '../../../Components/Admin/AdminLayout';
 
@@ -85,9 +84,6 @@ const CreateContract = () => {
   const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
-
-  // Phase 3 testing (giữ lại cho debugging nếu cần)
-  const [showTestPanel, setShowTestPanel] = useState(false);
 
   // Sử dụng custom hook để quản lý logic ký hợp đồng
   const {
@@ -424,16 +420,7 @@ const CreateContract = () => {
                         Phase 4: Simplified & Optimized
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="small"
-                        type={showTestPanel ? 'primary' : 'default'}
-                        onClick={() => setShowTestPanel(!showTestPanel)}
-                        icon={<BugOutlined />}
-                      >
-                        Debug Panel
-                      </Button>
-                    </div>
+                    {/* Debug Panel removed - không cần thiết cho nghiệp vụ chính */}
                   </div>
                 </Card>
 
@@ -514,13 +501,7 @@ const CreateContract = () => {
               </>
             )}
 
-            {/* Phase 3 Test Panel */}
-            {showTestPanel && contractLink && (
-              <PDFTestPanel 
-                contractNo={contractNo} 
-                realPdfUrl={getPdfDisplayUrl()}
-              />
-            )}
+            {/* Test panel removed - không cần thiết cho nghiệp vụ chính */}
 
             {/* Form */}
             <Form

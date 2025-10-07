@@ -8,7 +8,7 @@ import { ContractService } from '../App/Home/SignContractCustomer';
 // Reuse components từ CreateAccount
 import SignatureModal from './Admin/SignContract/Components/SignatureModal';
 import AppVerifyModal from './Admin/SignContract/Components/AppVerifyModal';
-import OptimizedPDFViewer from './Admin/CreateDealerAccount/OptimizedPDFViewer';
+import PDFModal from './Admin/SignContract/Components/PDF/PDFModal';
 import SmartCAModal from './Admin/SignContract/Components/SmartCAModal';
 import SmartCASelector from './Admin/SignContract/Components/SmartCASelector';
 import AddSmartCA from './Admin/SignContract/Components/AddSmartCA';
@@ -26,8 +26,8 @@ function ContractPage() {
   const [smartCAInfo, setSmartCAInfo] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
 
-  // PDF viewer - Phase 4: Sử dụng inline PDFViewer thay vì modal
-  const [showPDFViewer, setShowPDFViewer] = useState(false);
+  // PDF viewer - Phase 4: Sử dụng PDFModal
+  const [pdfModalVisible, setPdfModalVisible] = useState(false);
   const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfKey, setPdfKey] = useState(0);
 
@@ -117,7 +117,7 @@ function ContractPage() {
       return;
     }
     refreshPdfCache('toggle');
-    setShowPDFViewer(!showPDFViewer);
+    setPdfModalVisible(true);
   }
 
   // Nhận dữ liệu chữ ký từ SignatureModal và gọi API ký
@@ -227,7 +227,7 @@ function ContractPage() {
     setSmartCAInfo(null);
     setCurrentStep(0);
     setPdfBlob(null);
-    setShowPDFViewer(false);
+    setPdfModalVisible(false);
     setPdfKey(0);
     setSignatureCompleted(false);
     setContractSigned(false);
@@ -414,9 +414,9 @@ function ContractPage() {
                       type="primary"
                       icon={<FilePdfOutlined />}
                       onClick={togglePDFViewer}
-                      className={showPDFViewer ? "bg-gray-500 hover:bg-gray-600 border-gray-500" : "bg-red-500 hover:bg-red-600 border-red-500"}
+                      className="bg-blue-500 hover:bg-blue-600 border-blue-500"
                     >
-                      {showPDFViewer ? 'Ẩn PDF' : 'Xem PDF'}
+                      Xem PDF
                     </Button>
                     <Button href={contractInfo.downloadUrl} target="_blank" icon={<FilePdfOutlined />}>
                       Mở tab mới
@@ -457,16 +457,14 @@ function ContractPage() {
           </Card>
         )}
 
-        {/* Phase 4 & 5: Optimized PDF Viewer với lazy loading */}
-        {showPDFViewer && contractInfo && (
-          <Card title="Xem hợp đồng PDF" className="mt-4">
-            <OptimizedPDFViewer
-              key={pdfKey}
-              contractNo={`${contractInfo.processId?.slice(0, 8) || 'HĐ'}...`}
-              pdfUrl={pdfBlob || contractInfo.downloadUrl}
-            />
-          </Card>
-        )}
+        {/* PDF Modal for contract viewing */}
+        <PDFModal
+          visible={pdfModalVisible}
+          onClose={() => setPdfModalVisible(false)}
+          contractNo={`${contractInfo?.processId?.slice(0, 8) || 'HĐ'}...`}
+          pdfUrl={pdfBlob || contractInfo?.downloadUrl}
+          title={`Hợp đồng ${contractInfo?.processId?.slice(0, 8) || 'HĐ'}...`}
+        />
 
         {/* Signature Modal */}
         <SignatureModal
