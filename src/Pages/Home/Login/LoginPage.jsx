@@ -37,8 +37,8 @@ function LoginPage() {
       const response = await login(email, password, autoLogin);
       // Save JWT token
       localStorage.setItem("jwt_token", response.token);
-      localStorage.setItem("userFullName", response.result.fullName ||"");
-      message.success(`Chào mừng ${response.result.fullName}! Đăng nhập thành công!`);
+      localStorage.setItem("userFullName", response.result.userData||"");
+      message.success(`Chào mừng ${response.result.userData.fullName}! Đăng nhập thành công!`);
       // Redirect to customer dashboard after login
       navigate("/customer", { replace: true });
     } catch (err) {

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Form, 
-  Input, 
-  Button, 
-  Card, 
-  Row, 
-  Col, 
-  message, 
+import {
+  Form,
+  Input,
+  Button,
+  Card,
+  Row,
+  Col,
+  message,
   Select,
   Space,
   Typography,
@@ -17,9 +17,10 @@ import {
 } from 'antd';
 import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
-import { ContractService } from'../../../App/Home/SignContractCustomer'
+import { ContractService } from '../../../App/Home/SignContractCustomer'
 import ContractViewer from '../SignContract/Components/ContractViewer';
 import SignatureModal from '../SignContract/Components/SignatureModal';
+import SignaturePositionModal from '../SignContract/Components/SignaturePositionModal';
 import SmartCAModal from '../SignContract/Components/SmartCAModal';
 import AppVerifyModal from '../SignContract/Components/AppVerifyModal';
 import AddSmartCA from '../SignContract/Components/AddSmartCA';
@@ -35,12 +36,12 @@ const { Option } = Select;
 const { Content } = Layout;
 
 // Custom form field component with consistent styling
-const FormField = ({ 
-  name, 
-  label, 
-  icon, 
-  rules, 
-  children, 
+const FormField = ({
+  name,
+  label,
+  icon,
+  rules,
+  children,
   span = 12,
   required = true // This prop is used in rules if not explicitly provided
 }) => (
@@ -90,11 +91,15 @@ const CreateContract = () => {
     setShowSmartCAModal,
     showAppVerifyModal,
     setShowAppVerifyModal,
+    previewImage,
+    showPositionModal,
+    setShowPositionModal,
     handleSignature,
+    handlePositionConfirm,
     handleAppVerification,
     resetSigningState
   } = useContractSigning();
-  
+
   // Build a display URL for PDF (use dev proxy to avoid CORS/X-Frame in development)
   const getPdfDisplayUrl = (url) => {
     if (!url) return url;
@@ -116,7 +121,7 @@ const CreateContract = () => {
       try {
         setLoadingProvinces(true);
         const data = await locationApi.getProvinces();
-        
+
         // Đảm bảo data là array trước khi set
         if (Array.isArray(data)) {
           setProvinces(data);
@@ -149,7 +154,7 @@ const CreateContract = () => {
       setLoadingWards(true);
       // Gọi API backend để lấy wards theo provinceCode
       const wardsList = await locationApi.getWardsByProvinceCode(provinceCode);
-      
+
       if (Array.isArray(wardsList)) {
         setWards(wardsList);
       } else {
@@ -157,7 +162,7 @@ const CreateContract = () => {
         setWards([]);
         message.warning('Dữ liệu phường/xã không hợp lệ');
       }
-      
+
       form.setFieldsValue({ ward: undefined });
     } catch (error) {
       message.error('Không thể tải danh sách phường/xã');
@@ -171,7 +176,7 @@ const CreateContract = () => {
   // Handle form submission
   const onFinish = async (values) => {
     setLoading(true);
-    
+
     try {
       // Combine address with province and ward information
       const provinceCode = values.province;
@@ -210,16 +215,16 @@ const CreateContract = () => {
       }
 
       console.log('Dữ liệu gửi đi:', dealerData);
-      
+
       // Create dealer contract
       const result = await createAccountApi.createDealerContract(dealerData);
-      
+
       if (result.isSuccess || result.success) {
         message.success('Tạo hợp đồng thành công!');
-        
+
         let contractData = null;
         console.log('Full API response:', JSON.stringify(result, null, 2));
-        
+
         if (result.result?.data) {
           contractData = result.result.data;
           console.log('Lấy dữ liệu từ result.result.data:', contractData);
@@ -227,7 +232,7 @@ const CreateContract = () => {
           contractData = result.data;
           console.log('Lấy dữ liệu từ result.data:', contractData);
         }
-        
+
         if (contractData) {
           const contractIdFromResponse = contractData.id;
           const downloadUrl = contractData.downloadUrl;
@@ -316,8 +321,8 @@ const CreateContract = () => {
           <Space direction="vertical" size="large" className="w-full">
             {/* Header */}
             <div className="text-center py-5">
-              <Title 
-                level={2} 
+              <Title
+                level={2}
                 className="text-blue-500 mb-2 flex items-center justify-center gap-3"
               >
                 <UserAddOutlined />
@@ -430,7 +435,7 @@ const CreateContract = () => {
                     { min: 2, message: 'Tên hãng phải có ít nhất 2 ký tự!' }
                   ]}
                 >
-                  <Input 
+                  <Input
                     placeholder="Nhập tên hãng xe điện"
                     className="rounded-lg"
                   />
@@ -445,7 +450,7 @@ const CreateContract = () => {
                     { min: 2, message: 'Họ tên quản lý phải có ít nhất 2 ký tự!' }
                   ]}
                 >
-                  <Input 
+                  <Input
                     placeholder="Nhập họ tên quản lý"
                     className="rounded-lg"
                   />
@@ -457,13 +462,13 @@ const CreateContract = () => {
                   icon={<FileTextOutlined />}
                   rules={[
                     { required: true, message: 'Vui lòng nhập mã số thuế!' },
-                    { 
-                      pattern: /^[0-9]{10}$|^[0-9]{13}$/, 
-                      message: 'Mã số thuế phải có 10 hoặc 13 chữ số!' 
+                    {
+                      pattern: /^[0-9]{10}$|^[0-9]{13}$/,
+                      message: 'Mã số thuế phải có 10 hoặc 13 chữ số!'
                     }
                   ]}
                 >
-                  <Input 
+                  <Input
                     placeholder="Nhập mã số thuế (10 hoặc 13 chữ số)"
                     className="rounded-lg"
                     maxLength={13}
@@ -478,7 +483,7 @@ const CreateContract = () => {
                     { required: true, message: 'Vui lòng chọn tỉnh/thành phố!' }
                   ]}
                 >
-                  <Select 
+                  <Select
                     placeholder="Chọn tỉnh/thành phố"
                     className="rounded-lg"
                     showSearch
@@ -505,7 +510,7 @@ const CreateContract = () => {
                     { required: true, message: 'Vui lòng chọn phường/xã!' }
                   ]}
                 >
-                  <Select 
+                  <Select
                     placeholder="Chọn phường/xã"
                     className="rounded-lg"
                     showSearch
@@ -533,7 +538,7 @@ const CreateContract = () => {
                     { type: 'email', message: 'Email không hợp lệ!' }
                   ]}
                 >
-                  <Input 
+                  <Input
                     placeholder="Nhập email quản lý"
                     className="rounded-lg"
                   />
@@ -545,13 +550,13 @@ const CreateContract = () => {
                   icon={<PhoneOutlined />}
                   rules={[
                     { required: true, message: 'Vui lòng nhập số điện thoại quản lý!' },
-                    { 
-                      pattern: /^0[1-9]{9}$/, 
-                      message: 'Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số!' 
+                    {
+                      pattern: /^0[1-9]{9}$/,
+                      message: 'Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số!'
                     }
                   ]}
                 >
-                  <Input 
+                  <Input
                     placeholder="Nhập số điện thoại quản lý (bắt đầu bằng 0)"
                     className="rounded-lg"
                   />
@@ -565,7 +570,7 @@ const CreateContract = () => {
                     { required: true, message: 'Vui lòng chọn cấp độ đại lý!' }
                   ]}
                 >
-                  <Select 
+                  <Select
                     placeholder="Chọn cấp độ đại lý"
                     className="rounded-lg"
                   >
@@ -582,7 +587,7 @@ const CreateContract = () => {
                   required={false}
                   rules={[]}
                 >
-                  <Input 
+                  <Input
                     placeholder="Nhập khu vực đại lý (có thể bỏ trống)"
                     className="rounded-lg"
                   />
@@ -597,7 +602,7 @@ const CreateContract = () => {
                     { required: true, message: 'Vui lòng nhập địa chỉ đại lý!' }
                   ]}
                 >
-                  <Input.TextArea 
+                  <Input.TextArea
                     placeholder="Nhập địa chỉ đại lý (số nhà, tên đường, ...)"
                     rows={3}
                     className="rounded-lg"
@@ -612,7 +617,7 @@ const CreateContract = () => {
                   required={false}
                   rules={[]}
                 >
-                  <Input.TextArea 
+                  <Input.TextArea
                     placeholder="Nhập điều khoản bổ sung (có thể bỏ trống)"
                     rows={4}
                     className="rounded-lg"
@@ -624,17 +629,17 @@ const CreateContract = () => {
               <Row justify="center" className="mt-8">
                 <Col>
                   <Space size="large">
-                    <Button 
-                      size="large" 
+                    <Button
+                      size="large"
                       onClick={resetForm}
                       className="rounded-lg min-w-32 h-12 text-base font-semibold"
                       disabled={contractLink !== null}
                     >
                       Làm Mới
                     </Button>
-                    <Button 
-                      type="primary" 
-                      htmlType="submit" 
+                    <Button
+                      type="primary"
+                      htmlType="submit"
                       loading={loading}
                       size="large"
                       className="rounded-lg min-w-32 h-12 text-base font-semibold bg-gradient-to-r from-blue-500 to-blue-600 border-none shadow-lg hover:shadow-xl transition-all duration-200"
@@ -701,9 +706,19 @@ const CreateContract = () => {
           visible={showSignatureModal}
           onCancel={() => setShowSignatureModal(false)}
           onSign={(signatureData, signatureDisplayMode) => {
-            handleSignature(signatureData, signatureDisplayMode, contractId, waitingProcessData, contractNo);
+            handleSignature(signatureData, signatureDisplayMode, contractId, waitingProcessData, contractLink);
           }}
           loading={signingLoading}
+        />
+
+        {/* Signature Position Modal */}
+        <SignaturePositionModal
+          visible={showPositionModal}
+          onCancel={() => setShowPositionModal(false)}
+          onConfirm={handlePositionConfirm}
+          contractLink={contractLink}
+          contractNo={contractNo}
+          signaturePreview={previewImage}
         />
 
         {/* SmartCA Modal */}
