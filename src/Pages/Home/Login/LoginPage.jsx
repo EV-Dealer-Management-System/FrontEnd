@@ -36,19 +36,21 @@ function LoginPage() {
       setLoading(true);
       const response = await login(email, password, autoLogin);
       
-      // Kiểm tra đơn giản
-      if (!response || !response.result) {
-        throw new Error("Response không đúng định dạng");
+      console.log("Login response:", response); // Debug để xem response thực tế
+      
+      // Sửa lại logic kiểm tra - chỉ kiểm tra cần thiết
+      const accessToken = response?.result?.accessToken;
+      const userData = response?.result?.userData;
+      
+      if (!accessToken) {
+        throw new Error("Không nhận được token từ server");
       }
-
-      // Destructuring để tránh lỗi trên production
-      const { accessToken, userData } = response.result;
       
       // Lưu token
       localStorage.setItem("jwt_token", accessToken);
       
       // Lưu tên user
-      const fullName = userData ? userData.fullName : "";
+      const fullName = userData?.fullName || "";
       if (fullName) {
         localStorage.setItem("userFullName", fullName);
       }
@@ -57,6 +59,7 @@ function LoginPage() {
       
       // Redirect to customer dashboard after login
       navigate("/customer", { replace: true });
+      
     } catch (err) {
       console.error("Login error:", err);
 
