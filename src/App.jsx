@@ -9,7 +9,7 @@ import ResetPassword from "./Pages/Home/Login/Partial/ResetPassword";
 import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfirm";
 import ProtectedRoute from "./Router/ProtectedRoute";
 import PublicRoute from "./Router/PublicRoute";
-import CreateAccount from "./Pages/Admin/CreateDealerAccount/CreateAccount";
+import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
 import ContractPage from "./Pages/ContractPage";
 import EVMAdmin from "./Pages/Admin/EVMAdmin";
 import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
@@ -57,10 +57,10 @@ function App() {
 
           }
         />
-        <Route path="/admin/dealer/create-account" 
+        <Route path="/admin/dealer/create-contract" 
         element={
           <ProtectedRoute>
-            <CreateAccount />
+            <CreateContract />
           </ProtectedRoute>
         }
         />
