@@ -12,6 +12,36 @@ export const SignContract = () => {
     }
   };
 
+  // Hàm tạo hợp đồng dealer
+  const createDealerContract = async (contractData) => {
+    try {
+      const response = await api.post('/EContract/dealer-contracts', contractData);
+      
+      // Kiểm tra response có thành công không
+      if (response.data?.isSuccess && response.data?.result?.data) {
+        return {
+          success: true,
+          data: response.data.result.data,
+          downloadUrl: response.data.result.data.downloadUrl,
+          contractNo: response.data.result.data.no,
+          processId: response.data.result.data.waitingProcess?.id,
+          message: response.data.message
+        };
+      } else {
+        throw new Error(response.data?.message || 'Tạo hợp đồng thất bại');
+      }
+    } catch (error) {
+      console.error("Lỗi khi tạo hợp đồng dealer:", error);
+      
+      // Xử lý các lỗi cụ thể từ server
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      
+      throw error;
+    }
+  };
+
   const handleSignContract = async (contractData) => {
     try {
       // Lấy access token trước khi ký hợp đồng
@@ -61,6 +91,7 @@ export const SignContract = () => {
 
   return {
     handleSignContract,
-    getAccessTokenForEVC
+    getAccessTokenForEVC,
+    createDealerContract
   };
 };

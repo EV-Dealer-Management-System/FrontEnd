@@ -3,21 +3,18 @@ import {
   Card, 
   Button, 
   Space, 
-  Alert,
-  Modal
+  Alert
 } from 'antd';
 import { 
   ShopOutlined, 
-  PictureOutlined, 
   EnvironmentOutlined, 
   FilePdfOutlined, 
   EditOutlined, 
   CheckOutlined 
 } from '@ant-design/icons';
-import PDFViewer from '../../CreateDealerAccount/PDFViewer';
-import PDFViewerModal from './PDFViewerModal';
+import OptimizedPDFViewer from '../../CreateDealerAccount/OptimizedPDFViewer';
 
-// Component hiển thị hợp đồng đã tạo
+// Component hiển thị hợp đồng đã tạo - Phase 4: Chỉ sử dụng React-PDF
 const ContractViewer = ({ 
   contractLink, 
   contractNo, 
@@ -25,10 +22,10 @@ const ContractViewer = ({
   onSign, 
   onDownload, 
   onNewContract,
-  onViewPopup,
-  viewerLink
+  viewerLink,
+  loading = false
 }) => {
-  const [pdfModalVisible, setPdfModalVisible] = useState(false);
+  // Không cần pdfModalVisible nữa vì PDFViewer có built-in fullscreen
   
   return (
     <>
@@ -60,31 +57,30 @@ const ContractViewer = ({
             />
           )}
           
-          {/* PDF Display */}
+          {/* PDF Display - Phase 4: Chỉ sử dụng React-PDF */}
           <div className="mt-6 mb-6">
-            <div className="border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
-              <div className="max-h-[600px] overflow-y-auto">
-                <PDFViewer contractLink={contractLink} />
+            {loading ? (
+              <div className="border border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 min-h-[750px]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Đang tải hợp đồng PDF...</p>
+                </div>
               </div>
-            </div>
+            ) : (
+              // Phase 4 & 5: Optimized PDF Viewer với lazy loading
+              <OptimizedPDFViewer 
+                contractNo={contractNo} 
+                pdfUrl={viewerLink || contractLink}
+              />
+            )}
           </div>
           
-          {/* Action buttons */}
+          {/* Action buttons - Phase 4: Đơn giản hóa, PDFViewer có built-in fullscreen */}
           <div className="flex justify-between items-center mt-4">
             <Space>
               <Button 
                 type="primary" 
-                icon={<PictureOutlined />}
-                onClick={onViewPopup}
-                className="bg-blue-500 border-blue-500 hover:bg-blue-600"
-                title="Xem PDF toàn màn hình"
-              >
-                Xem toàn màn hình
-              </Button>
-              
-              <Button 
-                type="primary" 
-                href={contractLink} 
+                href={viewerLink || contractLink} 
                 target="_blank"
                 icon={<EnvironmentOutlined />}
                 className="bg-green-500 border-green-500 hover:bg-green-600"
@@ -129,15 +125,7 @@ const ContractViewer = ({
           </div>
         </div>
       </Card>
-      
-      {/* PDF Viewer Modal */}
-      <PDFViewerModal
-        visible={pdfModalVisible}
-        onCancel={() => setPdfModalVisible(false)}
-        contractLink={contractLink}
-        contractNo={contractNo}
-        viewerLink={viewerLink}
-      />
+      {/* Phase 4: Đã loại bỏ PDFViewerModal - PDFViewer có fullscreen built-in */}
     </>
   );
 };

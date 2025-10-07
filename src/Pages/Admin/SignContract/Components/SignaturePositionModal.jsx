@@ -64,16 +64,8 @@ const SignaturePositionModal = ({
     const overlayRef = useRef(null);
     const iframeRef = useRef(null);
 
-    // PDF Viewer services
+    // Phase 6: Cleaned up PDF Viewer services - only direct PDF access
     const services = [
-        {
-            name: "Google Docs Viewer",
-            url: `https://docs.google.com/gview?url=${encodeURIComponent(contractLink)}&embedded=true`,
-        },
-        {
-            name: "PDF.js Viewer",
-            url: `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(contractLink)}`,
-        },
         {
             name: "Direct PDF",
             url: contractLink,
@@ -610,7 +602,7 @@ const SignaturePositionModal = ({
                                                 onLoad={setupCanvas}
                                             />
                                         ) : (
-                                            // iframe với Google Docs hoặc PDF.js
+                                            // Phase 6: Direct PDF iframe
                                             <iframe
                                                 ref={iframeRef}
                                                 src={services[currentService]?.url}

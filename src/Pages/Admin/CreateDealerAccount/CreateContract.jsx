@@ -15,10 +15,10 @@ import {
   Modal,
   Layout
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined, BugOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
 import { ContractService } from '../../../App/Home/SignContractCustomer'
-import PDFViewer from './PDFViewer';
+import ContractViewer from '../SignContract/Components/ContractViewer';
 import SignatureModal from '../SignContract/Components/SignatureModal';
 import SignaturePositionModal from '../SignContract/Components/SignaturePositionModal';
 import SmartCAModal from '../SignContract/Components/SmartCAModal';
@@ -28,6 +28,7 @@ import SmartCASelector from '../SignContract/Components/SmartCASelector';
 import SmartCAStatusChecker from '../SignContract/Components/SmartCAStatusChecker';
 import useContractSigning from '../SignContract/useContractSigning';
 import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount';
+import PDFTestPanel from './PDFTestPanel';
 const FIXED_USER_ID = "18858";
 import AdminLayout from '../../../Components/Admin/AdminLayout';
 
@@ -80,6 +81,14 @@ const CreateContract = () => {
   const [selectedSmartCA, setSelectedSmartCA] = useState(null);
   const [checkingSmartCA, setCheckingSmartCA] = useState(false);
 
+  // PDF preview states
+  const [pdfBlob, setPdfBlob] = useState(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+  const [loadingPdf, setLoadingPdf] = useState(false);
+
+  // Phase 3 testing (giữ lại cho debugging nếu cần)
+  const [showTestPanel, setShowTestPanel] = useState(false);
+
   // Sử dụng custom hook để quản lý logic ký hợp đồng
   const {
     showSignatureModal,
@@ -100,18 +109,64 @@ const CreateContract = () => {
     resetSigningState
   } = useContractSigning();
 
-  // Build a display URL for PDF (use dev proxy to avoid CORS/X-Frame in development)
-  const getPdfDisplayUrl = (url) => {
-    if (!url) return url;
+  // Initialize contract service
+  const contractService = ContractService();
+
+  // Load PDF preview từ API /EContract/preview
+  const loadPdfPreview = React.useCallback(async (downloadUrl) => {
+    if (!downloadUrl) return null;
+    
+    setLoadingPdf(true);
     try {
-      const u = new URL(url);
+      // Extract token from downloadUrl
+      const url = new URL(downloadUrl);
+      const token = url.searchParams.get('token');
+      
+      if (!token) {
+        console.error('No token found in downloadUrl');
+        return downloadUrl;
+      }
+
+      // Call PDF preview API
+      const result = await contractService.handleGetPreviewPDF(token);
+      
+      if (result.success) {
+        setPdfBlob(result.data);
+        setPdfBlobUrl(result.url);
+        return result.url;
+      } else {
+        console.error('Failed to load PDF preview:', result.error);
+        message.warning('Không thể tải PDF preview, sử dụng link gốc');
+        return downloadUrl;
+      }
+    } catch (error) {
+      console.error('Error loading PDF preview:', error);
+      message.warning('Có lỗi khi tải PDF preview');
+      return downloadUrl;
+    } finally {
+      setLoadingPdf(false);
+    }
+  }, [contractService]);
+
+  // Build a display URL for PDF (sử dụng blob URL nếu có, không thì dùng dev proxy)
+  const getPdfDisplayUrl = () => {
+    // Ưu tiên sử dụng blob URL đã load từ preview API
+    if (pdfBlobUrl) {
+      return pdfBlobUrl;
+    }
+    
+    // Fallback về contractLink nếu chưa có blob
+    if (!contractLink) return null;
+    
+    try {
+      const u = new URL(contractLink);
       const token = u.searchParams.get('token');
       if (import.meta && import.meta.env && import.meta.env.DEV && token) {
         return `/pdf-proxy?token=${encodeURIComponent(token)}`;
       }
-      return url;
+      return contractLink;
     } catch {
-      return url;
+      return contractLink;
     }
   };
 
@@ -245,6 +300,10 @@ const CreateContract = () => {
           if (downloadUrl) {
             setContractLink(downloadUrl);
             setContractNo(contractNo || 'Không xác định');
+            
+            // Load PDF preview từ API /EContract/preview
+            await loadPdfPreview(downloadUrl);
+            
             message.success({
               content: (
                 <span>
@@ -284,10 +343,20 @@ const CreateContract = () => {
 
 
 
-  // Download PDF
+  // Download PDF - sử dụng blob data nếu có, không thì dùng contractLink
   const handleDownload = () => {
     const a = document.createElement('a');
-    a.href = contractLink;
+    
+    // Ưu tiên sử dụng blob URL đã load từ preview API
+    if (pdfBlobUrl) {
+      a.href = pdfBlobUrl;
+    } else if (contractLink) {
+      a.href = contractLink;
+    } else {
+      message.warning('Không có file PDF để tải xuống');
+      return;
+    }
+    
     a.download = `hop-dong-${contractNo || 'dai-ly'}.pdf`;
     document.body.appendChild(a);
     a.click();
@@ -308,6 +377,10 @@ const CreateContract = () => {
         setContractId(null);
         setWaitingProcessData(null);
         setWards([]);
+        // Reset PDF states
+        setPdfBlob(null);
+        setPdfBlobUrl(null);
+        setLoadingPdf(false);
         resetSigningState();
         message.success('Đã làm mới biểu mẫu');
       }
@@ -338,9 +411,114 @@ const CreateContract = () => {
 
             {/* Contract Display */}
             {contractLink && (
-              <PDFViewer
-                contractLink={contractLink}
-                contractNo={contractNo}
+              <>
+                {/* Phase 4: Chỉ sử dụng React-PDF */}
+                <Card className="mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Text strong className="text-green-600">
+                        <FileTextOutlined className="mr-2" />
+                        PDF Viewer: React-PDF (Native)
+                      </Text>
+                      <div className="text-xs text-gray-500 bg-green-50 px-2 py-1 rounded">
+                        Phase 4: Simplified & Optimized
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="small"
+                        type={showTestPanel ? 'primary' : 'default'}
+                        onClick={() => setShowTestPanel(!showTestPanel)}
+                        icon={<BugOutlined />}
+                      >
+                        Debug Panel
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+
+                <ContractViewer
+                  contractLink={contractLink}
+                  contractNo={contractNo}
+                  contractSigned={contractSigned}
+                  onSign={() => {
+                    // Kiểm tra đã có SmartCA và có chứng thư số hợp lệ chưa
+                    const hasValidSmartCA = smartCAInfo && (
+                      smartCAInfo.defaultSmartCa ||
+                      (smartCAInfo.userCertificates && smartCAInfo.userCertificates.length > 0)
+                    );
+                    if (!hasValidSmartCA) {
+                      message.warning('Bạn chưa có SmartCA hoặc chưa có chứng thư số hợp lệ. Vui lòng thêm SmartCA trước khi ký!');
+                      setShowAddSmartCA(true);
+                      return;
+                    }
+                    if (!selectedSmartCA) {
+                      message.warning('Vui lòng chọn chứng thư số SmartCA trước khi ký hợp đồng!');
+                      setShowSmartCASelector(true);
+                      return;
+                    }
+                    setShowSignatureModal(true);
+                  }}
+                  onDownload={handleDownload}
+                  onNewContract={resetForm}
+                  viewerLink={getPdfDisplayUrl()}
+                  loading={loadingPdf}
+                />
+
+                {/* Card trạng thái SmartCA giống ContractPage */}
+                <Card className="mb-6 mt-6">
+                  <Title level={4} className="flex items-center">
+                    <SmartCAModal />
+                    Trạng thái SmartCA
+                  </Title>
+                  {!smartCAInfo ? (
+                    <div className="text-center">
+                      <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded p-3 mb-3">
+                        <div className="font-medium">SmartCA chưa sẵn sàng</div>
+                        <div className="text-sm">Bạn cần thêm SmartCA để có thể ký hợp đồng</div>
+                      </div>
+                      <Button type="primary" danger onClick={() => setShowAddSmartCA(true)}>
+                        Thêm SmartCA
+                      </Button>
+                    </div>
+                  ) : !selectedSmartCA ? (
+                    <div className="text-center">
+                      <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded p-3 mb-3">
+                        <div className="font-medium">Đã có SmartCA</div>
+                        <div className="text-sm">Vui lòng chọn chứng thư số để ký hợp đồng</div>
+                      </div>
+                      <Button type="primary" onClick={() => setShowSmartCASelector(true)}>
+                        Chọn Chứng Thư
+                      </Button>
+                      <Button className="ml-2" onClick={() => setShowAddSmartCA(true)}>
+                        Thêm SmartCA Khác
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="bg-green-50 border border-green-200 text-green-700 rounded p-3 mb-3">
+                        <div className="font-medium">SmartCA sẵn sàng</div>
+                        <div className="text-sm">
+                          Sử dụng: {selectedSmartCA.commonName} ({selectedSmartCA.uid})
+                        </div>
+                      </div>
+                      <Button type="primary" onClick={() => setShowSignatureModal(true)}>
+                        Ký Hợp Đồng
+                      </Button>
+                      <Button className="ml-2" onClick={() => setShowSmartCASelector(true)}>
+                        Đổi Chứng Thư
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              </>
+            )}
+
+            {/* Phase 3 Test Panel */}
+            {showTestPanel && contractLink && (
+              <PDFTestPanel 
+                contractNo={contractNo} 
+                realPdfUrl={getPdfDisplayUrl()}
               />
             )}
 
