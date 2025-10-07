@@ -15,8 +15,12 @@ const useContractSigning = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const [showAddSmartCA, setShowAddSmartCA] = useState(false);
 
-  // Handle signature directly
-  const handleSignature = async (signatureData, signatureDisplayMode, contractId, waitingProcessData) => {
+  // State cho modal chọn vị trí chữ ký
+  const [showPositionModal, setShowPositionModal] = useState(false);
+  const [pendingSignatureData, setPendingSignatureData] = useState(null);
+
+  // Handle signature - Bước 1: Lưu dữ liệu chữ ký và mở modal chọn vị trí
+  const handleSignature = async (signatureData, signatureDisplayMode, contractId, waitingProcessData, contractLink) => {
     try {
       if (!contractId || !signatureData) {
         message.error('Không thể xác nhận vị trí chữ ký. Thiếu thông tin hợp đồng hoặc chữ ký.');
@@ -26,24 +30,51 @@ const useContractSigning = () => {
       // Set preview image
       setPreviewImage(signatureData);
 
-      // Chuyển sang trạng thái xác thực
+      // Lưu dữ liệu chữ ký tạm thời và mở modal chọn vị trí
+      setPendingSignatureData({
+        signatureData,
+        signatureDisplayMode,
+        contractId,
+        waitingProcessData,
+        contractLink
+      });
+
+      // Đóng modal ký và mở modal chọn vị trí
       setShowSignatureModal(false);
+      setShowPositionModal(true);
+    } catch (error) {
+      console.error('Error preparing signature:', error);
+      message.error('Có lỗi không mong muốn khi chuẩn bị chữ ký');
+    }
+  };
+
+  // Handle position confirmation - Bước 2: Thực hiện ký với vị trí đã chọn
+  const handlePositionConfirm = async (positionData) => {
+    try {
+      if (!pendingSignatureData) {
+        message.error('Không có dữ liệu chữ ký. Vui lòng thực hiện lại.');
+        return;
+      }
+
+      const { signatureData, signatureDisplayMode, waitingProcessData } = pendingSignatureData;
+      const { positionString, signingPage } = positionData;
+
+      // Đóng modal chọn vị trí và chuyển sang xác thực
+      setShowPositionModal(false);
       setSigningLoading(true);
       setShowSmartCAModal(true);
-      
+
       const signContractApi = SignContract();
-      
-      // Sử dụng vị trí cố định thay vì chọn vị trí
-      const positionString = "32,472,202,562";
-      
+
       console.log('Signature position:', positionString);
-      
+      console.log('Signing page:', signingPage);
+
       const signData = {
         waitingProcess: waitingProcessData,
         reason: "Ký hợp đồng đại lý",
         reject: false,
         signatureImage: signatureData,
-        signingPage: 0,
+        signingPage: signingPage,
         signingPosition: positionString,
         signatureText: "EVM COMPANY",
         fontSize: 14,
@@ -55,27 +86,29 @@ const useContractSigning = () => {
       console.log('Signature data format:', {
         fullDataURL: signatureData.substring(0, 100) + '...',
         dataURLLength: signatureData.length,
-        processId: contractId,
         waitingProcess: waitingProcessData,
         hasCorrectPrefix: signatureData.startsWith('data:image/png;base64,'),
-        position: positionString
+        position: positionString,
+        page: signingPage
       });
 
       const result = await signContractApi.handleSignContract(signData);
-      
+
       console.log('Digital signature result:', JSON.stringify(result, null, 2));
-      
+
       // Ký điện tử thành công, chuyển sang bước xác thực app
       if (result && result.statusCode === 200 && result.isSuccess) {
         setSignatureCompleted(true);
         setShowSmartCAModal(false);
         setShowAppVerifyModal(true);
         message.success('Ký điện tử thành công! Vui lòng xác thực trên ứng dụng.');
+        // Clear pending data
+        setPendingSignatureData(null);
       } else {
         // Xử lý lỗi ký điện tử
-        const errorMessage = result?.message || 
-                           result?.result?.messages?.[0] || 
-                           'Có lỗi khi ký điện tử';
+        const errorMessage = result?.message ||
+          result?.result?.messages?.[0] ||
+          'Có lỗi khi ký điện tử';
         message.error(errorMessage);
         setShowSmartCAModal(false);
       }
@@ -94,7 +127,7 @@ const useContractSigning = () => {
       message.error('Vui lòng hoàn thành ký điện tử trước!');
       return;
     }
-    
+
     setSigningLoading(true);
     try {
       setShowAppVerifyModal(false);
@@ -128,7 +161,7 @@ const useContractSigning = () => {
           className: 'bg-green-500 border-green-500 hover:bg-green-600'
         }
       });
-      
+
       message.success('Xác thực thành công! Hợp đồng đã hoàn tất.');
     } catch (error) {
       console.error('Error in app verification:', error);
@@ -142,7 +175,7 @@ const useContractSigning = () => {
   const handleSmartCASuccess = (smartCAData) => {
     console.log('SmartCA added:', smartCAData);
     setShowAddSmartCA(false);
-    
+
     // Hiển thị thông báo thành công với thông tin chi tiết
     if (smartCAData.hasValidSmartCA) {
       message.success('SmartCA đã được thêm và kích hoạt thành công!');
@@ -161,6 +194,8 @@ const useContractSigning = () => {
     setSigningLoading(false);
     setPreviewImage(null);
     setShowAddSmartCA(false);
+    setShowPositionModal(false);
+    setPendingSignatureData(null);
   };
 
   return {
@@ -176,7 +211,11 @@ const useContractSigning = () => {
     previewImage,
     showAddSmartCA,
     setShowAddSmartCA,
+    showPositionModal,
+    setShowPositionModal,
+    pendingSignatureData,
     handleSignature,
+    handlePositionConfirm,
     handleAppVerification,
     handleSmartCASuccess,
     resetSigningState,
