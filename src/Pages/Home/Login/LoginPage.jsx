@@ -35,13 +35,34 @@ function LoginPage() {
     try {
       setLoading(true);
       const response = await login(email, password, autoLogin);
-      // Save JWT token - sử dụng accessToken từ response
-      localStorage.setItem("jwt_token", response.result.accessToken);
 
-      // Lưu thông tin user từ userData
-      const fullName = response.result.userData?.fullName || "Người dùng";
+      // Debug: Log response để kiểm tra cấu trúc
+      console.log("Full response:", response);
+
+      // Kiểm tra cấu trúc response và xử lý các trường hợp khác nhau
+      let accessToken, fullName, userEmail;
+
+      if (response.result?.accessToken) {
+        // Trường hợp API trả về như bạn đã cung cấp
+        accessToken = response.result.accessToken;
+        fullName = response.result.userData?.fullName || "Người dùng";
+        userEmail = response.result.userData?.email || "";
+      } else if (response.token) {
+        // Trường hợp API trả về token trực tiếp
+        accessToken = response.token;
+        fullName =
+          response.result?.fullName || response.fullName || "Người dùng";
+        userEmail = response.result?.email || response.email || "";
+      } else {
+        // Fallback case
+        console.error("Unexpected response structure:", response);
+        throw new Error("Invalid response structure");
+      }
+
+      // Save JWT token
+      localStorage.setItem("jwt_token", accessToken);
       localStorage.setItem("userFullName", fullName);
-      localStorage.setItem("userEmail", response.result.userData?.email || "");
+      localStorage.setItem("userEmail", userEmail);
 
       message.success(`Chào mừng ${fullName}! Đăng nhập thành công!`);
 
