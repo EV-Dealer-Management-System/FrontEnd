@@ -74,7 +74,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: './DealerList',
           },
           {
-            path: '/admin/dealer/contracts',
+            path: '/admin/dealer/create-contract',
             name: 'Hợp đồng đại lý',
             icon: <FileTextOutlined />,
             component: './DealerContracts',
