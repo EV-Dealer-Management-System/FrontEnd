@@ -35,12 +35,26 @@ function LoginPage() {
     try {
       setLoading(true);
       const response = await login(email, password, autoLogin);
-      // Save JWT token
+      
+      // Kiểm tra đơn giản
+      if (!response || !response.result) {
+        throw new Error("Response không đúng định dạng");
+      }
 
-      localStorage.setItem("jwt_token", response.result.accessToken);
-      localStorage.setItem("userFullName", response.result.userData.fullName || "");
-      message.success(`Chào mừng ${response.result.userData.fullName}! Đăng nhập thành công!`);
-
+      // Destructuring để tránh lỗi trên production
+      const { accessToken, userData } = response.result;
+      
+      // Lưu token
+      localStorage.setItem("jwt_token", accessToken);
+      
+      // Lưu tên user
+      const fullName = userData ? userData.fullName : "";
+      if (fullName) {
+        localStorage.setItem("userFullName", fullName);
+      }
+      
+      message.success(`Chào mừng ${fullName || "người dùng"}! Đăng nhập thành công!`);
+      
       // Redirect to customer dashboard after login
       navigate("/customer", { replace: true });
     } catch (err) {
