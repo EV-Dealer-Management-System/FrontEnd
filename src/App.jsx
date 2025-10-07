@@ -13,6 +13,8 @@ import CreateAccount from "./Pages/Admin/CreateDealerAccount/CreateAccount";
 import ContractPage from "./Pages/ContractPage";
 import EVMAdmin from "./Pages/Admin/EVMAdmin";
 import Managemodel from "./Pages/Admin/VehicleManagement/Components/Managemodel";
+import Manageversion from "./Pages/Admin/VehicleManagement/Components/Manageversion";
+import Managecolor from "./Pages/Admin/VehicleManagement/Components/Managecolor";
 
 
 function App() {
@@ -54,6 +56,22 @@ function App() {
           element={
             <ProtectedRoute>
               <Managemodel />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/vehicle/version"
+          element={
+            <ProtectedRoute>
+              <Manageversion />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/vehicle/color"
+          element={
+            <ProtectedRoute>
+              <Managecolor />
             </ProtectedRoute>
           }
         />
