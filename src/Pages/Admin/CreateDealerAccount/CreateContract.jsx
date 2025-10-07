@@ -18,7 +18,7 @@ import {
 import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
 import { ContractService } from '../../../App/Home/SignContractCustomer'
-import ContractViewer from '../SignContract/Components/ContractViewer';
+import PDFViewer from './PDFViewer';
 import SignatureModal from '../SignContract/Components/SignatureModal';
 import SignaturePositionModal from '../SignContract/Components/SignaturePositionModal';
 import SmartCAModal from '../SignContract/Components/SmartCAModal';
@@ -338,81 +338,10 @@ const CreateContract = () => {
 
             {/* Contract Display */}
             {contractLink && (
-              <>
-                <ContractViewer
-                  contractLink={contractLink}
-                  contractNo={contractNo}
-                  contractSigned={contractSigned}
-                  onSign={() => {
-                    // Kiểm tra đã có SmartCA và có chứng thư số hợp lệ chưa
-                    const hasValidSmartCA = smartCAInfo && (
-                      smartCAInfo.defaultSmartCa ||
-                      (smartCAInfo.userCertificates && smartCAInfo.userCertificates.length > 0)
-                    );
-                    if (!hasValidSmartCA) {
-                      message.warning('Bạn chưa có SmartCA hoặc chưa có chứng thư số hợp lệ. Vui lòng thêm SmartCA trước khi ký!');
-                      setShowAddSmartCA(true);
-                      return;
-                    }
-                    if (!selectedSmartCA) {
-                      message.warning('Vui lòng chọn chứng thư số SmartCA trước khi ký hợp đồng!');
-                      setShowSmartCASelector(true);
-                      return;
-                    }
-                    setShowSignatureModal(true);
-                  }}
-                  onDownload={handleDownload}
-                  onNewContract={resetForm}
-                  viewerLink={getPdfDisplayUrl(contractLink)}
-                />
-
-                {/* Card trạng thái SmartCA giống ContractPage */}
-                <Card className="mb-6 mt-6">
-                  <Title level={4} className="flex items-center">
-                    <SmartCAModal />
-                    Trạng thái SmartCA
-                  </Title>
-                  {!smartCAInfo ? (
-                    <div className="text-center">
-                      <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded p-3 mb-3">
-                        <div className="font-medium">SmartCA chưa sẵn sàng</div>
-                        <div className="text-sm">Bạn cần thêm SmartCA để có thể ký hợp đồng</div>
-                      </div>
-                      <Button type="primary" danger onClick={() => setShowAddSmartCA(true)}>
-                        Thêm SmartCA
-                      </Button>
-                    </div>
-                  ) : !selectedSmartCA ? (
-                    <div className="text-center">
-                      <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded p-3 mb-3">
-                        <div className="font-medium">Đã có SmartCA</div>
-                        <div className="text-sm">Vui lòng chọn chứng thư số để ký hợp đồng</div>
-                      </div>
-                      <Button type="primary" onClick={() => setShowSmartCASelector(true)}>
-                        Chọn Chứng Thư
-                      </Button>
-                      <Button className="ml-2" onClick={() => setShowAddSmartCA(true)}>
-                        Thêm SmartCA Khác
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <div className="bg-green-50 border border-green-200 text-green-700 rounded p-3 mb-3">
-                        <div className="font-medium">SmartCA sẵn sàng</div>
-                        <div className="text-sm">
-                          Sử dụng: {selectedSmartCA.commonName} ({selectedSmartCA.uid})
-                        </div>
-                      </div>
-                      <Button type="primary" onClick={() => setShowSignatureModal(true)}>
-                        Ký Hợp Đồng
-                      </Button>
-                      <Button className="ml-2" onClick={() => setShowSmartCASelector(true)}>
-                        Đổi Chứng Thư
-                      </Button>
-                    </div>
-                  )}
-                </Card>
-              </>
+              <PDFViewer
+                contractLink={contractLink}
+                contractNo={contractNo}
+              />
             )}
 
             {/* Form */}

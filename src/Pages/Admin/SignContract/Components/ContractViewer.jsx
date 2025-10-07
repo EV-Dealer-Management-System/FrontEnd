@@ -14,6 +14,7 @@ import {
   EditOutlined, 
   CheckOutlined 
 } from '@ant-design/icons';
+import PDFViewer from '../../CreateDealerAccount/PDFViewer';
 import PDFViewerModal from './PDFViewerModal';
 
 // Component hiển thị hợp đồng đã tạo
@@ -24,6 +25,7 @@ const ContractViewer = ({
   onSign, 
   onDownload, 
   onNewContract,
+  onViewPopup,
   viewerLink
 }) => {
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
@@ -60,15 +62,10 @@ const ContractViewer = ({
           
           {/* PDF Display */}
           <div className="mt-6 mb-6">
-            <div className="border border-gray-300 rounded-lg overflow-hidden min-h-[750px] h-[calc(100vh-320px)]">
-              <iframe 
-                src={`https://docs.google.com/gview?url=${encodeURIComponent(contractLink)}&embedded=true`}
-                title="Google Docs PDF Viewer"
-                className="w-full h-full border-0"
-                onError={(e) => {
-                  console.error('Google Docs Viewer failed to load:', e);
-                }}
-              />
+            <div className="border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+              <div className="max-h-[600px] overflow-y-auto">
+                <PDFViewer contractLink={contractLink} />
+              </div>
             </div>
           </div>
           
@@ -78,7 +75,7 @@ const ContractViewer = ({
               <Button 
                 type="primary" 
                 icon={<PictureOutlined />}
-                onClick={() => setPdfModalVisible(true)}
+                onClick={onViewPopup}
                 className="bg-blue-500 border-blue-500 hover:bg-blue-600"
                 title="Xem PDF toàn màn hình"
               >
