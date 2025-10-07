@@ -3,11 +3,11 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { Spin, Button } from 'antd';
 import { FilePdfOutlined } from '@ant-design/icons';
 
-// Cấu hình worker cho pdfjs
-
-import workerSrc from '../../../../public/pdf.worker.min.js';
-
-pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+// Cấu hình worker cho Vite
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url,
+).toString();
 
 function PDFViewer({ contractLink, contractNo }) {
   const [numPages, setNumPages] = useState(null);
