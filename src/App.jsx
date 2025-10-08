@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 import LoginPage from "./Pages/Home/Login/LoginPage";
@@ -13,6 +12,8 @@ import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
 import ContractPage from "./Pages/ContractPage";
 import EVMAdmin from "./Pages/Admin/EVMAdmin";
 import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
+import DealerManager from "./Pages/DealerManager/DealerManager";
+import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
 
 function App() {
   return (
@@ -45,7 +46,6 @@ function App() {
             <ProtectedRoute>
               <EVMAdmin />
             </ProtectedRoute>
-
           }
         />
         <Route
@@ -54,15 +54,31 @@ function App() {
             <PublicRoute>
               <VehicleManagement />
             </PublicRoute>
-
           }
         />
-        <Route path="/admin/dealer/create-contract" 
-        element={
-          <ProtectedRoute>
-            <CreateContract />
-          </ProtectedRoute>
-        }
+        <Route
+          path="/admin/dealer/create-contract"
+          element={
+            <ProtectedRoute>
+              <CreateContract />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dealer"
+          element={
+            <PublicRoute>
+              <DealerManager />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/dealer/ev/ev-booking"
+          element={
+            <PublicRoute>
+              <EVBooking />
+            </PublicRoute>
+          }
         />
         {/* Redirect to login page by default */}
         <Route path="*" element={<Navigate to="/" replace />} />
