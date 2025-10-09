@@ -15,7 +15,11 @@
     "@ant-design/pro-components": "^2.8.10",
     "antd": "^5.27.1",
     "axios": "^1.11.0",
+
     "pdfjs-dist": "^5.4.296",
+
+    "jwt-decode": "^4.0.0",
+
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-pdf": "^10.1.0",

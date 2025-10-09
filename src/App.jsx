@@ -6,7 +6,7 @@ import { MailConfirmation } from "./Pages/Home/Register/partial/MailConfirmation
 import EmailVerification from "./Pages/Home/Register/partial/EmailVerification";
 import ResetPassword from "./Pages/Home/Login/Partial/ResetPassword";
 import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfirm";
-import ProtectedRoute from "./Router/ProtectedRoute";
+
 import PublicRoute from "./Router/PublicRoute";
 import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
 import ContractPage from "./Pages/ContractPage";
@@ -14,6 +14,12 @@ import EVMAdmin from "./Pages/Admin/EVMAdmin";
 import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
 import DealerManager from "./Pages/DealerManager/DealerManager";
 import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
+import GetAllEVBooking from "./Pages/DealerManager/GetAllEVBooking.jsx/GetAllEVBooking";
+import DealerManagerRoute from "./Router/DealerManagerRoute";
+import AdminRoute from "./Router/AdminRoute";
+import DealerStaffRoute from "./Router/DealerStaffRoute";
+import EVMStaffRoute from "./Router/EVMStaffRoute";
+
 
 function App() {
   return (
@@ -40,47 +46,28 @@ function App() {
         <Route path="/forgot-password" element={<ResetPassword />} />
         <Route path="/api/reset-password" element={<ResetPasswordConfirm />} />
         <Route path="/contract" element={<ContractPage />} />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <EVMAdmin />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/vehicle/model"
-          element={
-            <PublicRoute>
-              <VehicleManagement />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/admin/dealer/create-contract"
-          element={
-            <ProtectedRoute>
-              <CreateContract />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dealer"
-          element={
-            <PublicRoute>
-              <DealerManager />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/dealer/ev/ev-booking"
-          element={
-            <PublicRoute>
-              <EVBooking />
-            </PublicRoute>
-          }
-        />
-        {/* Redirect to login page by default */}
+        {/* Admin Routes - với catch-all route */}
+        <Route path="/admin/*" element={<AdminRoute>
+          <Routes>
+            <Route path="" element={<EVMAdmin />} />
+            <Route path="vehicle/model" element={<VehicleManagement />} />
+            <Route path="dealer/create-contract" element={<CreateContract />} />
+            {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ admin */}
+            <Route path="*" element={<Navigate to="/admin" replace />} />
+          </Routes>
+        </AdminRoute>} />
+        {/* Dealer Manager Routes - với catch-all route */}
+        <Route path="/dealer-manager/*" element={<DealerManagerRoute>
+          <Routes>
+            <Route path="" element={<DealerManager />} />
+            <Route path="ev/ev-booking" element={<EVBooking />} />
+            <Route path="ev/all-ev-booking" element={<GetAllEVBooking />} />
+            {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}
+            <Route path="*" element={<Navigate to="/dealer-manager" replace />} />
+          </Routes>
+        </DealerManagerRoute>} />
+
+        {/* Global catch-all route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
