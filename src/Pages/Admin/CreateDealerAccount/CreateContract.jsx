@@ -82,6 +82,7 @@ const CreateContract = () => {
   const [checkingSmartCA, setCheckingSmartCA] = useState(false);
 
   // PDF preview states
+  const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
 
@@ -111,55 +112,38 @@ const CreateContract = () => {
   // Load PDF preview từ API /EContract/preview
   const loadPdfPreview = React.useCallback(async (downloadUrl) => {
     if (!downloadUrl) return null;
-
+    
     setLoadingPdf(true);
     try {
       // Extract token từ downloadUrl
       const tokenMatch = downloadUrl.match(/[?&]token=([^&]+)/);
       const token = tokenMatch ? tokenMatch[1] : null;
-
       if (!token) {
         message.warning('Không tìm thấy token trong đường dẫn hợp đồng');
-
+        return null;
       }
       // Gọi API qua backend proxy thay vì fetch trực tiếp
-      const response = await api.get(`/EContract/preview?token=${token}`, {
-        responseType: 'blob'
-      });
-
+      const response = await api.get(`/EContract/preview?`, {
+      params: { token },        // cách này sạch hơn so với nối string
+      responseType: 'blob'
+    });
+      
       if (response.status === 200) {
-        const nextBlob = new Blob([response.data], { type: 'application/pdf' });
-        const blobUrl = URL.createObjectURL(nextBlob);
-
-        setPdfBlobUrl(prevUrl => {
-          if (prevUrl) {
-            URL.revokeObjectURL(prevUrl);
-          }
-          return blobUrl;
-        });
+        const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        
+        setPdfBlob(pdfBlob);
+        setPdfBlobUrl(blobUrl);
         return blobUrl;
       }
-
-      return null;
     } catch (error) {
       console.log('Lỗi API preview, sử dụng link gốc:', error.message);
-      setPdfBlobUrl(prevUrl => {
-        if (prevUrl) {
-          URL.revokeObjectURL(prevUrl);
-        }
-        return null;
-      });
+      // Quan trọng: KHÔNG return downloadUrl trực tiếp vì sẽ gây CORS
       return null;
     } finally {
       setLoadingPdf(false);
     }
   }, []);
-
-  useEffect(() => () => {
-    if (pdfBlobUrl) {
-      URL.revokeObjectURL(pdfBlobUrl);
-    }
-  }, [pdfBlobUrl]);
 
   // Build a display URL for PDF (ưu tiên blob URL, không thì dùng trực tiếp contractLink)
   const getPdfDisplayUrl = () => {
@@ -305,11 +289,7 @@ const CreateContract = () => {
             setContractNo(contractNo || 'Không xác định');
             
             // Load PDF preview từ API /EContract/preview
-            const previewUrl = await loadPdfPreview(downloadUrl);
-
-            if (!previewUrl) {
-              message.warning('Không thể tải trước hợp đồng PDF. Vui lòng mở trong tab mới để xem.');
-            }
+            await loadPdfPreview(downloadUrl);
             
             message.success({
               content: (
@@ -356,34 +336,25 @@ const CreateContract = () => {
       // Download từ blob URL (không CORS)
       const link = document.createElement('a');
       link.href = pdfBlobUrl;
-      link.download = `hop-dong-${contractNo || 'dai-ly'}.pdf`;
+      link.download = `${title || `hop-dong-${contractNo}`}.pdf`;
       link.click();
-      return;
-    }
-
-    if (contractLink) {
+    } else if (contractLink) {
       // Mở trong tab mới thay vì download trực tiếp
-      window.open(contractLink, '_blank', 'noopener,noreferrer');
+      window.open(contractLink, '_blank');
       message.info('PDF đã được mở trong tab mới');
-      return;
+    } else {
+      message.warning('Không có file PDF để tải xuống');
     }
-
-    message.warning('Không có file PDF để tải xuống');
   };
 
   const handlePrint = () => {
-    const targetUrl = pdfBlobUrl || contractLink;
-
-    if (targetUrl) {
+    if (contractLink) {
       // Mở trong tab mới để in (tránh CORS)
-      const printWindow = window.open(targetUrl, '_blank', 'noopener,noreferrer');
-      if (printWindow) {
-        message.info('PDF đã được mở trong tab mới. Vui lòng sử dụng Ctrl+P để in');
-      }
-      return;
+      const printWindow = window.open(contractLink, '_blank');
+      message.info('PDF đã được mở trong tab mới. Vui lòng sử dụng Ctrl+P để in');
+    } else {
+      message.warning('Không có file PDF để in');
     }
-
-    message.warning('Không có file PDF để in');
   };
 
   // Reset form and related state
@@ -401,12 +372,8 @@ const CreateContract = () => {
         setWaitingProcessData(null);
         setWards([]);
         // Reset PDF states
-        setPdfBlobUrl(prevUrl => {
-          if (prevUrl) {
-            URL.revokeObjectURL(prevUrl);
-          }
-          return null;
-        });
+        setPdfBlob(null);
+        setPdfBlobUrl(null);
         setLoadingPdf(false);
         resetSigningState();
         message.success('Đã làm mới biểu mẫu');
