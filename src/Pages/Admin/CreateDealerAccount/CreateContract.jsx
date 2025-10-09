@@ -15,7 +15,7 @@ import {
   Modal,
   Layout
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined,FilePdfOutlined,DownloadOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
 import api from '../../../api/api';
 import { ContractService } from '../../../App/Home/SignContractCustomer'
@@ -120,28 +120,27 @@ const CreateContract = () => {
       const token = tokenMatch ? tokenMatch[1] : null;
       
       if (!token) {
+        console.log('Không tìm thấy token, dùng link gốc');
         return downloadUrl;
       }
 
-      // Call API để lấy PDF binary stream
+      // Gọi API qua backend proxy thay vì fetch trực tiếp
       const response = await api.get(`/EContract/preview?token=${token}`, {
-        responseType: 'blob'  // Nhận binary data
+        responseType: 'blob'
       });
       
       if (response.status === 200) {
-        // Tạo blob URL từ PDF binary data
         const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
         const blobUrl = URL.createObjectURL(pdfBlob);
         
         setPdfBlob(pdfBlob);
         setPdfBlobUrl(blobUrl);
         return blobUrl;
-      } else {
-        return downloadUrl;
       }
     } catch (error) {
-      console.error('Error loading PDF preview:', error);
-      return downloadUrl;
+      console.log('Lỗi API preview, sử dụng link gốc:', error.message);
+      // Quan trọng: KHÔNG return downloadUrl trực tiếp vì sẽ gây CORS
+      return null;
     } finally {
       setLoadingPdf(false);
     }
@@ -149,13 +148,14 @@ const CreateContract = () => {
 
   // Build a display URL for PDF (ưu tiên blob URL, không thì dùng trực tiếp contractLink)
   const getPdfDisplayUrl = () => {
-    // Ưu tiên sử dụng blob URL đã load từ preview API
+    // Ưu tiên blob URL từ preview API (không CORS)
     if (pdfBlobUrl) {
       return pdfBlobUrl;
     }
     
-    // Sử dụng trực tiếp contractLink thay vì proxy
-    return contractLink;
+    // KHÔNG dùng trực tiếp downloadUrl vì sẽ gây CORS
+    // Thay vào đó, hiển thị thông báo cho user
+    return null;
   };
 
   // Load provinces on component mount
@@ -333,22 +333,29 @@ const CreateContract = () => {
 
   // Download PDF - sử dụng blob data nếu có, không thì dùng contractLink
   const handleDownload = () => {
-    const a = document.createElement('a');
-    
-    // Ưu tiên sử dụng blob URL đã load từ preview API
     if (pdfBlobUrl) {
-      a.href = pdfBlobUrl;
+      // Download từ blob URL (không CORS)
+      const link = document.createElement('a');
+      link.href = pdfBlobUrl;
+      link.download = `${title || `hop-dong-${contractNo}`}.pdf`;
+      link.click();
     } else if (contractLink) {
-      a.href = contractLink;
+      // Mở trong tab mới thay vì download trực tiếp
+      window.open(contractLink, '_blank');
+      message.info('PDF đã được mở trong tab mới');
     } else {
       message.warning('Không có file PDF để tải xuống');
-      return;
     }
-    
-    a.download = `hop-dong-${contractNo || 'dai-ly'}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  };
+
+  const handlePrint = () => {
+    if (contractLink) {
+      // Mở trong tab mới để in (tránh CORS)
+      const printWindow = window.open(contractLink, '_blank');
+      message.info('PDF đã được mở trong tab mới. Vui lòng sử dụng Ctrl+P để in');
+    } else {
+      message.warning('Không có file PDF để in');
+    }
   };
 
   // Reset form and related state
@@ -412,7 +419,6 @@ const CreateContract = () => {
                         Phase 4: Simplified & Optimized
                       </div>
                     </div>
-                    {/* Debug Panel removed - không cần thiết cho nghiệp vụ chính */}
                   </div>
                 </Card>
 
@@ -818,6 +824,25 @@ const CreateContract = () => {
           loading={signingLoading}
           signatureCompleted={signatureCompleted}
         />
+
+        {/* Trong ContractViewer hoặc PDFModal */}
+        {!getPdfDisplayUrl() && contractLink && (
+          <div className="flex flex-col items-center justify-center h-64 text-center p-6 bg-gray-50 rounded-lg">
+            <FilePdfOutlined className="text-6xl mb-4 text-blue-400" />
+            <p className="text-lg mb-4 text-gray-700">PDF Preview không khả dụng</p>
+            <Button 
+              type="primary" 
+              icon={<DownloadOutlined />}
+              onClick={() => window.open(contractLink, '_blank')}
+              size="large"
+            >
+              Mở PDF trong tab mới
+            </Button>
+            <p className="text-sm text-gray-500 mt-2">
+              Nhấn để xem PDF trên trang VNPT
+            </p>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
