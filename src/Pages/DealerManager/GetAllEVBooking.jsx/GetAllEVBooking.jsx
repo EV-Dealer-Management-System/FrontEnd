@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { message, Layout, Tag, Tabs, Badge } from "antd";
+import {
+  message,
+  Layout,
+  Tag,
+  Row,
+  Col,
+  Card,
+  Progress,
+  Statistic,
+} from "antd";
 import {
   PageContainer,
   ProCard,
@@ -11,6 +20,8 @@ import {
   CloseCircleOutlined,
   CarOutlined,
   FileTextOutlined,
+  TrophyOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import { getAllEVBookings } from "../../../App/DealerManager/EVBooking/GetAllEVBooking";
 import { getBookingById } from "../../../App/DealerManager/EVBooking/GetBookingByID";
@@ -18,6 +29,8 @@ import NavigationBar from "../../../Components/DealerManager/Components/Navigati
 import BookingFilters from "./Components/BookingFilters";
 import BookingTable from "./Components/BookingTable";
 import BookingDetailDrawer from "./Components/BookingDetailDrawer";
+import StatusDistributionChart from "./Components/StatusDistributionChart";
+import TrendChart from "./Components/TrendChart";
 
 const { Content } = Layout;
 
@@ -152,7 +165,54 @@ function GetAllEVBooking() {
       ),
     };
 
+    // Tính tỷ lệ phê duyệt
+    stats.approvalRate =
+      stats.total > 0 ? ((stats.approved / stats.total) * 100).toFixed(1) : 0;
+
+    // Tính tỷ lệ hoàn thành
+    stats.completionRate =
+      stats.total > 0 ? ((stats.completed / stats.total) * 100).toFixed(1) : 0;
+
+    // Tính trung bình xe/booking
+    stats.avgVehiclesPerBooking =
+      stats.total > 0 ? (stats.totalVehicles / stats.total).toFixed(1) : 0;
+
     return stats;
+  }, [bookings]);
+
+  // Dữ liệu cho biểu đồ phân bố trạng thái
+  const statusChartData = useMemo(() => {
+    return [
+      { type: "Chờ Duyệt", value: statistics.pending, color: "#fa8c16" },
+      { type: "Đã Duyệt", value: statistics.approved, color: "#52c41a" },
+      { type: "Hoàn Thành", value: statistics.completed, color: "#1890ff" },
+      { type: "Đã Từ Chối", value: statistics.rejected, color: "#ff4d4f" },
+    ].filter((item) => item.value > 0);
+  }, [statistics]);
+
+  // Dữ liệu cho biểu đồ xu hướng 7 ngày
+  const trendChartData = useMemo(() => {
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      return date.toISOString().split("T")[0];
+    });
+
+    return last7Days.map((date) => {
+      const count = bookings.filter((b) => {
+        if (!b.bookingDate) return false;
+        const bookingDate = new Date(b.bookingDate).toISOString().split("T")[0];
+        return bookingDate === date;
+      }).length;
+
+      return {
+        date: new Date(date).toLocaleDateString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+        }),
+        count,
+      };
+    });
   }, [bookings]);
 
   // Format ngày giờ
@@ -271,7 +331,7 @@ function GetAllEVBooking() {
   }, [bookings, searchText, activeTab, dateRange]);
 
   return (
-    <Layout className="min-h-screen bg-gray-50">
+    <Layout className="min-h-screen" style={{ background: "#f0f2f5" }}>
       <NavigationBar
         collapsed={collapsed}
         onCollapse={setCollapsed}
@@ -283,67 +343,152 @@ function GetAllEVBooking() {
           marginLeft: isMobile ? 0 : collapsed ? 64 : 280,
         }}
       >
-        <Content style={{ margin: "16px" }}>
+        <Content style={{ margin: "24px 16px" }}>
           <PageContainer
             header={{
-              title: "Quản Lý Booking",
-              subTitle: "Duyệt và theo dõi đơn đặt xe",
-              ghost: true,
+              title: (
+                <span style={{ fontSize: 24, fontWeight: 600 }}>
+                  Dashboard Đại Lý Xe Máy Điện
+                </span>
+              ),
+              subTitle: (
+                <span style={{ fontSize: 14, color: "#8c8c8c" }}>
+                  Quản lý booking và theo dõi hiệu suất bán hàng
+                </span>
+              ),
+              ghost: false,
+              extra: [
+                <Tag
+                  key="pending"
+                  color="orange"
+                  icon={<ClockCircleOutlined />}
+                >
+                  {statistics.pending} Chờ Duyệt
+                </Tag>,
+              ],
             }}
           >
-            {/* Thống kê tổng quan - Gọn gàng hơn */}
-            <ProCard ghost gutter={[16, 16]} style={{ marginBlockEnd: 16 }}>
-              <ProCard colSpan={6}>
-                <StatisticCard
-                  statistic={{
-                    title: "Tổng Booking",
-                    value: statistics.total,
-                    icon: <FileTextOutlined style={{ color: "#1890ff" }} />,
-                  }}
-                  chart={
-                    <div
-                      style={{ fontSize: 12, color: "#8c8c8c", marginTop: 8 }}
-                    >
-                      {statistics.totalVehicles} xe
-                    </div>
-                  }
-                  chartPlacement="bottom"
+            {/* KPI Cards */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+              <Col xs={24} sm={12} lg={6}>
+                <Card bordered={false} hoverable>
+                  <Statistic
+                    title="Tổng Booking"
+                    value={statistics.total}
+                    prefix={<FileTextOutlined />}
+                    valueStyle={{ color: "#1890ff" }}
+                  />
+                  <Progress
+                    percent={100}
+                    strokeColor="#1890ff"
+                    showInfo={false}
+                    style={{ marginTop: 8 }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card bordered={false} hoverable>
+                  <Statistic
+                    title="Tổng Số Xe"
+                    value={statistics.totalVehicles}
+                    prefix={<CarOutlined />}
+                    valueStyle={{ color: "#52c41a" }}
+                    suffix="xe"
+                  />
+                  <Progress
+                    percent={100}
+                    strokeColor="#52c41a"
+                    showInfo={false}
+                    style={{ marginTop: 8 }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card bordered={false} hoverable>
+                  <Statistic
+                    title="Tỷ Lệ Phê Duyệt"
+                    value={statistics.approvalRate}
+                    prefix={<TrophyOutlined />}
+                    suffix="%"
+                    valueStyle={{ color: "#faad14" }}
+                  />
+                  <Progress
+                    percent={statistics.approvalRate}
+                    strokeColor="#faad14"
+                    showInfo={false}
+                    style={{ marginTop: 8 }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card bordered={false} hoverable>
+                  <Statistic
+                    title="TB Xe/Booking"
+                    value={statistics.avgVehiclesPerBooking}
+                    prefix={<ThunderboltOutlined />}
+                    valueStyle={{ color: "#722ed1" }}
+                    suffix="xe"
+                  />
+                  <Progress
+                    percent={Math.min(
+                      statistics.avgVehiclesPerBooking * 10,
+                      100
+                    )}
+                    strokeColor="#722ed1"
+                    showInfo={false}
+                    style={{ marginTop: 8 }}
+                  />
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Charts Section */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+              <Col xs={24} lg={12}>
+                <StatusDistributionChart
+                  data={statusChartData}
+                  total={statistics.total}
+                />
+              </Col>
+
+              <Col xs={24} lg={12}>
+                <TrendChart data={trendChartData} />
+              </Col>
+            </Row>
+
+            {/* Performance Metrics */}
+            <ProCard ghost gutter={[16, 16]} style={{ marginBottom: 24 }}>
+              <ProCard colSpan={8} bordered>
+                <Statistic
+                  title="Chờ Duyệt"
+                  value={statistics.pending}
+                  valueStyle={{ color: "#fa8c16" }}
+                  prefix={<ClockCircleOutlined />}
+                  suffix={`/ ${statistics.total}`}
                 />
               </ProCard>
-              <ProCard colSpan={6}>
-                <StatisticCard
-                  statistic={{
-                    title: "Chờ Duyệt",
-                    value: statistics.pending,
-                    valueStyle: { color: "#fa8c16" },
-                    icon: <ClockCircleOutlined style={{ color: "#fa8c16" }} />,
-                  }}
+              <ProCard colSpan={8} bordered>
+                <Statistic
+                  title="Đã Phê Duyệt"
+                  value={statistics.approved}
+                  valueStyle={{ color: "#52c41a" }}
+                  prefix={<CheckCircleOutlined />}
+                  suffix={`/ ${statistics.total}`}
                 />
               </ProCard>
-              <ProCard colSpan={6}>
-                <StatisticCard
-                  statistic={{
-                    title: "Đã Phê Duyệt",
-                    value: statistics.approved,
-                    valueStyle: { color: "#52c41a" },
-                    icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
-                  }}
-                />
-              </ProCard>
-              <ProCard colSpan={6}>
-                <StatisticCard
-                  statistic={{
-                    title: "Hoàn Thành",
-                    value: statistics.completed,
-                    valueStyle: { color: "#1890ff" },
-                    icon: <CarOutlined style={{ color: "#1890ff" }} />,
-                  }}
+              <ProCard colSpan={8} bordered>
+                <Statistic
+                  title="Hoàn Thành"
+                  value={statistics.completed}
+                  valueStyle={{ color: "#1890ff" }}
+                  prefix={<CarOutlined />}
+                  suffix={`/ ${statistics.total}`}
                 />
               </ProCard>
             </ProCard>
 
-            {/* Bộ lọc - Gọn gàng hơn */}
-            <ProCard style={{ marginBlockEnd: 16 }}>
+            {/* Filters */}
+            <ProCard style={{ marginBottom: 16 }} bordered>
               <BookingFilters
                 searchText={searchText}
                 onSearchChange={setSearchText}
@@ -357,115 +502,19 @@ function GetAllEVBooking() {
               />
             </ProCard>
 
-            {/* Tabs để phân loại theo trạng thái */}
-            <ProCard>
-              <Tabs
-                activeKey={activeTab}
-                onChange={setActiveTab}
-                type="card"
-                items={[
-                  {
-                    key: "all",
-                    label: (
-                      <span>
-                        Tất cả <Badge count={statistics.total} showZero />
-                      </span>
-                    ),
-                    children: (
-                      <BookingTable
-                        dataSource={filteredBookings}
-                        loading={loading}
-                        onViewDetail={handleViewDetail}
-                        formatDateTime={formatDateTime}
-                        onStatusUpdate={fetchBookings}
-                      />
-                    ),
-                  },
-                  {
-                    key: "pending",
-                    label: (
-                      <span>
-                        <ClockCircleOutlined /> Chờ Duyệt{" "}
-                        <Badge
-                          count={statistics.pending}
-                          style={{ backgroundColor: "#fa8c16" }}
-                        />
-                      </span>
-                    ),
-                    children: (
-                      <BookingTable
-                        dataSource={filteredBookings}
-                        loading={loading}
-                        onViewDetail={handleViewDetail}
-                        formatDateTime={formatDateTime}
-                        onStatusUpdate={fetchBookings}
-                      />
-                    ),
-                  },
-                  {
-                    key: "approved",
-                    label: (
-                      <span>
-                        <CheckCircleOutlined /> Đã Duyệt{" "}
-                        <Badge
-                          count={statistics.approved}
-                          style={{ backgroundColor: "#52c41a" }}
-                        />
-                      </span>
-                    ),
-                    children: (
-                      <BookingTable
-                        dataSource={filteredBookings}
-                        loading={loading}
-                        onViewDetail={handleViewDetail}
-                        formatDateTime={formatDateTime}
-                        onStatusUpdate={fetchBookings}
-                      />
-                    ),
-                  },
-                  {
-                    key: "completed",
-                    label: (
-                      <span>
-                        <CarOutlined /> Hoàn Thành{" "}
-                        <Badge
-                          count={statistics.completed}
-                          style={{ backgroundColor: "#1890ff" }}
-                        />
-                      </span>
-                    ),
-                    children: (
-                      <BookingTable
-                        dataSource={filteredBookings}
-                        loading={loading}
-                        onViewDetail={handleViewDetail}
-                        formatDateTime={formatDateTime}
-                        onStatusUpdate={fetchBookings}
-                      />
-                    ),
-                  },
-                  {
-                    key: "rejected",
-                    label: (
-                      <span>
-                        <CloseCircleOutlined /> Đã Từ Chối{" "}
-                        <Badge
-                          count={statistics.rejected}
-                          style={{ backgroundColor: "#ff4d4f" }}
-                        />
-                      </span>
-                    ),
-                    children: (
-                      <BookingTable
-                        dataSource={filteredBookings}
-                        loading={loading}
-                        onViewDetail={handleViewDetail}
-                        formatDateTime={formatDateTime}
-                        onStatusUpdate={fetchBookings}
-                      />
-                    ),
-                  },
-                ]}
+            {/* Booking Table */}
+            <ProCard
+              title="Danh Sách Booking"
+              bordered
+              headerBordered
+              extra={<Tag color="blue">{filteredBookings.length} booking</Tag>}
+            >
+              <BookingTable
+                dataSource={filteredBookings}
+                loading={loading}
+                onViewDetail={handleViewDetail}
+                formatDateTime={formatDateTime}
+                onStatusUpdate={fetchBookings}
               />
             </ProCard>
           </PageContainer>
