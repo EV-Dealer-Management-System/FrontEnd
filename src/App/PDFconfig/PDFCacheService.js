@@ -181,7 +181,7 @@ class PDFCacheService {
   // Phase 5: IndexedDB persistence for offline support
   async persistToIndexedDB(key, cacheEntry) {
     try {
-      const dbRequest = indexedDB.open('PDFCache', 1);
+      const dbRequest = indexedDB.open('PDFCache', 2);
       
       dbRequest.onupgradeneeded = (event) => {
         const db = event.target.result;
