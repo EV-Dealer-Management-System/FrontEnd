@@ -9,7 +9,7 @@ import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfir
 
 import PublicRoute from "./Router/PublicRoute";
 import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
-import ContractPage from "./Pages/ContractPage";
+import ContractPage from "./Pages/PublicPage/ContractPage";
 import EVMAdmin from "./Pages/Admin/EVMAdmin";
 import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
 import DealerManager from "./Pages/DealerManager/DealerManager";
@@ -19,7 +19,6 @@ import DealerManagerRoute from "./Router/DealerManagerRoute";
 import AdminRoute from "./Router/AdminRoute";
 import DealerStaffRoute from "./Router/DealerStaffRoute";
 import EVMStaffRoute from "./Router/EVMStaffRoute";
-
 
 function App() {
   return (
@@ -47,25 +46,41 @@ function App() {
         <Route path="/api/reset-password" element={<ResetPasswordConfirm />} />
         <Route path="/contract" element={<ContractPage />} />
         {/* Admin Routes - với catch-all route */}
-        <Route path="/admin/*" element={<AdminRoute>
-          <Routes>
-            <Route path="" element={<EVMAdmin />} />
-            <Route path="vehicle/model" element={<VehicleManagement />} />
-            <Route path="dealer/create-contract" element={<CreateContract />} />
-            {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ admin */}
-            <Route path="*" element={<Navigate to="/admin" replace />} />
-          </Routes>
-        </AdminRoute>} />
+        <Route
+          path="/admin/*"
+          element={
+            <AdminRoute>
+              <Routes>
+                <Route path="" element={<EVMAdmin />} />
+                <Route path="vehicle/model" element={<VehicleManagement />} />
+                <Route
+                  path="dealer/create-contract"
+                  element={<CreateContract />}
+                />
+                {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ admin */}
+                <Route path="*" element={<Navigate to="/admin" replace />} />
+              </Routes>
+            </AdminRoute>
+          }
+        />
         {/* Dealer Manager Routes - với catch-all route */}
-        <Route path="/dealer-manager/*" element={<DealerManagerRoute>
-          <Routes>
-            <Route path="" element={<DealerManager />} />
-            <Route path="ev/ev-booking" element={<EVBooking />} />
-            <Route path="ev/all-ev-booking" element={<GetAllEVBooking />} />
-            {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}
-            <Route path="*" element={<Navigate to="/dealer-manager" replace />} />
-          </Routes>
-        </DealerManagerRoute>} />
+        <Route
+          path="/dealer-manager/*"
+          element={
+            <DealerManagerRoute>
+              <Routes>
+                <Route path="" element={<DealerManager />} />
+                <Route path="ev/ev-booking" element={<EVBooking />} />
+                <Route path="ev/all-ev-booking" element={<GetAllEVBooking />} />
+                {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}
+                <Route
+                  path="*"
+                  element={<Navigate to="/dealer-manager" replace />}
+                />
+              </Routes>
+            </DealerManagerRoute>
+          }
+        />
 
         {/* Global catch-all route */}
         <Route path="*" element={<Navigate to="/" replace />} />

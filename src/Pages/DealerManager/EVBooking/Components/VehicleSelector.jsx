@@ -14,20 +14,23 @@ const { Text } = Typography;
  * Component để chọn thông tin xe (mẫu, phiên bản, màu, số lượng)
  * @param {Array} models - Danh sách mẫu xe
  * @param {Array} versions - Danh sách phiên bản
- * @param {Array} colors - Danh sách màu xe
+ * @param {Object} colorsCache - Cache màu xe theo modelId_versionId
  * @param {Function} onModelChange - Callback khi thay đổi mẫu xe
+ * @param {Function} onVersionChange - Callback khi thay đổi phiên bản
  * @param {Object} formRef - Reference của form chính
  * @param {Number} index - Index của item trong list
  */
 function VehicleSelector({
   models,
   versions,
-  colors,
+  colorsCache,
   onModelChange,
+  onVersionChange,
   formRef,
   index,
 }) {
   const [selectedVersion, setSelectedVersion] = useState(null);
+  const [selectedModel, setSelectedModel] = useState(null);
 
   return (
     <Card
@@ -61,6 +64,7 @@ function VehicleSelector({
               onChange: (value) => {
                 // Reset version khi đổi model
                 setSelectedVersion(null);
+                setSelectedModel(value);
                 if (onModelChange) {
                   onModelChange(value, index);
                 }
@@ -91,6 +95,16 @@ function VehicleSelector({
                 // Tìm thông tin chi tiết của version
                 const versionDetail = versions.find((v) => v.value === value);
                 setSelectedVersion(versionDetail);
+
+                // Gọi callback để fetch colors
+                const modelId = formRef.current?.getFieldValue([
+                  "bookingDetails",
+                  index,
+                  "modelId",
+                ]);
+                if (onVersionChange && modelId) {
+                  onVersionChange(value, modelId, index);
+                }
               },
             }}
           />
@@ -100,9 +114,29 @@ function VehicleSelector({
           <ProFormSelect
             name="colorId"
             label="Màu xe"
-            options={colors}
-            placeholder="Chọn màu xe"
+            options={(() => {
+              // Lấy modelId và versionId hiện tại từ form
+              const modelId = formRef.current?.getFieldValue([
+                "bookingDetails",
+                index,
+                "modelId",
+              ]);
+              const versionId = formRef.current?.getFieldValue([
+                "bookingDetails",
+                index,
+                "versionId",
+              ]);
+
+              // Tạo cache key và lấy colors từ cache
+              if (modelId && versionId) {
+                const cacheKey = `${modelId}_${versionId}`;
+                return colorsCache[cacheKey] || [];
+              }
+              return [];
+            })()}
+            placeholder="Chọn phiên bản trước"
             rules={[{ required: true, message: "Vui lòng chọn màu xe" }]}
+            dependencies={[["bookingDetails", index, "versionId"]]}
             fieldProps={{
               showSearch: true,
               optionFilterProp: "label",

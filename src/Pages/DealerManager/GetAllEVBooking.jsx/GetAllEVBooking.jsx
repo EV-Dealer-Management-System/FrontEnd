@@ -1,352 +1,489 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from "react";
+import { message, Layout, Tag, Tabs, Badge } from "antd";
 import {
-    Table,
-    Card,
-    message,
-    Tag,
-    Space,
-    Button,
-    Tooltip,
-    Layout
-} from 'antd';
+  PageContainer,
+  ProCard,
+  StatisticCard,
+} from "@ant-design/pro-components";
 import {
-    EyeOutlined,
-    UserOutlined,
-    PhoneOutlined,
-    CalendarOutlined,
-    CarOutlined
-} from '@ant-design/icons';
-import { PageContainer } from '@ant-design/pro-components';
-import { getAllEVBookings } from '../../../App/DealerManager/EVBooking/GetAllEVBooking';
-import NavigationBar from '../../../Components/DealerManager/Components/NavigationBar';
-import BookingStatsSection from './Components/BookingStatsSection';
-import BookingSearchBar from './Components/BookingSearchBar';
-import BookingDetailModal from './Components/BookingDetailModal';
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  CarOutlined,
+  FileTextOutlined,
+} from "@ant-design/icons";
+import { getAllEVBookings } from "../../../App/DealerManager/EVBooking/GetAllEVBooking";
+import { getBookingById } from "../../../App/DealerManager/EVBooking/GetBookingByID";
+import NavigationBar from "../../../Components/DealerManager/Components/NavigationBar";
+import BookingFilters from "./Components/BookingFilters";
+import BookingTable from "./Components/BookingTable";
+import BookingDetailDrawer from "./Components/BookingDetailDrawer";
 
 const { Content } = Layout;
 
 function GetAllEVBooking() {
-    const [bookings, setBookings] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [searchText, setSearchText] = useState('');
-    const [selectedBooking, setSelectedBooking] = useState(null);
-    const [detailModalVisible, setDetailModalVisible] = useState(false);
-    const [collapsed, setCollapsed] = useState(false);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+  const [dateRange, setDateRange] = useState(null);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [detailDrawerVisible, setDetailDrawerVisible] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-    // Xử lý responsive
-    useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+  // Xử lý responsive
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-    // Load danh sách booking khi component mount
-    useEffect(() => {
-        fetchBookings();
-    }, []);
+  // Load danh sách booking khi component mount
+  useEffect(() => {
+    fetchBookings();
+  }, []);
 
-    // Lấy danh sách booking từ API
-    const fetchBookings = async () => {
-        setLoading(true);
-        try {
-            const response = await getAllEVBookings();
+  // Lấy danh sách booking từ API
+  const fetchBookings = async () => {
+    setLoading(true);
+    try {
+      const response = await getAllEVBookings();
 
-            if (response && response.isSuccess) {
-                const data = response.result || response.data || [];
-                const bookingsList = Array.isArray(data) ? data : [];
+      if (response && response.isSuccess) {
+        const data = response.result || response.data || [];
+        const bookingsList = Array.isArray(data) ? data : [];
 
-                // Map data để thêm thông tin từ bookingEVDetails
-                const enhancedBookings = bookingsList.map(booking => {
-                    // Tính tổng số lượng xe từ bookingEVDetails
-                    const totalQuantity = booking.bookingEVDetails?.reduce(
-                        (sum, detail) => sum + (detail.quantity || 0),
-                        0
-                    ) || booking.totalQuantity || 0;
+        // Map data để thêm thông tin từ bookingEVDetails
+        const enhancedBookings = bookingsList.map((booking) => {
+          // Tính tổng số lượng xe từ bookingEVDetails
+          const totalQuantity =
+            booking.bookingEVDetails?.reduce(
+              (sum, detail) => sum + (detail.quantity || 0),
+              0
+            ) ||
+            booking.totalQuantity ||
+            0;
 
-                    return {
-                        ...booking,
-                        totalQuantity,
-                        // Giữ nguyên bookingEVDetails để hiển thị chi tiết
-                        bookingEVDetails: booking.bookingEVDetails || []
-                    };
-                });
+          // Tính tổng giá trị
+          const totalAmount =
+            booking.bookingEVDetails?.reduce(
+              (sum, detail) => sum + (detail.totalPrice || 0),
+              0
+            ) ||
+            booking.totalAmount ||
+            0;
 
-                setBookings(enhancedBookings);
-                message.success(`Đã tải ${enhancedBookings.length} booking thành công`);
-            } else {
-                message.error(response?.message || 'Không thể tải danh sách booking');
-                setBookings([]);
-            }
-        } catch (error) {
-            console.error('Error fetching bookings:', error);
-            message.error('Có lỗi khi tải danh sách booking');
-            setBookings([]);
-        } finally {
-            setLoading(false);
-        }
+          return {
+            ...booking,
+            totalQuantity,
+            totalAmount,
+            // Giữ nguyên bookingEVDetails để hiển thị chi tiết
+            bookingEVDetails: booking.bookingEVDetails || [],
+          };
+        });
+
+        setBookings(enhancedBookings);
+        message.success(`Đã tải ${enhancedBookings.length} booking thành công`);
+      } else {
+        message.error(response?.message || "Không thể tải danh sách booking");
+        setBookings([]);
+      }
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      message.error("Có lỗi khi tải danh sách booking");
+      setBookings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Xem chi tiết booking
+  const handleViewDetail = async (record) => {
+    setDetailDrawerVisible(true);
+    setDetailLoading(true);
+    setSelectedBooking(null); // Reset trước khi fetch
+
+    try {
+      const response = await getBookingById(record.id);
+
+      if (response && response.isSuccess) {
+        setSelectedBooking(response.result);
+      } else {
+        message.error(response?.message || "Không thể tải chi tiết booking");
+        setDetailDrawerVisible(false);
+      }
+    } catch (error) {
+      console.error("Error fetching booking details:", error);
+      message.error("Có lỗi khi tải chi tiết booking");
+      setDetailDrawerVisible(false);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  // Reset bộ lọc
+  const handleResetFilters = () => {
+    setSearchText("");
+    setActiveTab("all");
+    setDateRange(null);
+  };
+
+  // Tính toán thống kê
+  const statistics = useMemo(() => {
+    const getStatus = (booking) => {
+      if (typeof booking.status === "number") return booking.status;
+      return 0;
     };
 
-    // Xem chi tiết booking
-    const handleViewDetail = (record) => {
-        setSelectedBooking(record);
-        setDetailModalVisible(true);
+    const stats = {
+      total: bookings.length,
+      pending: bookings.filter((b) => getStatus(b) === 0).length,
+      approved: bookings.filter((b) => getStatus(b) === 1).length,
+      rejected: bookings.filter((b) => getStatus(b) === 2).length,
+      cancelled: bookings.filter((b) => getStatus(b) === 3).length,
+      completed: bookings.filter((b) => getStatus(b) === 4).length,
+      totalVehicles: bookings.reduce(
+        (sum, b) => sum + (b.totalQuantity || 0),
+        0
+      ),
     };
 
-    // Format ngày giờ
-    const formatDateTime = (dateString) => {
-        if (!dateString) return 'N/A';
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleString('vi-VN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        } catch {
-            return dateString;
-        }
+    return stats;
+  }, [bookings]);
+
+  // Format ngày giờ
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Format tiền tệ
+  const formatCurrency = (amount) => {
+    if (!amount && amount !== 0) return "N/A";
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(amount);
+  };
+
+  // Hiển thị trạng thái booking
+  const getStatusTag = (status) => {
+    let statusValue = "";
+    if (status === null || status === undefined) {
+      statusValue = "";
+    } else if (typeof status === "number") {
+      const numberStatusMap = {
+        0: "pending",
+        1: "approved",
+        2: "rejected",
+        3: "cancelled",
+        4: "completed",
+      };
+      statusValue = numberStatusMap[status] || "";
+    } else if (typeof status === "string") {
+      statusValue = status.toLowerCase();
+    } else if (typeof status === "object" && status.value !== undefined) {
+      statusValue = String(status.value).toLowerCase();
+    } else {
+      statusValue = String(status).toLowerCase();
+    }
+
+    const statusMap = {
+      pending: { color: "orange", text: "Chờ xác nhận" },
+      approved: { color: "green", text: "Đã phê duyệt" },
+      rejected: { color: "red", text: "Đã từ chối" },
+      cancelled: { color: "default", text: "Đã hủy" },
+      completed: { color: "blue", text: "Hoàn thành" },
     };
 
-    // Format tiền tệ
-    const formatCurrency = (amount) => {
-        if (!amount && amount !== 0) return 'N/A';
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND'
-        }).format(amount);
+    const statusInfo = statusMap[statusValue] || {
+      color: "default",
+      text: status || "Không xác định",
     };
+    return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
+  };
 
-    // Hiển thị trạng thái booking
-    const getStatusTag = (status) => {
-        // Xử lý status - có thể là số (0, 1, 2...) hoặc string
-        let statusValue = '';
-        if (status === null || status === undefined) {
-            statusValue = '';
-        } else if (typeof status === 'number') {
-            // Nếu status là số, map sang string
-            const numberStatusMap = {
-                0: 'pending',
-                1: 'confirmed',
-                2: 'completed',
-                3: 'cancelled',
-                4: 'processing'
-            };
-            statusValue = numberStatusMap[status] || '';
-        } else if (typeof status === 'string') {
-            statusValue = status.toLowerCase();
-        } else if (typeof status === 'object' && status.value !== undefined) {
-            statusValue = String(status.value).toLowerCase();
-        } else {
-            statusValue = String(status).toLowerCase();
-        }
-
-        const statusMap = {
-            'pending': { color: 'orange', text: 'Chờ xác nhận' },
-            'confirmed': { color: 'blue', text: 'Đã xác nhận' },
-            'completed': { color: 'green', text: 'Hoàn thành' },
-            'cancelled': { color: 'red', text: 'Đã hủy' },
-            'processing': { color: 'cyan', text: 'Đang xử lý' }
-        };
-
-        const statusInfo = statusMap[statusValue] || { color: 'default', text: status || 'Không xác định' };
-        return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
-    };
-
-    // Lọc dữ liệu theo search
-    const filteredBookings = bookings.filter(booking => {
-        if (!searchText) return true;
-
+  // Lọc dữ liệu
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((booking) => {
+      // Filter by search text
+      if (searchText) {
         const searchLower = searchText.toLowerCase();
-
-        // Helper để convert field sang string an toàn
         const toString = (value) => {
-            if (!value) return '';
-            if (typeof value === 'string') return value;
-            if (typeof value === 'object' && value.value !== undefined) return String(value.value);
-            return String(value);
+          if (!value) return "";
+          if (typeof value === "string") return value;
+          if (typeof value === "object" && value.value !== undefined)
+            return String(value.value);
+          return String(value);
         };
 
-        return (
-            toString(booking.id).toLowerCase().includes(searchLower) ||
-            toString(booking.dealerId).toLowerCase().includes(searchLower) ||
-            toString(booking.createdBy).toLowerCase().includes(searchLower) ||
-            toString(booking.note).toLowerCase().includes(searchLower)
-        );
+        const matchesSearch =
+          toString(booking.id).toLowerCase().includes(searchLower) ||
+          toString(booking.dealerId).toLowerCase().includes(searchLower) ||
+          toString(booking.createdBy).toLowerCase().includes(searchLower) ||
+          toString(booking.note).toLowerCase().includes(searchLower);
+
+        if (!matchesSearch) return false;
+      }
+
+      // Filter by active tab (status)
+      if (activeTab && activeTab !== "all") {
+        const statusMap = {
+          pending: 0,
+          approved: 1,
+          rejected: 2,
+          cancelled: 3,
+          completed: 4,
+        };
+        const filterStatusValue = statusMap[activeTab];
+        const bookingStatus =
+          typeof booking.status === "number" ? booking.status : 0;
+
+        if (bookingStatus !== filterStatusValue) return false;
+      }
+
+      // Filter by date range
+      if (dateRange && dateRange[0] && dateRange[1]) {
+        const bookingDate = new Date(booking.bookingDate);
+        const startDate = dateRange[0].startOf("day").toDate();
+        const endDate = dateRange[1].endOf("day").toDate();
+
+        if (bookingDate < startDate || bookingDate > endDate) return false;
+      }
+
+      return true;
     });
+  }, [bookings, searchText, activeTab, dateRange]);
 
-    // Cấu hình cột cho bảng
-    const columns = [
-        {
-            title: 'STT',
-            key: 'index',
-            width: 60,
-            align: 'center',
-            render: (_, __, index) => index + 1
-        },
-        {
-            title: 'Mã Booking',
-            dataIndex: 'id',
-            key: 'id',
-            width: 200,
-            render: (text) => (
-                <Tooltip title={text}>
-                    <strong className="text-blue-600">
-                        {text ? text.substring(0, 13) + '...' : 'N/A'}
-                    </strong>
-                </Tooltip>
-            )
-        },
-        {
-            title: 'Dealer',
-            dataIndex: 'dealerId',
-            key: 'dealerId',
-            width: 150,
-            render: (text) => (
-                <Tooltip title={text}>
-                    <span className="text-gray-600 text-xs">
-                        {text ? text.substring(0, 8) + '...' : 'N/A'}
-                    </span>
-                </Tooltip>
-            )
-        },
-        {
-            title: 'Số Lượng Xe',
-            dataIndex: 'totalQuantity',
-            key: 'totalQuantity',
-            width: 120,
-            align: 'center',
-            render: (text) => (
-                <Tag color="blue" className="font-semibold">
-                    {text || 0} xe
-                </Tag>
-            )
-        },
-        {
-            title: 'Ngày Đặt',
-            dataIndex: 'bookingDate',
-            key: 'bookingDate',
-            width: 160,
-            render: (text) => (
-                <div className="flex items-center">
-                    <CalendarOutlined className="mr-2 text-gray-500" />
-                    {formatDateTime(text)}
-                </div>
-            )
-        },
-        {
-            title: 'Người Tạo',
-            dataIndex: 'createdBy',
-            key: 'createdBy',
-            width: 140,
-            render: (text) => (
-                <div className="flex items-center">
-                    <UserOutlined className="mr-2 text-gray-500" />
-                    {text || 'N/A'}
-                </div>
-            )
-        },
-        {
-            title: 'Trạng Thái',
-            dataIndex: 'status',
-            key: 'status',
-            width: 130,
-            align: 'center',
-            render: (status) => getStatusTag(status)
-        },
-        {
-            title: 'Thao Tác',
-            key: 'actions',
-            width: 100,
-            align: 'center',
-            fixed: 'right',
-            render: (_, record) => (
-                <Space>
-                    <Tooltip title="Xem chi tiết">
-                        <Button
-                            type="primary"
-                            icon={<EyeOutlined />}
-                            size="small"
-                            onClick={() => handleViewDetail(record)}
-                        />
-                    </Tooltip>
-                </Space>
-            )
-        }
-    ];
-
-    return (
-        <Layout style={{ minHeight: '100vh' }}>
-            <NavigationBar
-                collapsed={collapsed}
-                onCollapse={setCollapsed}
-                isMobile={isMobile}
-            />
-            <Layout
-                style={{
-                    marginLeft: isMobile ? 0 : (collapsed ? 64 : 280),
-                    transition: 'all 0.2s ease',
-                }}
-            >
-                <Content>
-                    <PageContainer
-                        title={
-                            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
-                                Danh Sách Đặt Xe Điện
-                            </span>
-                        }
-                        subTitle="Quản lý và theo dõi các booking xe điện"
+  return (
+    <Layout className="min-h-screen bg-gray-50">
+      <NavigationBar
+        collapsed={collapsed}
+        onCollapse={setCollapsed}
+        isMobile={isMobile}
+      />
+      <Layout
+        className="transition-all duration-200"
+        style={{
+          marginLeft: isMobile ? 0 : collapsed ? 64 : 280,
+        }}
+      >
+        <Content style={{ margin: "16px" }}>
+          <PageContainer
+            header={{
+              title: "Quản Lý Booking",
+              subTitle: "Duyệt và theo dõi đơn đặt xe",
+              ghost: true,
+            }}
+          >
+            {/* Thống kê tổng quan - Gọn gàng hơn */}
+            <ProCard ghost gutter={[16, 16]} style={{ marginBlockEnd: 16 }}>
+              <ProCard colSpan={6}>
+                <StatisticCard
+                  statistic={{
+                    title: "Tổng Booking",
+                    value: statistics.total,
+                    icon: <FileTextOutlined style={{ color: "#1890ff" }} />,
+                  }}
+                  chart={
+                    <div
+                      style={{ fontSize: 12, color: "#8c8c8c", marginTop: 8 }}
                     >
-                        {/* Thống kê tổng quan */}
-                        <BookingStatsSection
-                            bookings={bookings}
+                      {statistics.totalVehicles} xe
+                    </div>
+                  }
+                  chartPlacement="bottom"
+                />
+              </ProCard>
+              <ProCard colSpan={6}>
+                <StatisticCard
+                  statistic={{
+                    title: "Chờ Duyệt",
+                    value: statistics.pending,
+                    valueStyle: { color: "#fa8c16" },
+                    icon: <ClockCircleOutlined style={{ color: "#fa8c16" }} />,
+                  }}
+                />
+              </ProCard>
+              <ProCard colSpan={6}>
+                <StatisticCard
+                  statistic={{
+                    title: "Đã Phê Duyệt",
+                    value: statistics.approved,
+                    valueStyle: { color: "#52c41a" },
+                    icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
+                  }}
+                />
+              </ProCard>
+              <ProCard colSpan={6}>
+                <StatisticCard
+                  statistic={{
+                    title: "Hoàn Thành",
+                    value: statistics.completed,
+                    valueStyle: { color: "#1890ff" },
+                    icon: <CarOutlined style={{ color: "#1890ff" }} />,
+                  }}
+                />
+              </ProCard>
+            </ProCard>
+
+            {/* Bộ lọc - Gọn gàng hơn */}
+            <ProCard style={{ marginBlockEnd: 16 }}>
+              <BookingFilters
+                searchText={searchText}
+                onSearchChange={setSearchText}
+                statusFilter={activeTab}
+                onStatusFilterChange={setActiveTab}
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                onReset={handleResetFilters}
+                onReload={fetchBookings}
+                loading={loading}
+              />
+            </ProCard>
+
+            {/* Tabs để phân loại theo trạng thái */}
+            <ProCard>
+              <Tabs
+                activeKey={activeTab}
+                onChange={setActiveTab}
+                type="card"
+                items={[
+                  {
+                    key: "all",
+                    label: (
+                      <span>
+                        Tất cả <Badge count={statistics.total} showZero />
+                      </span>
+                    ),
+                    children: (
+                      <BookingTable
+                        dataSource={filteredBookings}
+                        loading={loading}
+                        onViewDetail={handleViewDetail}
+                        formatDateTime={formatDateTime}
+                        onStatusUpdate={fetchBookings}
+                      />
+                    ),
+                  },
+                  {
+                    key: "pending",
+                    label: (
+                      <span>
+                        <ClockCircleOutlined /> Chờ Duyệt{" "}
+                        <Badge
+                          count={statistics.pending}
+                          style={{ backgroundColor: "#fa8c16" }}
                         />
-
-                        {/* Thanh tìm kiếm */}
-                        <BookingSearchBar
-                            searchText={searchText}
-                            onSearch={setSearchText}
-                            onReload={fetchBookings}
-                            loading={loading}
+                      </span>
+                    ),
+                    children: (
+                      <BookingTable
+                        dataSource={filteredBookings}
+                        loading={loading}
+                        onViewDetail={handleViewDetail}
+                        formatDateTime={formatDateTime}
+                        onStatusUpdate={fetchBookings}
+                      />
+                    ),
+                  },
+                  {
+                    key: "approved",
+                    label: (
+                      <span>
+                        <CheckCircleOutlined /> Đã Duyệt{" "}
+                        <Badge
+                          count={statistics.approved}
+                          style={{ backgroundColor: "#52c41a" }}
                         />
+                      </span>
+                    ),
+                    children: (
+                      <BookingTable
+                        dataSource={filteredBookings}
+                        loading={loading}
+                        onViewDetail={handleViewDetail}
+                        formatDateTime={formatDateTime}
+                        onStatusUpdate={fetchBookings}
+                      />
+                    ),
+                  },
+                  {
+                    key: "completed",
+                    label: (
+                      <span>
+                        <CarOutlined /> Hoàn Thành{" "}
+                        <Badge
+                          count={statistics.completed}
+                          style={{ backgroundColor: "#1890ff" }}
+                        />
+                      </span>
+                    ),
+                    children: (
+                      <BookingTable
+                        dataSource={filteredBookings}
+                        loading={loading}
+                        onViewDetail={handleViewDetail}
+                        formatDateTime={formatDateTime}
+                        onStatusUpdate={fetchBookings}
+                      />
+                    ),
+                  },
+                  {
+                    key: "rejected",
+                    label: (
+                      <span>
+                        <CloseCircleOutlined /> Đã Từ Chối{" "}
+                        <Badge
+                          count={statistics.rejected}
+                          style={{ backgroundColor: "#ff4d4f" }}
+                        />
+                      </span>
+                    ),
+                    children: (
+                      <BookingTable
+                        dataSource={filteredBookings}
+                        loading={loading}
+                        onViewDetail={handleViewDetail}
+                        formatDateTime={formatDateTime}
+                        onStatusUpdate={fetchBookings}
+                      />
+                    ),
+                  },
+                ]}
+              />
+            </ProCard>
+          </PageContainer>
+        </Content>
+      </Layout>
 
-                        {/* Bảng dữ liệu */}
-                        <Card className="shadow-lg rounded-xl" bordered={false}>
-                            <Table
-                                columns={columns}
-                                dataSource={filteredBookings}
-                                loading={loading}
-                                rowKey={(record) => record.id || record.bookingCode}
-                                pagination={{
-                                    pageSize: 10,
-                                    showSizeChanger: true,
-                                    showTotal: (total) => `Tổng ${total} booking`,
-                                    pageSizeOptions: ['10', '20', '50', '100'],
-                                    className: 'px-4'
-                                }}
-                                scroll={{ x: 1200 }}
-                                className="booking-table"
-                            />
-                        </Card>
-                    </PageContainer>
-                </Content>
-            </Layout>
-
-            {/* Modal chi tiết */}
-            <BookingDetailModal
-                visible={detailModalVisible}
-                onClose={() => setDetailModalVisible(false)}
-                booking={selectedBooking}
-                formatDateTime={formatDateTime}
-                formatCurrency={formatCurrency}
-                getStatusTag={getStatusTag}
-            />
-        </Layout>
-    );
+      {/* Drawer chi tiết */}
+      <BookingDetailDrawer
+        visible={detailDrawerVisible}
+        onClose={() => setDetailDrawerVisible(false)}
+        booking={selectedBooking}
+        loading={detailLoading}
+        formatDateTime={formatDateTime}
+        formatCurrency={formatCurrency}
+        getStatusTag={getStatusTag}
+      />
+    </Layout>
+  );
 }
 
 export default GetAllEVBooking;

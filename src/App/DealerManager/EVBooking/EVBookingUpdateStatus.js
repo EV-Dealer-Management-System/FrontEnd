@@ -1,8 +1,8 @@
 import api from "../../../api/api";
 
-const EVBookingUpdateStatus = async (bookingId, status) => {
+const EVBookingUpdateStatus = async (bookingId, newStatus) => {
     try {
-        const response = await api.put(`/BookingEV/update-booking-status/${bookingId}`, { status });
+        const response = await api.put(`/BookingEV/update-booking-status/${bookingId}?newStatus=${newStatus}`);
         return response.data;
     } catch (error) {
         console.error("Error updating EV booking status:", error);

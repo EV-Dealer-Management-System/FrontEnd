@@ -7,13 +7,20 @@ import { CarOutlined } from "@ant-design/icons";
  * @param {Object} item - Thông tin chi tiết đặt xe
  * @param {Object} models - Danh sách mẫu xe
  * @param {Object} versions - Danh sách phiên bản
- * @param {Object} colors - Danh sách màu xe
+ * @param {Object} colorsCache - Cache màu xe theo modelId_versionId
  */
-function BookingItemCard({ item, models, versions, colors }) {
+function BookingItemCard({ item, models, versions, colorsCache }) {
   // Tìm thông tin chi tiết từ ID
   const model = models.find((m) => m.value === item.modelId);
   const version = versions.find((v) => v.value === item.versionId);
-  const color = colors.find((c) => c.value === item.colorId);
+
+  // Lấy color từ cache
+  let color = null;
+  if (item.modelId && item.versionId && item.colorId) {
+    const cacheKey = `${item.modelId}_${item.versionId}`;
+    const colorsForVersion = colorsCache[cacheKey] || [];
+    color = colorsForVersion.find((c) => c.value === item.colorId);
+  }
 
   return (
     <Card

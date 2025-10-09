@@ -9,8 +9,9 @@ import { App, Card, Row, Col, Space } from "antd";
 import { createEVBooking } from "../../../App/DealerManager/EVBooking/EVBooking";
 import DealerManagerLayout from "../../../Components/DealerManager/DealerManagerLayout";
 import getAllEVModels from "../../../App/DealerManager/EVBooking/layouts/getAllEVModel";
-import getAllEVVersion from "../../../App/DealerManager/EVBooking/layouts/GetAllEVVersion";
-import getAllEVColors from "../../../App/DealerManager/EVBooking/layouts/GetAllEVColor";
+import getAllEVVersionByModelID from "../../../App/DealerManager/EVBooking/Layouts/GetAllEVVersionByModelID";
+import { getEVColorbyModelAndVersion } from "../../../App/DealerManager/EVBooking/Layouts/GetEVColorbyModelAndVersion";
+
 import VehicleSelector from "./Components/VehicleSelector";
 import BookingSummary from "./Components/BookingSummary";
 import BookingItemCard from "./Components/BookingItemCard";
@@ -20,19 +21,49 @@ function EVBooking() {
   const formRef = useRef();
   const [models, setModels] = useState([]);
   const [versions, setVersions] = useState([]);
-  const [colors, setColors] = useState([]);
+  const [colorsCache, setColorsCache] = useState({});
   const [bookingDetails, setBookingDetails] = useState([]);
 
-  // Lấy danh sách mẫu xe
+  // Lấy danh sách mẫu xe và phiên bản
   useEffect(() => {
-    const fetchModels = async () => {
+    const fetchModelsAndVersions = async () => {
       try {
+        // 1. Lấy danh sách models
         const modelData = await getAllEVModels();
         const mappedModels = modelData.result.map((model) => ({
           label: model.modelName,
           value: model.id,
         }));
         setModels(mappedModels);
+
+        // 2. Lấy versions cho từng model
+        const allVersions = [];
+        for (const model of modelData.result) {
+          try {
+            const versionData = await getAllEVVersionByModelID(model.id);
+            if (versionData && versionData.result) {
+              const mappedVersions = versionData.result.map((version) => ({
+                label: version.versionName,
+                value: version.id,
+                modelId: version.modelId,
+                // Thông tin chi tiết để hiển thị
+                motorPower: version.motorPower,
+                batteryCapacity: version.batteryCapacity,
+                rangePerCharge: version.rangePerCharge,
+                topSpeed: version.topSpeed,
+                weight: version.weight,
+                height: version.height,
+                productionYear: version.productionYear,
+                description: version.description,
+                supplyStatus: version.supplyStatus,
+              }));
+              allVersions.push(...mappedVersions);
+            }
+          } catch (error) {
+            console.error(`Lỗi khi lấy versions cho model ${model.id}:`, error);
+          }
+        }
+        setVersions(allVersions);
       } catch {
         modal.error({
           title: "Lỗi",
@@ -40,70 +71,63 @@ function EVBooking() {
         });
       }
     };
-    fetchModels();
-  }, [modal]);
-
-  // Lấy danh sách phiên bản xe
-  useEffect(() => {
-    const fetchVersions = async () => {
-      try {
-        const versionData = await getAllEVVersion();
-        const mappedVersions = versionData.result.map((version) => ({
-          label: version.versionName,
-          value: version.id,
-          modelId: version.modelId,
-          // Thông tin chi tiết để hiển thị
-          motorPower: version.motorPower,
-          batteryCapacity: version.batteryCapacity,
-          rangePerCharge: version.rangePerCharge,
-          topSpeed: version.topSpeed,
-          weight: version.weight,
-          height: version.height,
-          productionYear: version.productionYear,
-          description: version.description,
-          supplyStatus: version.supplyStatus,
-        }));
-        setVersions(mappedVersions);
-      } catch {
-        modal.error({
-          title: "Lỗi",
-          content: "Không thể tải danh sách phiên bản xe",
-        });
-      }
-    };
-    fetchVersions();
-  }, [modal]);
-
-  // Lấy danh sách màu xe
-  useEffect(() => {
-    const fetchColors = async () => {
-      try {
-        const colorData = await getAllEVColors();
-        const mappedColors = colorData.result.map((color) => ({
-          label: color.colorName,
-          value: color.id,
-          extraCost: color.extraCost,
-        }));
-        setColors(mappedColors);
-      } catch {
-        modal.error({
-          title: "Lỗi",
-          content: "Không thể tải danh sách màu xe",
-        });
-      }
-    };
-    fetchColors();
+    fetchModelsAndVersions();
   }, [modal]);
 
   // Xử lý khi thay đổi model
   const handleModelChange = (modelId, index) => {
-    // Reset version khi thay đổi model
+    // Reset version và color khi thay đổi model
     formRef.current?.setFields([
       {
         name: ["bookingDetails", index, "versionId"],
         value: undefined,
       },
+      {
+        name: ["bookingDetails", index, "colorId"],
+        value: undefined,
+      },
     ]);
+  };
+
+  // Xử lý khi thay đổi version - fetch colors tương ứng
+  const handleVersionChange = async (versionId, modelId, index) => {
+    try {
+      // Reset colorId
+      formRef.current?.setFields([
+        {
+          name: ["bookingDetails", index, "colorId"],
+          value: undefined,
+        },
+      ]);
+
+      // Fetch colors cho model và version này
+      const cacheKey = `${modelId}_${versionId}`;
+
+      // Kiểm tra cache trước
+      if (!colorsCache[cacheKey]) {
+        const colorData = await getEVColorbyModelAndVersion(modelId, versionId);
+
+        if (colorData && colorData.result) {
+          const mappedColors = colorData.result.map((color) => ({
+            label: color.colorName,
+            value: color.id,
+            extraCost: color.extraCost,
+          }));
+
+          // Lưu vào cache
+          setColorsCache((prev) => ({
+            ...prev,
+            [cacheKey]: mappedColors,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching colors:", error);
+      modal.error({
+        title: "Lỗi",
+        content: "Không thể tải danh sách màu xe",
+      });
+    }
   };
 
   // Xử lý khi submit form
@@ -192,8 +216,9 @@ function EVBooking() {
                         <VehicleSelector
                           models={models}
                           versions={versions}
-                          colors={colors}
+                          colorsCache={colorsCache}
                           onModelChange={handleModelChange}
+                          onVersionChange={handleVersionChange}
                           formRef={formRef}
                           index={index}
                         />
@@ -263,7 +288,7 @@ function EVBooking() {
                             item={item}
                             models={models}
                             versions={versions}
-                            colors={colors}
+                            colorsCache={colorsCache}
                           />
                         ))}
                       </div>
