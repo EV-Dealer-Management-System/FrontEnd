@@ -118,12 +118,9 @@ const CreateContract = () => {
       // Extract token từ downloadUrl
       const tokenMatch = downloadUrl.match(/[?&]token=([^&]+)/);
       const token = tokenMatch ? tokenMatch[1] : null;
-      
       if (!token) {
-        console.log('Không tìm thấy token, dùng link gốc');
-        return downloadUrl;
+        message.warning('Không tìm thấy token trong đường dẫn hợp đồng');
       }
-
       // Gọi API qua backend proxy thay vì fetch trực tiếp
       const response = await api.get(`/EContract/preview?token=${token}`, {
         responseType: 'blob'
