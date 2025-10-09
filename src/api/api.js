@@ -17,8 +17,6 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-
-// Response interceptor để xử lý token hết hạn
 api.interceptors.response.use(
   (response) => {
     return response;

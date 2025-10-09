@@ -54,7 +54,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
     path: "/dealer",
     routes: [
       {
-        path: "/dealer/dashboard",
+        path: "/dealer-manager",
         name: "Tổng quan",
         icon: <DashboardOutlined />,
         component: "./Dashboard",
@@ -96,26 +96,26 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: "./Inventory",
           },
           {
-            path: "/dealer/ev/ev-booking",
+            path: "/dealer-manager/ev/ev-booking",
             name: "Yêu cầu nhập hàng",
             icon: <DeploymentUnitOutlined />,
             component: "./InventoryRequest",
           },
           {
-            path: "/dealer/inventory/history",
-            name: "Lịch sử nhập/xuất",
+            path: "/dealer-manager/ev/all-ev-booking",
+            name: "Lịch sử đặt xe",
             icon: <GlobalOutlined />,
             component: "./InventoryHistory",
           },
         ],
       },
       {
-        path: "/dealer/staff",
+        path: "/dealer-manager/staff",
         name: "Quản lý nhân viên",
         icon: <TeamOutlined />,
         routes: [
           {
-            path: "/dealer/staff/list",
+            path: "/dealer-manager/staff/list",
             name: "Danh sách nhân viên",
             icon: <TeamOutlined />,
             component: "./StaffList",

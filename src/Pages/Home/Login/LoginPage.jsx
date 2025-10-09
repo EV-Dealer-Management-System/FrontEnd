@@ -3,6 +3,7 @@ import { Typography, Avatar, Space, Alert, App } from "antd";
 const { useApp } = App;
 import { login } from "../../../utils/auth";
 import { useNavigate, Link } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 import {
   GoogleOutlined,
   FacebookOutlined,
@@ -35,12 +36,50 @@ function LoginPage() {
     try {
       setLoading(true);
       const response = await login(email, password, autoLogin);
-      // Save JWT token
-      localStorage.setItem("jwt_token", response.token);
-      localStorage.setItem("userFullName", response.result.userData||"");
-      message.success(`Chào mừng ${response.result.userData.fullName}! Đăng nhập thành công!`);
-      // Redirect to customer dashboard after login
-      navigate("/customer", { replace: true });
+
+      // Debug: Log response
+      console.log('Login response:', response);
+
+      // Kiểm tra response và accessToken hợp lệ
+      if (!response?.result?.accessToken) {
+        throw new Error("Token không hợp lệ");
+      }
+
+      // Save JWT token và refresh token
+      localStorage.setItem("jwt_token", response.result.accessToken);
+      localStorage.setItem("refresh_token", response.result.refreshToken);
+      localStorage.setItem("userFullName", response.result?.userData?.fullName || "");
+
+      // Debug: Log stored token
+      console.log('Stored token:', localStorage.getItem("jwt_token"));
+
+      // Decode token để lấy role
+      const decodedToken = jwtDecode(response.result.accessToken);
+      console.log('Decoded token:', decodedToken);
+      const userRole = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']; if (!userRole) {
+        throw new Error("Không tìm thấy thông tin role");
+      }
+
+      message.success(`Chào mừng ${response.result?.userData?.fullName || ""}! Đăng nhập thành công!`);
+
+      // Điều hướng dựa trên role
+      switch (userRole) {
+        case 'Admin':
+          navigate("/admin", { replace: true });
+          break;
+        case 'DealerManager':
+          navigate("/dealer-manager", { replace: true });
+          break;
+        case 'DealerStaff':
+          navigate("/dealer-staff", { replace: true });
+          break;
+        case 'EVMStaff':
+          navigate("/evm-staff", { replace: true });
+          break;
+        default:
+          navigate("/customer", { replace: true });
+          break;
+      }
     } catch (err) {
       console.error("Login error:", err);
 
@@ -82,7 +121,7 @@ function LoginPage() {
         );
       } else if (err.response?.status === 403) {
         // Xử lý trường hợp tài khoản bị khóa
-const message = err.response?.data?.message || "";
+        const message = err.response?.data?.message || "";
         const minutes = message.match(/\d+/)?.[0] || "vài"; // Lấy số phút từ thông báo
         setLoginError(
           `Tài khoản đã bị khóa. Vui lòng thử lại sau ${minutes} phút.`
@@ -164,88 +203,88 @@ const message = err.response?.data?.message || "";
                 {
                   type: "email",
                   message: "Vui lòng nhập đúng định dạng email!",
-},
-]}
-/>
+                },
+              ]}
+            />
 
-<ProFormText.Password
-name="password"
-fieldProps={{ size: "large", prefix: <LockOutlined /> }}
-placeholder="Mật khẩu"
-rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
-/>
+            <ProFormText.Password
+              name="password"
+              fieldProps={{ size: "large", prefix: <LockOutlined /> }}
+              placeholder="Mật khẩu"
+              rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
+            />
 
-<div className="flex items-center justify-between">
-<ProFormCheckbox noStyle name="autoLogin">
-  Ghi nhớ đăng nhập
-</ProFormCheckbox>
-<Link to="/forgot-password" className="text-blue-600">
-  Quên mật khẩu?
-</Link>
-</div>
-</LoginForm>
+            <div className="flex items-center justify-between">
+              <ProFormCheckbox noStyle name="autoLogin">
+                Ghi nhớ đăng nhập
+              </ProFormCheckbox>
+              <Link to="/forgot-password" className="text-blue-600">
+                Quên mật khẩu?
+              </Link>
+            </div>
+          </LoginForm>
 
-<div style={{ marginTop: "24px" }}>
-<Space direction="vertical" style={{ width: "100%" }}>
-<div style={{ textAlign: "center", color: "#8c8c8c" }}>
-  Hoặc tiếp tục với
-</div>
-<div
-  style={{
-    display: "flex",
-    justifyContent: "center",
-    gap: "24px",
-    marginTop: "16px",
-  }}
->
-  <Avatar
-    className="social-button"
-    style={{
-      backgroundColor: "#fff",
-      cursor: "pointer",
-      border: "1px solid #d9d9d9",
-    }}
-    icon={
-      <img
-        src="https://www.google.com/images/branding/googleg/1x/googleg_standard_color_128dp.png"
-        alt="Google"
-        style={{ width: "18px", height: "18px" }}
-      />
-    }
-    onClick={() => handleSocialLogin("Google")}
-  />
-  <Avatar
-    className="social-button"
-    style={{
-      backgroundColor: "#1877f2",
-      cursor: "pointer",
-    }}
-    icon={
-      <FacebookOutlined style={{ fontSize: 20, color: "#fff" }} />
-    }
-    onClick={() => handleSocialLogin("Facebook")}
-  />
-</div>
-</Space>
-</div>
+          <div style={{ marginTop: "24px" }}>
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <div style={{ textAlign: "center", color: "#8c8c8c" }}>
+                Hoặc tiếp tục với
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: "24px",
+                  marginTop: "16px",
+                }}
+              >
+                <Avatar
+                  className="social-button"
+                  style={{
+                    backgroundColor: "#fff",
+                    cursor: "pointer",
+                    border: "1px solid #d9d9d9",
+                  }}
+                  icon={
+                    <img
+                      src="https://www.google.com/images/branding/googleg/1x/googleg_standard_color_128dp.png"
+                      alt="Google"
+                      style={{ width: "18px", height: "18px" }}
+                    />
+                  }
+                  onClick={() => handleSocialLogin("Google")}
+                />
+                <Avatar
+                  className="social-button"
+                  style={{
+                    backgroundColor: "#1877f2",
+                    cursor: "pointer",
+                  }}
+                  icon={
+                    <FacebookOutlined style={{ fontSize: 20, color: "#fff" }} />
+                  }
+                  onClick={() => handleSocialLogin("Facebook")}
+                />
+              </div>
+            </Space>
+          </div>
 
-<div
-style={{
-textAlign: "center",
-marginTop: "24px",
-fontSize: "14px",
-color: "#8c8c8c",
-}}
->
-Chưa có tài khoản?{" "}
-<Link to="/register" style={{ color: "#1677ff", fontWeight: 500 }}>
-Đăng ký ngay
-</Link>
-</div>
-</ProCard>
-</div>
-</PageContainer>
-);
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: "24px",
+              fontSize: "14px",
+              color: "#8c8c8c",
+            }}
+          >
+            Chưa có tài khoản?{" "}
+            <Link to="/register" style={{ color: "#1677ff", fontWeight: 500 }}>
+              Đăng ký ngay
+            </Link>
+          </div>
+        </ProCard>
+      </div>
+    </PageContainer>
+  );
 }
 
 export default LoginPage;
