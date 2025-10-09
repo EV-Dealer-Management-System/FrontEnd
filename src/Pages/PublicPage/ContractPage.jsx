@@ -3,17 +3,17 @@ import { Card, Form, Input, Button, Row, Col, Typography, Steps, Space, Tag, Div
 import { FileTextOutlined, SafetyOutlined, EditOutlined, CheckCircleOutlined, FilePdfOutlined, ReloadOutlined, DownloadOutlined } from '@ant-design/icons';
 
 // Reuse service
-import { ContractService } from '../App/Home/SignContractCustomer';
+import { ContractService } from '../../App/Home/SignContractCustomer';
 
-import api from '../api/api';
+import api from '../../api/api';
 
 // Reuse components từ CreateAccount
-import SignatureModal from './Admin/SignContract/Components/SignatureModal';
-import AppVerifyModal from './Admin/SignContract/Components/AppVerifyModal';
-import PDFModal from './Admin/SignContract/Components/PDF/PDFModal';
-import SmartCAModal from './Admin/SignContract/Components/SmartCAModal';
-import SmartCASelector from './Admin/SignContract/Components/SmartCASelector';
-import AddSmartCA from './Admin/SignContract/Components/AddSmartCA';
+import SignatureModal from '../Admin/SignContract/Components/SignatureModal';
+import AppVerifyModal from '../Admin/SignContract/Components/AppVerifyModal';
+import PDFModal from '../Admin/SignContract/Components/PDF/PDFModal';
+import SmartCAModal from '../Admin/SignContract/Components/SmartCAModal';
+import SmartCASelector from '../Admin/SignContract/Components/SmartCASelector';
+import AddSmartCA from '../Admin/SignContract/Components/AddSmartCA';
 
 const { Title, Text, Paragraph } = Typography;
 const { Step } = Steps;
@@ -80,7 +80,7 @@ function ContractPage() {
       }
 
       // Gọi API qua backend proxy để tránh CORS
-      const response = await api.get(`/EContract/preview?`, {
+    const response = await api.get(`/EContract/preview?`, {
       params: { token },        // cách này sạch hơn so với nối string
       responseType: 'blob'
     });
