@@ -21,12 +21,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 
-function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false }) {
+function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false, scale: externalScale }) {
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [loading, setLoading] = useState(true);
   const [pdfUrl, setPdfUrl] = useState(null);
-  const [scale, setScale] = useState(1.2); // Zoom scale
+  const [internalScale, setInternalScale] = useState(1.2); // Internal scale khi không có external scale
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [loadTime, setLoadTime] = useState(null); // Performance tracking
   const [touchStart, setTouchStart] = useState(null);
@@ -285,7 +285,7 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
         viewer: 'React-PDF',
         duration,
         numPages,
-        scale,
+        scale: currentScale,
         timestamp: new Date().toISOString(),
         contractNo,
         memoryUsage: memData,
@@ -349,27 +349,36 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
     trackMemoryUsage();
   }, [pageNumber, numPages, trackMemoryUsage]);
   
-  // Phase 5: Optimized zoom với memory monitoring
+  // Get current scale - ưu tiên external scale, fallback về internal scale
+  const currentScale = externalScale || internalScale;
+
+  // Phase 5: Optimized zoom với memory monitoring (chỉ khi không có external scale)
   const zoomIn = useCallback(() => {
-    setScale(prev => {
-      const newScale = Math.min(prev + 0.2, 3);
-      trackMemoryUsage();
-      return newScale;
-    });
-  }, [trackMemoryUsage]);
+    if (!externalScale) {
+      setInternalScale(prev => {
+        const newScale = Math.min(prev + 0.2, 3);
+        trackMemoryUsage();
+        return newScale;
+      });
+    }
+  }, [externalScale, trackMemoryUsage]);
 
   const zoomOut = useCallback(() => {
-    setScale(prev => {
-      const newScale = Math.max(prev - 0.2, 0.5);
-      trackMemoryUsage();
-      return newScale;
-    });
-  }, [trackMemoryUsage]);
+    if (!externalScale) {
+      setInternalScale(prev => {
+        const newScale = Math.max(prev - 0.2, 0.5);
+        trackMemoryUsage();
+        return newScale;
+      });
+    }
+  }, [externalScale, trackMemoryUsage]);
 
   const resetZoom = useCallback(() => {
-    setScale(1.2);
-    trackMemoryUsage();
-  }, [trackMemoryUsage]);
+    if (!externalScale) {
+      setInternalScale(1.2);
+      trackMemoryUsage();
+    }
+  }, [externalScale, trackMemoryUsage]);
   
   // Fullscreen toggle
   const toggleFullscreen = useCallback(() => {
@@ -409,16 +418,19 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
       const scaleChange = distance / pinchDistance;
       const sensitivity = isMobile ? 1.2 : 1.0; // Tăng sensitivity trên mobile
       
-      setScale(prev => {
-        const newScale = Math.max(0.5, Math.min(3, prev * (scaleChange * sensitivity)));
-        
-        // Throttle memory tracking on mobile để tránh lag
-        if (!isMobile || Date.now() % 500 === 0) {
-          trackMemoryUsage();
-        }
-        
-        return newScale;
-      });
+      // Chỉ cho phép pinch zoom khi không có external scale
+      if (!externalScale) {
+        setInternalScale(prev => {
+          const newScale = Math.max(0.5, Math.min(3, prev * (scaleChange * sensitivity)));
+          
+          // Throttle memory tracking on mobile để tránh lag
+          if (!isMobile || Date.now() % 500 === 0) {
+            trackMemoryUsage();
+          }
+          
+          return newScale;
+        });
+      }
       
       setPinchDistance(distance);
     }
@@ -493,17 +505,17 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
 
   // Phase 5: Responsive scale adjustment
   const getResponsiveScale = useMemo(() => {
-    if (!isMobile) return scale;
+    if (!isMobile) return currentScale;
     
     // Mobile optimization: adjust scale based on screen size
     const screenWidth = window.innerWidth;
     if (screenWidth < 480) {
-      return Math.min(scale, 1.0); // Max 1.0 trên mobile nhỏ
+      return Math.min(currentScale, 1.0); // Max 1.0 trên mobile nhỏ
     } else if (screenWidth < 768) {
-      return Math.min(scale, 1.2); // Max 1.2 trên tablet
+      return Math.min(currentScale, 1.2); // Max 1.2 trên tablet
     }
-    return scale;
-  }, [scale, isMobile]);
+    return currentScale;
+  }, [currentScale, isMobile]);
 
   // Phase 5: Viewport meta optimization
   useEffect(() => {
@@ -531,8 +543,8 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
     <div className={`w-full ${showAllPages ? 'bg-transparent' : `flex flex-col bg-white ${
       isFullscreen ? 'fixed inset-0 z-50' : 'rounded-lg shadow-lg'
     } ${isMobile ? 'p-2' : 'p-4'}`}`}>
-      {/* Header controls - Chỉ hiển thị khi KHÔNG phải showAllPages */}
-      {!showAllPages && (
+      {/* Header controls - Chỉ hiển thị khi KHÔNG phải showAllPages và KHÔNG có external scale */}
+      {!showAllPages && !externalScale && (
         <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-between items-center'} mb-4 pb-3 border-b`}>
           <div className="flex items-center">
             <FilePdfOutlined className="mr-2 text-blue-600" />
@@ -546,7 +558,7 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
               <Button size="small" icon={<ZoomOutOutlined />} onClick={zoomOut} />
             </Tooltip>
             
-            <span className="text-sm px-2">{Math.round(scale * 100)}%</span>
+            <span className="text-sm px-2">{Math.round(currentScale * 100)}%</span>
             
             <Tooltip title="Phóng to">
               <Button size="small" icon={<ZoomInOutlined />} onClick={zoomIn} />
@@ -658,13 +670,13 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
             ref={documentRef}
           >
             {showAllPages ? (
-              // Render tất cả trang với scroll tốt - chỉ căn giữa ngang
+              // Render tất cả trang - sử dụng currentScale thay vì fixed scale
               <div className="w-full flex flex-col">
                 {Array.from(new Array(numPages), (el, index) => (
                   <div key={`page_${index + 1}`} className="flex justify-center mb-4">
                     <Page
                       pageNumber={index + 1}
-                      scale={0.8} // Fixed scale cho all pages
+                      scale={externalScale || 0.8} // Dùng external scale hoặc default 0.8
                       className="shadow-lg border border-gray-200"
                       renderAnnotationLayer={false}
                       renderTextLayer={false}
@@ -676,11 +688,11 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
                 ))}
               </div>
             ) : (
-              // Render single page như trước
+              // Render single page - chỉ dùng scale của react-pdf
               <Page 
                 pageNumber={pageNumber} 
                 scale={getResponsiveScale}
-                className={`shadow-lg ${isMobile ? 'max-w-full' : ''}`}
+                className="shadow-lg"
                 // Phase 5: Performance optimizations
                 renderAnnotationLayer={false} // Tắt annotations để tiết kiệm memory
                 renderTextLayer={false} // Tắt text layer để render nhanh hơn

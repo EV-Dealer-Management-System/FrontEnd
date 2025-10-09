@@ -9,7 +9,7 @@ import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfir
 
 import PublicRoute from "./Router/PublicRoute";
 import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
-import ContractPage from "./Pages/ContractPage";
+import ContractPage from "./Pages/PublicPage/ContractPage";
 import EVMAdmin from "./Pages/Admin/EVMAdmin";
 import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
 import DealerManager from "./Pages/DealerManager/DealerManager";
@@ -19,7 +19,7 @@ import DealerManagerRoute from "./Router/DealerManagerRoute";
 import AdminRoute from "./Router/AdminRoute";
 import DealerStaffRoute from "./Router/DealerStaffRoute";
 import EVMStaffRoute from "./Router/EVMStaffRoute";
-
+import ContractViewer from "./Pages/PublicPage/ContractView";
 
 function App() {
   return (
@@ -46,6 +46,7 @@ function App() {
         <Route path="/forgot-password" element={<ResetPassword />} />
         <Route path="/api/reset-password" element={<ResetPasswordConfirm />} />
         <Route path="/contract" element={<ContractPage />} />
+        <Route path="/EContract/preview" element={<ContractViewer />} />
         {/* Admin Routes - với catch-all route */}
         <Route path="/admin/*" element={<AdminRoute>
           <Routes>
