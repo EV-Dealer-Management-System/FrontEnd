@@ -12,7 +12,7 @@ import {
   FullscreenExitOutlined
 } from '@ant-design/icons';
 import api from '../../../../../api/api';
-import { pdfCacheService } from '../../../CreateDealerAccount/PDFCacheService';
+import { pdfCacheService } from './PDFCacheService';
 
 // Cấu hình worker cho pdfjs sử dụng file trong public
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -21,7 +21,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 
-function PDFViewer({ contractNo, pdfUrl: externalPdfUrl }) {
+function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false }) {
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -472,47 +472,54 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl }) {
   }, [isMobile]);
 
   return (
-    <div className={`w-full flex flex-col bg-white ${
+    <div className={`w-full ${showAllPages ? 'bg-transparent' : `flex flex-col bg-white ${
       isFullscreen ? 'fixed inset-0 z-50' : 'rounded-lg shadow-lg'
-    } ${isMobile ? 'p-2' : 'p-4'}`}>
-      {/* Phase 5: Responsive header với mobile-optimized controls */}
-      <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-between items-center'} mb-4 pb-3 border-b`}>
-        <div className="flex items-center">
-          <FilePdfOutlined className="mr-2 text-blue-600" />
-          <span className={`font-semibold text-blue-600 ${isMobile ? 'text-sm' : ''}`}>
-            {contractNo ? `Hợp đồng số: ${contractNo}` : 'Xem hợp đồng PDF'}
-          </span>
+    } ${isMobile ? 'p-2' : 'p-4'}`}`}>
+      {/* Header controls - Chỉ hiển thị khi KHÔNG phải showAllPages */}
+      {!showAllPages && (
+        <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-between items-center'} mb-4 pb-3 border-b`}>
+          <div className="flex items-center">
+            <FilePdfOutlined className="mr-2 text-blue-600" />
+            <span className={`font-semibold text-blue-600 ${isMobile ? 'text-sm' : ''}`}>
+              {contractNo ? `Hợp đồng số: ${contractNo}` : 'Xem hợp đồng PDF'}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Tooltip title="Thu nhỏ">
+              <Button size="small" icon={<ZoomOutOutlined />} onClick={zoomOut} />
+            </Tooltip>
+            
+            <span className="text-sm px-2">{Math.round(scale * 100)}%</span>
+            
+            <Tooltip title="Phóng to">
+              <Button size="small" icon={<ZoomInOutlined />} onClick={zoomIn} />
+            </Tooltip>
+            
+            <Tooltip title="Reset zoom">
+              <Button size="small" onClick={resetZoom}>
+                100%
+              </Button>
+            </Tooltip>
+            
+            <Tooltip title={isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}>
+              <Button 
+                size="small" 
+                icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />} 
+                onClick={toggleFullscreen} 
+              />
+            </Tooltip>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <Tooltip title="Thu nhỏ">
-            <Button size="small" icon={<ZoomOutOutlined />} onClick={zoomOut} />
-          </Tooltip>
-          
-          <span className="text-sm px-2">{Math.round(scale * 100)}%</span>
-          
-          <Tooltip title="Phóng to">
-            <Button size="small" icon={<ZoomInOutlined />} onClick={zoomIn} />
-          </Tooltip>
-          
-          <Tooltip title="Reset zoom">
-            <Button size="small" onClick={resetZoom}>
-              100%
-            </Button>
-          </Tooltip>
-          
-          <Tooltip title={isFullscreen ? "Thoát toàn màn hình" : "Toàn màn hình"}>
-            <Button 
-              size="small" 
-              icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />} 
-              onClick={toggleFullscreen} 
-            />
-          </Tooltip>
-        </div>
-      </div>
+      )}
       
       <div 
-        className="flex justify-center items-center min-h-[600px] bg-gray-50 rounded-lg border border-gray-200 w-full"
+        className={
+          showAllPages 
+            ? 'w-full overflow-auto flex justify-center' // Thêm overflow-auto và flex justify-center cho showAllPages
+            : 'w-full bg-gray-50 rounded-lg border border-gray-200 flex justify-center items-center min-h-[600px]'
+        }
+        style={showAllPages ? { overflowY: "auto" } : {}}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -594,23 +601,44 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl }) {
             // Phase 5: Performance tuning
             ref={documentRef}
           >
-            <Page 
-              pageNumber={pageNumber} 
-              scale={getResponsiveScale}
-              className={`shadow-lg ${isMobile ? 'max-w-full' : ''}`}
-              // Phase 5: Performance optimizations
-              renderAnnotationLayer={false} // Tắt annotations để tiết kiệm memory
-              renderTextLayer={false} // Tắt text layer để render nhanh hơn
-              // Phase 5: Error handling cho từng page
-              onLoadError={(error) => {
-                console.error(`Page ${pageNumber} load error:`, error);
-                message.error(`Lỗi tải trang ${pageNumber}: ${error.message}`);
-              }}
-              onRenderSuccess={() => {
-                // Track successful renders
-                trackMemoryUsage();
-              }}
-            />
+            {showAllPages ? (
+              // Render tất cả trang với scroll tốt - chỉ căn giữa ngang
+              <div className="w-full flex flex-col">
+                {Array.from(new Array(numPages), (el, index) => (
+                  <div key={`page_${index + 1}`} className="flex justify-center mb-4">
+                    <Page
+                      pageNumber={index + 1}
+                      scale={0.8} // Fixed scale cho all pages
+                      className="shadow-lg border border-gray-200"
+                      renderAnnotationLayer={false}
+                      renderTextLayer={false}
+                      onLoadError={(error) => {
+                        console.error(`Page ${index + 1} load error:`, error);
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Render single page như trước
+              <Page 
+                pageNumber={pageNumber} 
+                scale={getResponsiveScale}
+                className={`shadow-lg ${isMobile ? 'max-w-full' : ''}`}
+                // Phase 5: Performance optimizations
+                renderAnnotationLayer={false} // Tắt annotations để tiết kiệm memory
+                renderTextLayer={false} // Tắt text layer để render nhanh hơn
+                // Phase 5: Error handling cho từng page
+                onLoadError={(error) => {
+                  console.error(`Page ${pageNumber} load error:`, error);
+                  message.error(`Lỗi tải trang ${pageNumber}: ${error.message}`);
+                }}
+                onRenderSuccess={() => {
+                  // Track successful renders
+                  trackMemoryUsage();
+                }}
+              />
+            )}
           </Document>
         )}
         
@@ -622,8 +650,8 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl }) {
         )}
       </div>
       
-      {/* Navigation Controls */}
-      {numPages && (
+      {/* Navigation Controls - Ẩn khi hiển thị tất cả trang */}
+      {numPages && !showAllPages && (
         <div className="flex items-center justify-center mt-4 gap-4 pt-3 border-t">
           <Button 
             icon={<LeftOutlined />} 

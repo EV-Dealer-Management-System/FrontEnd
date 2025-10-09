@@ -4,9 +4,6 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  optimizeDeps: {
-    include: ['pdfjs-dist']
-  },
   build: {
     rollupOptions: {
       output: {
@@ -14,8 +11,7 @@ export default defineConfig({
           // Vendor chunks for large dependencies
           'antd': ['antd', '@ant-design/icons', '@ant-design/pro-components', '@ant-design/charts'],
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'utils': ['axios'],
-          'pdf': ['react-pdf', 'pdfjs-dist']
+          'utils': ['axios']
         }
       }
     },

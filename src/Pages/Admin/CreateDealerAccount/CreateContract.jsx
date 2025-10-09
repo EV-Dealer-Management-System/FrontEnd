@@ -17,6 +17,7 @@ import {
 } from 'antd';
 import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
+import api from '../../../api/api';
 import { ContractService } from '../../../App/Home/SignContractCustomer'
 import ContractViewer from '../SignContract/Components/ContractViewer';
 import SignatureModal from '../SignContract/Components/SignatureModal';
@@ -114,56 +115,47 @@ const CreateContract = () => {
     
     setLoadingPdf(true);
     try {
-      // Extract token from downloadUrl
-      const url = new URL(downloadUrl);
-      const token = url.searchParams.get('token');
+      // Extract token từ downloadUrl
+      const tokenMatch = downloadUrl.match(/[?&]token=([^&]+)/);
+      const token = tokenMatch ? tokenMatch[1] : null;
       
       if (!token) {
-        console.error('No token found in downloadUrl');
         return downloadUrl;
       }
 
-      // Call PDF preview API
-      const result = await contractService.handleGetPreviewPDF(token);
+      // Call API để lấy PDF binary stream
+      const response = await api.get(`/EContract/preview?token=${token}`, {
+        responseType: 'blob'  // Nhận binary data
+      });
       
-      if (result.success) {
-        setPdfBlob(result.data);
-        setPdfBlobUrl(result.url);
-        return result.url;
+      if (response.status === 200) {
+        // Tạo blob URL từ PDF binary data
+        const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        
+        setPdfBlob(pdfBlob);
+        setPdfBlobUrl(blobUrl);
+        return blobUrl;
       } else {
-        console.error('Failed to load PDF preview:', result.error);
-        message.warning('Không thể tải PDF preview, sử dụng link gốc');
         return downloadUrl;
       }
     } catch (error) {
       console.error('Error loading PDF preview:', error);
-      message.warning('Có lỗi khi tải PDF preview');
       return downloadUrl;
     } finally {
       setLoadingPdf(false);
     }
-  }, [contractService]);
+  }, []);
 
-  // Build a display URL for PDF (sử dụng blob URL nếu có, không thì dùng dev proxy)
+  // Build a display URL for PDF (ưu tiên blob URL, không thì dùng trực tiếp contractLink)
   const getPdfDisplayUrl = () => {
     // Ưu tiên sử dụng blob URL đã load từ preview API
     if (pdfBlobUrl) {
       return pdfBlobUrl;
     }
     
-    // Fallback về contractLink nếu chưa có blob
-    if (!contractLink) return null;
-    
-    try {
-      const u = new URL(contractLink);
-      const token = u.searchParams.get('token');
-      if (import.meta && import.meta.env && import.meta.env.DEV && token) {
-        return `/pdf-proxy?token=${encodeURIComponent(token)}`;
-      }
-      return contractLink;
-    } catch {
-      return contractLink;
-    }
+    // Sử dụng trực tiếp contractLink thay vì proxy
+    return contractLink;
   };
 
   // Load provinces on component mount

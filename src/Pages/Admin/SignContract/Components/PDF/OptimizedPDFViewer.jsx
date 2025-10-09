@@ -36,7 +36,7 @@ const PDFLoadingFallback = ({ message = "Đang tải PDF Viewer..." }) => (
 );
 
 // Phase 5: Optimized PDF Viewer Wrapper với bundle splitting
-const OptimizedPDFViewer = ({ contractNo, pdfUrl, onLoadingChange, ...props }) => {
+const OptimizedPDFViewer = ({ contractNo, pdfUrl, showAllPages = false, onLoadingChange, ...props }) => {
   // Preload worker khi component mount
   React.useEffect(() => {
     if (onLoadingChange) onLoadingChange(true);
@@ -63,6 +63,7 @@ const OptimizedPDFViewer = ({ contractNo, pdfUrl, onLoadingChange, ...props }) =
         <LazyPDFViewer 
           contractNo={contractNo} 
           pdfUrl={pdfUrl} 
+          showAllPages={showAllPages}
           onLoadingChange={onLoadingChange}
           {...props}
         />
