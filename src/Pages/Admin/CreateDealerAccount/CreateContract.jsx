@@ -15,8 +15,9 @@ import {
   Modal,
   Layout
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined,FilePdfOutlined,DownloadOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
+import api from '../../../api/api';
 import { ContractService } from '../../../App/Home/SignContractCustomer'
 import ContractViewer from '../SignContract/Components/ContractViewer';
 import SignatureModal from '../SignContract/Components/SignatureModal';
@@ -80,6 +81,11 @@ const CreateContract = () => {
   const [selectedSmartCA, setSelectedSmartCA] = useState(null);
   const [checkingSmartCA, setCheckingSmartCA] = useState(false);
 
+  // PDF preview states
+  const [pdfBlob, setPdfBlob] = useState(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+  const [loadingPdf, setLoadingPdf] = useState(false);
+
   // Sử dụng custom hook để quản lý logic ký hợp đồng
   const {
     showSignatureModal,
@@ -100,19 +106,55 @@ const CreateContract = () => {
     resetSigningState
   } = useContractSigning();
 
-  // Build a display URL for PDF (use dev proxy to avoid CORS/X-Frame in development)
-  const getPdfDisplayUrl = (url) => {
-    if (!url) return url;
+  // Initialize contract service
+  const contractService = ContractService();
+
+  // Load PDF preview từ API /EContract/preview
+  const loadPdfPreview = React.useCallback(async (downloadUrl) => {
+    if (!downloadUrl) return null;
+    
+    setLoadingPdf(true);
     try {
-      const u = new URL(url);
-      const token = u.searchParams.get('token');
-      if (import.meta && import.meta.env && import.meta.env.DEV && token) {
-        return `/pdf-proxy?token=${encodeURIComponent(token)}`;
+      // Extract token từ downloadUrl
+      const tokenMatch = downloadUrl.match(/[?&]token=([^&]+)/);
+      const token = tokenMatch ? tokenMatch[1] : null;
+      if (!token) {
+        message.warning('Không tìm thấy token trong đường dẫn hợp đồng');
+        return null;
       }
-      return url;
-    } catch {
-      return url;
+      // Gọi API qua backend proxy thay vì fetch trực tiếp
+      const response = await api.get(`/EContract/preview?`, {
+      params: { token },        // cách này sạch hơn so với nối string
+      responseType: 'blob'
+    });
+      
+      if (response.status === 200) {
+        const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        
+        setPdfBlob(pdfBlob);
+        setPdfBlobUrl(blobUrl);
+        return blobUrl;
+      }
+    } catch (error) {
+      console.log('Lỗi API preview, sử dụng link gốc:', error.message);
+      // Quan trọng: KHÔNG return downloadUrl trực tiếp vì sẽ gây CORS
+      return null;
+    } finally {
+      setLoadingPdf(false);
     }
+  }, []);
+
+  // Build a display URL for PDF (ưu tiên blob URL, không thì dùng trực tiếp contractLink)
+  const getPdfDisplayUrl = () => {
+    // Ưu tiên blob URL từ preview API (không CORS)
+    if (pdfBlobUrl) {
+      return pdfBlobUrl;
+    }
+    
+    // KHÔNG dùng trực tiếp downloadUrl vì sẽ gây CORS
+    // Thay vào đó, hiển thị thông báo cho user
+    return null;
   };
 
   // Load provinces on component mount
@@ -245,6 +287,10 @@ const CreateContract = () => {
           if (downloadUrl) {
             setContractLink(downloadUrl);
             setContractNo(contractNo || 'Không xác định');
+            
+            // Load PDF preview từ API /EContract/preview
+            await loadPdfPreview(downloadUrl);
+            
             message.success({
               content: (
                 <span>
@@ -284,14 +330,31 @@ const CreateContract = () => {
 
 
 
-  // Download PDF
+  // Download PDF - sử dụng blob data nếu có, không thì dùng contractLink
   const handleDownload = () => {
-    const a = document.createElement('a');
-    a.href = contractLink;
-    a.download = `hop-dong-${contractNo || 'dai-ly'}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    if (pdfBlobUrl) {
+      // Download từ blob URL (không CORS)
+      const link = document.createElement('a');
+      link.href = pdfBlobUrl;
+      link.download = `${title || `hop-dong-${contractNo}`}.pdf`;
+      link.click();
+    } else if (contractLink) {
+      // Mở trong tab mới thay vì download trực tiếp
+      window.open(contractLink, '_blank');
+      message.info('PDF đã được mở trong tab mới');
+    } else {
+      message.warning('Không có file PDF để tải xuống');
+    }
+  };
+
+  const handlePrint = () => {
+    if (contractLink) {
+      // Mở trong tab mới để in (tránh CORS)
+      const printWindow = window.open(contractLink, '_blank');
+      message.info('PDF đã được mở trong tab mới. Vui lòng sử dụng Ctrl+P để in');
+    } else {
+      message.warning('Không có file PDF để in');
+    }
   };
 
   // Reset form and related state
@@ -308,6 +371,10 @@ const CreateContract = () => {
         setContractId(null);
         setWaitingProcessData(null);
         setWards([]);
+        // Reset PDF states
+        setPdfBlob(null);
+        setPdfBlobUrl(null);
+        setLoadingPdf(false);
         resetSigningState();
         message.success('Đã làm mới biểu mẫu');
       }
@@ -339,6 +406,21 @@ const CreateContract = () => {
             {/* Contract Display */}
             {contractLink && (
               <>
+                {/* Phase 4: Chỉ sử dụng React-PDF */}
+                <Card className="mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Text strong className="text-green-600">
+                        <FileTextOutlined className="mr-2" />
+                        PDF Viewer: React-PDF (Native)
+                      </Text>
+                      <div className="text-xs text-gray-500 bg-green-50 px-2 py-1 rounded">
+                        Phase 4: Simplified & Optimized
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
                 <ContractViewer
                   contractLink={contractLink}
                   contractNo={contractNo}
@@ -363,7 +445,8 @@ const CreateContract = () => {
                   }}
                   onDownload={handleDownload}
                   onNewContract={resetForm}
-                  viewerLink={getPdfDisplayUrl(contractLink)}
+                  viewerLink={getPdfDisplayUrl()}
+                  loading={loadingPdf}
                 />
 
                 {/* Card trạng thái SmartCA giống ContractPage */}
@@ -414,6 +497,8 @@ const CreateContract = () => {
                 </Card>
               </>
             )}
+
+            {/* Test panel removed - không cần thiết cho nghiệp vụ chính */}
 
             {/* Form */}
             <Form
@@ -738,6 +823,25 @@ const CreateContract = () => {
           loading={signingLoading}
           signatureCompleted={signatureCompleted}
         />
+
+        {/* Trong ContractViewer hoặc PDFModal */}
+        {!getPdfDisplayUrl() && contractLink && (
+          <div className="flex flex-col items-center justify-center h-64 text-center p-6 bg-gray-50 rounded-lg">
+            <FilePdfOutlined className="text-6xl mb-4 text-blue-400" />
+            <p className="text-lg mb-4 text-gray-700">PDF Preview không khả dụng</p>
+            <Button 
+              type="primary" 
+              icon={<DownloadOutlined />}
+              onClick={() => window.open(contractLink, '_blank')}
+              size="large"
+            >
+              Mở PDF trong tab mới
+            </Button>
+            <p className="text-sm text-gray-500 mt-2">
+              Nhấn để xem PDF trên trang VNPT
+            </p>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

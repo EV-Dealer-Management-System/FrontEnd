@@ -73,3 +73,122 @@ button:focus-visible {
     background-color: #fff !important;
   }
 }
+
+/* Custom Table Styles for Professional Dashboard */
+.highlight-pending-row {
+  background-color: #fffbf0 !important;
+  border-left: 3px solid #fa8c16;
+  transition: all 0.3s ease;
+}
+
+.highlight-pending-row:hover {
+  background-color: #fff7e6 !important;
+  box-shadow: 0 2px 8px rgba(250, 140, 22, 0.15);
+  transform: translateX(2px);
+}
+
+.table-row-even {
+  background-color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.table-row-even:hover {
+  background-color: #fafafa !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.table-row-odd {
+  background-color: #fafafa;
+  transition: all 0.3s ease;
+}
+
+.table-row-odd:hover {
+  background-color: #f5f5f5 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* ProTable Header Styling */
+.ant-pro-table-list-toolbar-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #262626;
+}
+
+/* Table Header */
+.ant-table-thead > tr > th {
+  background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+  font-weight: 600;
+  color: #262626;
+  border-bottom: 2px solid #e8e8e8;
+  padding: 16px;
+  font-size: 14px;
+}
+
+/* Table Cell Padding */
+.ant-table-tbody > tr > td {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #595959;
+}
+
+/* Card Styling */
+.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+.ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ProCard Styling */
+.ant-pro-card {
+  border-radius: 8px;
+}
+
+/* Smooth transitions for all interactive elements */
+.ant-btn {
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.016);
+}
+
+.ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ant-btn-primary {
+  background: #1890ff;
+  border-color: #1890ff;
+}
+
+.ant-btn-primary:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+}
+
+.ant-tag {
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+/* Progress Bar Styling */
+.ant-progress-line {
+  border-radius: 4px;
+}
+
+.ant-progress-bg {
+  border-radius: 4px !important;
+}
+
+/* Statistic Styling */
+.ant-statistic-title {
+  color: #8c8c8c;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ant-statistic-content {
+  font-size: 24px;
+  font-weight: 600;
+}

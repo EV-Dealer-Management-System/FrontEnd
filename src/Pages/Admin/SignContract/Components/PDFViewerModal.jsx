@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { 
   Modal, 
   Button, 
-  Image 
+  Image,
+  Tabs 
 } from 'antd';
-import { FilePdfOutlined, ClearOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { FilePdfOutlined, ClearOutlined, EnvironmentOutlined, FileTextOutlined } from '@ant-design/icons';
+import PDFViewer from './PDF/PDFViewer';
 
 // PDF Viewer Modal component - Hiển thị PDF giống Adobe Acrobat
 const PDFViewerModal = ({ 
@@ -14,30 +16,68 @@ const PDFViewerModal = ({
   contractNo,
   viewerLink 
 }) => {
-  const [currentService, setCurrentService] = useState(0); // Default to Google Docs Viewer
+  const [activeTab, setActiveTab] = useState('google-docs'); // Default tab
   const [imageError, setImageError] = useState(false);
   
-  const services = [
+  // Sử dụng viewerLink nếu có (từ PDF preview API), nếu không thì dùng contractLink
+  const pdfUrl = viewerLink || contractLink;
+
+  // Tabs configuration for different PDF viewers
+  const tabItems = [
     {
-      name: "Google Docs Viewer",
-      url: `https://docs.google.com/gview?url=${encodeURIComponent(contractLink)}&embedded=true`,
+      key: 'google-docs',
+      label: (
+        <span>
+          <EnvironmentOutlined />
+          Google Docs
+        </span>
+      ),
+      children: (
+        <div className="h-[70vh]">
+          <iframe 
+            src={`https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true`}
+            className="w-full h-full border-0"
+            title="Google Docs PDF Viewer"
+          />
+        </div>
+      )
     },
     {
-      name: "PDF.js Viewer",
-      url: `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(contractLink)}`,
+      key: 'pdfjs',
+      label: (
+        <span>
+          <FilePdfOutlined />
+          PDF.js
+        </span>
+      ),
+      children: (
+        <div className="h-[70vh]">
+          <iframe 
+            src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(pdfUrl)}`}
+            className="w-full h-full border-0"
+            title="PDF.js Viewer"
+          />
+        </div>
+      )
     },
     {
-      name: "Original PDF",
-      url: contractLink,
+      key: 'react-pdf',
+      label: (
+        <span>
+          <FileTextOutlined />
+          React-PDF
+        </span>
+      ),
+      children: (
+        <div className="h-[70vh] overflow-auto">
+          <PDFViewer 
+            contractNo={contractNo} 
+            pdfUrl={pdfUrl}
+          />
+        </div>
+      )
     }
   ];
-
-  const currentUrl = viewerLink || services[currentService].url;
-  
-  const handleServiceChange = () => {
-    setCurrentService((prev) => (prev + 1) % services.length);
-    setImageError(false);
-  };
   
   return (
     <Modal
@@ -48,9 +88,9 @@ const PDFViewerModal = ({
             <span className="font-medium">{contractNo}</span>
           </span>
           <div className="flex items-center space-x-2">
-            <Button size="small" onClick={handleServiceChange} className="text-xs">
-              Viewer: {services[currentService].name}
-            </Button>
+            <span className="text-sm text-gray-600">
+              Mode: {activeTab === 'google-docs' ? 'Google Docs' : activeTab === 'pdfjs' ? 'PDF.js' : 'React-PDF'}
+            </span>
             <Button 
               type="primary" 
               size="small" 
@@ -60,7 +100,6 @@ const PDFViewerModal = ({
             >
               Thoát Toàn Màn Hình
             </Button>
-            {imageError && <span className="text-red-500 text-xs">❌ Lỗi tải</span>}
           </div>
         </div>
       }
@@ -113,86 +152,20 @@ const PDFViewerModal = ({
       }}
       destroyOnClose={true}
     >
-      <div className="w-full h-full flex flex-col" style={{ backgroundColor: '#525659' }}>
-        {/* PDF Display - Acrobat Style Fullscreen */}
-        <div 
-          className="flex-1 overflow-hidden flex justify-center"
-          style={{
-            backgroundColor: '#525659',
-            padding: '0'
-          }}
-        >
-          <div className="bg-white shadow-lg" style={{ width: '100%', height: '100%', maxWidth: '100%', display: 'flex', justifyContent: 'center' }}>
-            {currentService === 2 ? (
-              // Hiển thị PDF trực tiếp - sử dụng iframe với Mozilla PDF.js nếu browser không hỗ trợ
-              <object 
-                data={currentUrl} 
-                type="application/pdf" 
-                style={{ 
-                  width: '100%', 
-                  height: '85vh',
-                  minWidth: '800px',
-                  display: 'block'
-                }}
-                onError={() => setImageError(true)}
-              >
-                <iframe
-                  src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(contractLink)}`}
-                  title={`Hợp đồng ${contractNo}`}
-                  style={{ 
-                    width: '100%', 
-                    height: '90vh',
-                    minWidth: '100%',
-                    border: 'none',
-                    display: 'block'
-                  }}
-                  onError={() => setImageError(true)}
-                />
-                <div className="p-8 text-center text-gray-600 bg-white">
-                  <FilePdfOutlined className="text-4xl text-red-500 mb-4" />
-                  <p className="text-lg mb-4">Không thể hiển thị PDF trực tiếp</p>
-                  <Button 
-                    type="primary" 
-                    icon={<EnvironmentOutlined />}
-                    href={contractLink} 
-                    target="_blank"
-                    className="bg-blue-500 border-blue-500"
-                  >
-                    Mở trong tab mới
-                  </Button>
-                </div>
-              </object>
-            ) : (
-              // Hiển thị qua iframe với các service viewer
-              <iframe
-                src={currentUrl}
-                title={`Hợp đồng ${contractNo}`}
-                style={{ 
-                  width: '100%', 
-                  height: '90vh',
-                  minWidth: '100%',
-                  maxWidth: '100%',
-                  border: 'none',
-                  display: 'block'
-                }}
-                onError={() => setImageError(true)}
-                onLoad={() => setImageError(false)}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-      
-      {/* Hướng dẫn sử dụng - Acrobat style */}
-      <div className="flex justify-between items-center text-gray-300 text-xs px-4 py-2" style={{ backgroundColor: '#333', borderTop: '1px solid #222' }}>
-        <div className="flex items-center">
-          <span className="mr-2">💡</span>
-          <span>Sử dụng scroll để xem toàn bộ tài liệu</span>
-        </div>
-        <div>
-          <span>Hợp đồng số: <strong>{contractNo}</strong></span>
-        </div>
-      </div>
+      {/* Phase 2: Tabs cho các PDF viewers */}
+      <Tabs 
+        activeKey={activeTab} 
+        onChange={setActiveTab}
+        items={tabItems}
+        type="card"
+        size="small"
+        className="h-full"
+        tabBarStyle={{ 
+          margin: 0, 
+          backgroundColor: '#f5f5f5',
+          borderBottom: '1px solid #d9d9d9'
+        }}
+      />
     </Modal>
   );
 };
