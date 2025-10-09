@@ -50,6 +50,91 @@ function ContractPage() {
   const [showSmartCASelector, setShowSmartCASelector] = useState(false);
   const [showExistingSmartCASelector, setShowExistingSmartCASelector] = useState(false);
   const [selectedSmartCA, setSelectedSmartCA] = useState(null);
+  
+  const revokePdfPreviewUrl = useCallback(() => {
+    setPdfPreviewUrl(prevUrl => {
+      if (prevUrl) {
+        URL.revokeObjectURL(prevUrl);
+      }
+      return null;
+    });
+  }, []);
+
+  const extractTokenFromDownloadUrl = useCallback((downloadUrl) => {
+    try {
+      const url = new URL(downloadUrl);
+      return url.searchParams.get('token');
+    } catch (error) {
+      console.error('Không thể phân tích token từ downloadUrl:', error);
+      return null;
+    }
+  }, []);
+
+  const loadPdfPreview = useCallback(
+    async (downloadUrl, { forceRefresh = false, silent = false } = {}) => {
+      if (!downloadUrl) {
+        return null;
+      }
+
+      if (pdfLoading) {
+        if (!silent) {
+          message.warning('Đang tải file PDF, vui lòng đợi...');
+        }
+        return null;
+      }
+
+      const token = extractTokenFromDownloadUrl(downloadUrl);
+
+      if (!token) {
+        if (!silent) {
+          message.warning('Không tìm thấy token trong đường dẫn hợp đồng.');
+        }
+        return null;
+      }
+
+      setPdfLoading(true);
+
+      try {
+        const params = { token };
+
+        if (forceRefresh) {
+          params._ = Date.now();
+        }
+
+        const response = await api.get('/EContract/preview', {
+          params,
+          responseType: 'blob'
+        });
+
+        if (!response || response.status !== 200) {
+          throw new Error('Không thể tải trước PDF');
+        }
+
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(blob);
+
+        setPdfPreviewUrl(prevUrl => {
+          if (prevUrl) {
+            URL.revokeObjectURL(prevUrl);
+          }
+          return blobUrl;
+        });
+
+        return blobUrl;
+      } catch (error) {
+        console.error('Lỗi khi tải PDF preview:', error);
+        if (!silent) {
+          message.error('Không thể tải trước file PDF. Vui lòng thử lại sau.');
+        }
+        return null;
+      } finally {
+        setPdfLoading(false);
+      }
+    },
+    [extractTokenFromDownloadUrl, pdfLoading]
+  );
+
+  useEffect(() => () => revokePdfPreviewUrl(), [revokePdfPreviewUrl]);
 
   const revokePdfPreviewUrl = useCallback(() => {
     setPdfPreviewUrl(prevUrl => {
@@ -204,13 +289,69 @@ function ContractPage() {
       message.warning('Không có link PDF');
       return;
     }
-    if (!pdfPreviewUrl) {
+
+
+     if (!pdfPreviewUrl) {
+
+
       const previewUrl = await loadPdfPreview(contractInfo.downloadUrl, { silent: true });
       if (!previewUrl) {
         return;
       }
     }
     setPdfModalVisible(true);
+  }
+async function openPdfInNewTab() {
+    if (!contractInfo?.downloadUrl) {
+      message.warning('Không có link PDF');
+      return;
+    }
+
+    const url = pdfPreviewUrl || await loadPdfPreview(contractInfo.downloadUrl);
+
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }
+
+  async function downloadPdfFile() {
+    if (!contractInfo?.downloadUrl) {
+      message.warning('Không có file PDF để tải xuống');
+      return;
+    }
+
+
+  async function openPdfInNewTab() {
+    if (!contractInfo?.downloadUrl) {
+      message.warning('Không có link PDF');
+      return;
+    }
+
+    const url = pdfPreviewUrl || await loadPdfPreview(contractInfo.downloadUrl);
+
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }
+
+  async function downloadPdfFile() {
+    if (!contractInfo?.downloadUrl) {
+      message.warning('Không có file PDF để tải xuống');
+      return;
+    }
+
+
+    const url = pdfPreviewUrl || await loadPdfPreview(contractInfo.downloadUrl);
+
+    if (!url) return;
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${contractInfo?.processId?.substring(0, 8) || 'hop-dong'}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    message.success('Đang tải file PDF...');
   }
 
   async function openPdfInNewTab() {
@@ -543,7 +684,11 @@ function ContractPage() {
                     >
                       Xem PDF
                     </Button>
-                    <Button onClick={openPdfInNewTab} loading={pdfLoading} icon={<FilePdfOutlined />}>
+
+
+                     <Button onClick={openPdfInNewTab} loading={pdfLoading} icon={<FilePdfOutlined />}>
+
+
                       Mở tab mới
                     </Button>
                   </Space>
