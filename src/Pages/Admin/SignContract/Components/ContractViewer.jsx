@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  Card, 
-  Button, 
-  Space, 
-  Alert
+import {
+  Card,
+  Button,
+  Space,
+  Alert,
+  message
 } from 'antd';
 import { 
   ShopOutlined, 
@@ -15,21 +16,33 @@ import {
 import PDFModal from './PDF/PDFModal';
 
 // Component hiển thị hợp đồng đã tạo - Sử dụng PDF Modal
-const ContractViewer = ({ 
-  contractLink, 
-  contractNo, 
-  contractSigned, 
-  onSign, 
-  onDownload, 
+const ContractViewer = ({
+  contractLink,
+  contractNo,
+  contractSigned,
+  onSign,
+  onDownload,
   onNewContract,
   viewerLink,
   loading = false
 }) => {
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
-  
+  const previewUrl = viewerLink || null;
+
+  const handleOpenInNewTab = () => {
+    const targetUrl = previewUrl || contractLink;
+
+    if (!targetUrl) {
+      message.warning('Không có đường dẫn để mở hợp đồng.');
+      return;
+    }
+
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <>
-      <Card 
+      <Card
         className="bg-green-50 border-green-200 mb-6"
         title={
           <span className="flex items-center text-green-600">
@@ -65,26 +78,31 @@ const ContractViewer = ({
               <p className="text-gray-600 mb-4">
                 Hợp đồng số <strong>{contractNo}</strong> đã được tạo thành công.
               </p>
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 size="large"
                 icon={<FilePdfOutlined />}
                 onClick={() => setPdfModalVisible(true)}
                 loading={loading}
                 className="bg-blue-500 hover:bg-blue-600"
+                disabled={!previewUrl}
               >
                 Xem hợp đồng PDF
               </Button>
+              {!previewUrl && !loading && (
+                <p className="text-sm text-gray-500 mt-3">
+                  Không thể tải trước hợp đồng trong ứng dụng. Vui lòng mở trong tab mới để xem.
+                </p>
+              )}
             </div>
           </div>
-          
+
           {/* Action buttons - Phase 4: Đơn giản hóa, PDFViewer có built-in fullscreen */}
           <div className="flex justify-between items-center mt-4">
             <Space>
-              <Button 
-                type="primary" 
-                href={viewerLink || contractLink} 
-                target="_blank"
+              <Button
+                type="primary"
+                onClick={handleOpenInNewTab}
                 icon={<EnvironmentOutlined />}
                 className="bg-green-500 border-green-500 hover:bg-green-600"
               >
@@ -134,7 +152,7 @@ const ContractViewer = ({
         visible={pdfModalVisible}
         onClose={() => setPdfModalVisible(false)}
         contractNo={contractNo}
-        pdfUrl={viewerLink || contractLink}
+        pdfUrl={previewUrl}
         title={`Hợp đồng ${contractNo}`}
       />
     </>

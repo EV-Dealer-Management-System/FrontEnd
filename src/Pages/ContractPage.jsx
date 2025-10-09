@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card, Form, Input, Button, Row, Col, Typography, Steps, Space, Tag, Divider, Modal, message } from 'antd';
 import { FileTextOutlined, SafetyOutlined, EditOutlined, CheckCircleOutlined, FilePdfOutlined, ReloadOutlined } from '@ant-design/icons';
 
 // Reuse service
 import { ContractService } from '../App/Home/SignContractCustomer';
+
+import api from '../api/api';
 
 // Reuse components từ CreateAccount
 import SignatureModal from './Admin/SignContract/Components/SignatureModal';
@@ -28,8 +30,8 @@ function ContractPage() {
 
   // PDF viewer - Phase 4: Sử dụng PDFModal
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
-  const [pdfBlob, setPdfBlob] = useState(null);
-  const [pdfKey, setPdfKey] = useState(0);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   // Flow ký
   const [signingLoading, setSigningLoading] = useState(false);
@@ -48,6 +50,91 @@ function ContractPage() {
   const [showSmartCASelector, setShowSmartCASelector] = useState(false);
   const [showExistingSmartCASelector, setShowExistingSmartCASelector] = useState(false);
   const [selectedSmartCA, setSelectedSmartCA] = useState(null);
+
+  const revokePdfPreviewUrl = useCallback(() => {
+    setPdfPreviewUrl(prevUrl => {
+      if (prevUrl) {
+        URL.revokeObjectURL(prevUrl);
+      }
+      return null;
+    });
+  }, []);
+
+  const extractTokenFromDownloadUrl = useCallback((downloadUrl) => {
+    try {
+      const url = new URL(downloadUrl);
+      return url.searchParams.get('token');
+    } catch (error) {
+      console.error('Không thể phân tích token từ downloadUrl:', error);
+      return null;
+    }
+  }, []);
+
+  const loadPdfPreview = useCallback(
+    async (downloadUrl, { forceRefresh = false, silent = false } = {}) => {
+      if (!downloadUrl) {
+        return null;
+      }
+
+      if (pdfLoading) {
+        if (!silent) {
+          message.warning('Đang tải file PDF, vui lòng đợi...');
+        }
+        return null;
+      }
+
+      const token = extractTokenFromDownloadUrl(downloadUrl);
+
+      if (!token) {
+        if (!silent) {
+          message.warning('Không tìm thấy token trong đường dẫn hợp đồng.');
+        }
+        return null;
+      }
+
+      setPdfLoading(true);
+
+      try {
+        const params = { token };
+
+        if (forceRefresh) {
+          params._ = Date.now();
+        }
+
+        const response = await api.get('/EContract/preview', {
+          params,
+          responseType: 'blob'
+        });
+
+        if (!response || response.status !== 200) {
+          throw new Error('Không thể tải trước PDF');
+        }
+
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(blob);
+
+        setPdfPreviewUrl(prevUrl => {
+          if (prevUrl) {
+            URL.revokeObjectURL(prevUrl);
+          }
+          return blobUrl;
+        });
+
+        return blobUrl;
+      } catch (error) {
+        console.error('Lỗi khi tải PDF preview:', error);
+        if (!silent) {
+          message.error('Không thể tải trước file PDF. Vui lòng thử lại sau.');
+        }
+        return null;
+      } finally {
+        setPdfLoading(false);
+      }
+    },
+    [extractTokenFromDownloadUrl, pdfLoading]
+  );
+
+  useEffect(() => () => revokePdfPreviewUrl(), [revokePdfPreviewUrl]);
 
   function showCertificateSelector() {
     if (smartCAInfo) {
@@ -71,6 +158,7 @@ function ContractPage() {
         setContractInfo(result.data);
         setCurrentStep(1);
         await checkSmartCA(result.data.processedByUserId);
+        await loadPdfPreview(result.data.downloadUrl, { silent: true });
         message.success('Lấy thông tin hợp đồng thành công!');
       } else {
         message.error(result.error || 'Không lấy được thông tin hợp đồng');
@@ -102,22 +190,59 @@ function ContractPage() {
   }
 
   // Ép reload PDF bằng cache-busting
-  function refreshPdfCache(reason = '') {
+  async function refreshPdfCache(reason = '') {
     if (!contractInfo?.downloadUrl) return;
-    const base = contractInfo.downloadUrl;
-    const freshUrl = `${base}${base.includes('?') ? '&' : '?'}_ts=${Date.now()}`;
-    setPdfBlob(freshUrl);
-    setPdfKey(k => k + 1);
+    await loadPdfPreview(contractInfo.downloadUrl, {
+      forceRefresh: true,
+      silent: reason === 'toggle'
+    });
   }
 
   // Phase 4: Toggle inline PDF viewer thay vì modal
-  function togglePDFViewer() {
+  async function togglePDFViewer() {
     if (!contractInfo?.downloadUrl) {
       message.warning('Không có link PDF');
       return;
     }
-    refreshPdfCache('toggle');
+    if (!pdfPreviewUrl) {
+      const previewUrl = await loadPdfPreview(contractInfo.downloadUrl, { silent: true });
+      if (!previewUrl) {
+        return;
+      }
+    }
     setPdfModalVisible(true);
+  }
+
+  async function openPdfInNewTab() {
+    if (!contractInfo?.downloadUrl) {
+      message.warning('Không có link PDF');
+      return;
+    }
+
+    const url = pdfPreviewUrl || await loadPdfPreview(contractInfo.downloadUrl);
+
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }
+
+  async function downloadPdfFile() {
+    if (!contractInfo?.downloadUrl) {
+      message.warning('Không có file PDF để tải xuống');
+      return;
+    }
+
+    const url = pdfPreviewUrl || await loadPdfPreview(contractInfo.downloadUrl);
+
+    if (!url) return;
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${contractInfo?.processId?.substring(0, 8) || 'hop-dong'}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    message.success('Đang tải file PDF...');
   }
 
   // Nhận dữ liệu chữ ký từ SignatureModal và gọi API ký
@@ -150,7 +275,7 @@ function ContractPage() {
       
       if (result.success) {
         message.success('Ký điện tử thành công! Vui lòng xác thực.');
-        refreshPdfCache('afterSign');
+        await refreshPdfCache('afterSign');
         setSignatureCompleted(true);
         setShowAppVerifyModal(true);
       } else {
@@ -179,7 +304,7 @@ function ContractPage() {
         setShowAppVerifyModal(false);
         setCurrentStep(4);
         setContractSigned(true);
-        refreshPdfCache('afterVerify');
+        await refreshPdfCache('afterVerify');
 
         Modal.success({
           title: (
@@ -226,9 +351,9 @@ function ContractPage() {
     setContractInfo(null);
     setSmartCAInfo(null);
     setCurrentStep(0);
-    setPdfBlob(null);
+    revokePdfPreviewUrl();
+    setPdfLoading(false);
     setPdfModalVisible(false);
-    setPdfKey(0);
     setSignatureCompleted(false);
     setContractSigned(false);
     setShowSignatureModal(false);
@@ -418,7 +543,7 @@ function ContractPage() {
                     >
                       Xem PDF
                     </Button>
-                    <Button href={contractInfo.downloadUrl} target="_blank" icon={<FilePdfOutlined />}>
+                    <Button onClick={openPdfInNewTab} loading={pdfLoading} icon={<FilePdfOutlined />}>
                       Mở tab mới
                     </Button>
                   </Space>
@@ -448,7 +573,7 @@ function ContractPage() {
               <Title level={3} className="text-green-600 mb-2">Ký Hợp Đồng Thành Công!</Title>
               <Paragraph className="text-gray-600 mb-6">Bạn có thể tải hợp đồng đã ký.</Paragraph>
               <Space>
-                <Button type="primary" size="large" href={contractInfo?.downloadUrl} target="_blank" icon={<FilePdfOutlined />} className="bg-green-500 hover:bg-green-600 border-green-500">
+                <Button type="primary" size="large" onClick={downloadPdfFile} loading={pdfLoading} icon={<FilePdfOutlined />} className="bg-green-500 hover:bg-green-600 border-green-500">
                   Tải hợp đồng đã ký
                 </Button>
                 <Button size="large" onClick={resetForm}>Ký hợp đồng khác</Button>
@@ -462,7 +587,7 @@ function ContractPage() {
           visible={pdfModalVisible}
           onClose={() => setPdfModalVisible(false)}
           contractNo={`${contractInfo?.processId?.slice(0, 8) || 'HĐ'}...`}
-          pdfUrl={pdfBlob || contractInfo?.downloadUrl}
+          pdfUrl={pdfPreviewUrl}
           title={`Hợp đồng ${contractInfo?.processId?.slice(0, 8) || 'HĐ'}...`}
         />
 
