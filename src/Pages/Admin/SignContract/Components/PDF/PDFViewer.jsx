@@ -50,25 +50,88 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
       const startTime = Date.now();
       setLoadTime(startTime);
       
-      // Phase 5: Check cache first
       const cacheKey = contractNo || 'default-pdf';
       
-      // Nếu đã có pdfUrl từ props (blob URL từ CreateContract), cache nó và sử dụng
+      // Phase 5: Normalize externalPdfUrl - chuyển string URL thành Blob
       if (externalPdfUrl) {
-        // Try to cache the external PDF for future use
-        if (externalPdfUrl instanceof Blob) {
-          pdfCacheService.cachePDF(cacheKey, externalPdfUrl, {
-            contractNo,
-            source: 'props',
-            timestamp: Date.now()
-          });
+        try {
+          let pdfBlob = null;
+          
+          // Nếu là Blob thì sử dụng trực tiếp
+          if (externalPdfUrl instanceof Blob) {
+            pdfBlob = externalPdfUrl;
+            console.log('📄 Using existing Blob from props');
+          } 
+          // Nếu là string URL thì fetch qua backend để convert thành Blob
+          else if (typeof externalPdfUrl === 'string') {
+            console.log('🔄 Normalizing string URL to Blob via backend...');
+            
+            // Extract token từ URL nếu có (cho VNPT API)
+            const tokenMatch = externalPdfUrl.match(/[?&]token=([^&]+)/);
+            const token = tokenMatch ? tokenMatch[1] : null;
+            
+            if (token) {
+              // Fetch qua backend preview API để tránh CORS
+              const response = await api.get(`/EContract/preview?token=${token}`, {
+                responseType: 'blob',
+                timeout: 30000
+              });
+              
+              if (response.status === 200) {
+                pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+                console.log('✅ Successfully converted URL to Blob via backend');
+              } else {
+                throw new Error('Backend preview API failed');
+              }
+            } else {
+              // Nếu không có token, thử fetch trực tiếp (có thể gây CORS)
+              console.log('⚠️ No token found, attempting direct fetch (may cause CORS)');
+              const response = await fetch(externalPdfUrl);
+              
+              if (response.ok) {
+                pdfBlob = await response.blob();
+                console.log('✅ Successfully fetched URL directly');
+              } else {
+                throw new Error(`Direct fetch failed: ${response.status}`);
+              }
+            }
+          }
+          
+          // Cache normalized blob
+          if (pdfBlob) {
+            await pdfCacheService.cachePDF(cacheKey, pdfBlob, {
+              contractNo,
+              source: typeof externalPdfUrl === 'string' ? 'normalized-url' : 'props-blob',
+              timestamp: Date.now(),
+              size: pdfBlob.size,
+              originalUrl: typeof externalPdfUrl === 'string' ? externalPdfUrl : null
+            });
+            
+            // Tạo blob URL để sử dụng
+            const blobUrl = URL.createObjectURL(pdfBlob);
+            setPdfUrl(blobUrl);
+            setLoading(false);
+            console.log('💾 Cached and set normalized PDF blob');
+            return;
+          }
+          
+        } catch (error) {
+          console.error('❌ Error normalizing externalPdfUrl:', error);
+          
+          // Fallback: sử dụng URL gốc nếu không normalize được
+          if (typeof externalPdfUrl === 'string') {
+            console.log('🔄 Fallback: using original string URL');
+            setPdfUrl(externalPdfUrl);
+            setLoading(false);
+            return;
+          }
+          
+          // Nếu lỗi hoàn toàn, tiếp tục logic cache/API bên dưới
+          console.log('🔄 Fallback: continuing to cache/API logic');
         }
-        setPdfUrl(externalPdfUrl);
-        setLoading(false);
-        return;
       }
 
-      // Phase 5: Try cache first before API call
+      // Phase 5: Try cache first before API call (logic gốc)
       const cachedPdf = await pdfCacheService.getCachedPDF(cacheKey);
       if (cachedPdf) {
         console.log(`🎯 Using cached PDF for ${cacheKey}`);
@@ -77,19 +140,16 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
         return;
       }
 
-      // Nếu không có, thử fetch từ API (backup logic)
+      // Backup API logic (giữ nguyên như cũ)
       try {
         setLoading(true);
         
-        // Lấy JWT token từ localStorage cho authentication header
         const token = localStorage.getItem('jwt_token');
         
         if (!token) {
           throw new Error('Không tìm thấy token xác thực');
         }
 
-        // NOTE: Đây là backup logic - thông thường pdfUrl sẽ được truyền từ CreateContract
-        // CreateContract đã extract token từ downloadUrl và gọi preview API
         const response = await api.get('/EContract/preview', {
           responseType: 'blob',
           headers: {
@@ -97,13 +157,11 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
           }
         });
 
-        // Phase 5: Cache the PDF và tạo blob URL
         const blob = new Blob([response.data], { type: 'application/pdf' });
         
-        // Cache for future use
         await pdfCacheService.cachePDF(cacheKey, blob, {
           contractNo,
-          source: 'api',
+          source: 'api-backup',
           timestamp: Date.now(),
           size: blob.size
         });
@@ -114,7 +172,7 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
       } catch (error) {
         console.error('Lỗi khi tải PDF:', error);
         
-        // Phase 5: Enhanced error handling với detailed diagnostics
+        // Enhanced error handling logic (giữ nguyên)
         const errorDetails = {
           message: error.message,
           status: error.response?.status,
@@ -134,7 +192,7 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
         
         setErrorInfo(errorDetails);
         
-        // Phase 5: Smart retry strategy với network-aware backoff
+        // Smart retry logic (giữ nguyên)
         const maxRetries = navigator.connection?.effectiveType === 'slow-2g' ? 2 : 3;
         const baseDelay = navigator.connection?.effectiveType === '4g' ? 500 : 1000;
         
@@ -148,11 +206,9 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
             fetchPdf();
           }, delay);
         } else {
-          // Phase 5: Enhanced fallback strategies
           const fallbackMessage = `Không thể tải PDF sau ${maxRetries} lần thử. `;
           
           if (error.response?.status === 200 && error.response?.data) {
-            // PDF data OK nhưng render fail - mở trong tab mới
             const blob = new Blob([error.response.data], { type: 'application/pdf' });
             const url = URL.createObjectURL(blob);
             window.open(url, '_blank');
@@ -176,7 +232,7 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false })
         URL.revokeObjectURL(pdfUrl);
       }
     };
-  }, [externalPdfUrl]); // Re-run khi externalPdfUrl thay đổi
+  }, [externalPdfUrl, retryCount]); // Re-run khi externalPdfUrl hoặc retryCount thay đổi
 
   // Phase 5: Enhanced performance tracking với memory monitoring
   const trackMemoryUsage = useCallback(() => {
