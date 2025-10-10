@@ -21,7 +21,8 @@ const commonColors = [
 
 const Managecolor = () => {
     const [form] = Form.useForm();
-    const [searchForm] = Form.useForm();
+    const [searchNameForm] = Form.useForm();
+    const [searchCodeForm] = Form.useForm();
     const [updateForm] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [colorData, setColorData] = useState(null);
@@ -33,9 +34,12 @@ const Managecolor = () => {
         // Lưu tab hiện tại
         localStorage.setItem('currentColorTab', activeKey);
         
-        // Nếu chuyển sang tab search, set mặc định là search by name
+        // Nếu chuyển sang tab search, reset search forms và set mặc định là search by name
         if (activeKey === '2') {
             localStorage.setItem('currentSearchTab', 'name');
+            searchNameForm.resetFields();
+            searchCodeForm.resetFields();
+            setColorData(null);
         }
 
         // Nếu có dữ liệu color và đang chuyển sang tab update
@@ -43,10 +47,10 @@ const Managecolor = () => {
             localStorage.setItem('colorForUpdate', JSON.stringify(colorData));
         }
 
-        // Chỉ reload khi chuyển từ Create sang Search hoặc ngược lại
-        if ((activeKey === '2' && localStorage.getItem('currentColorTab') === '1') ||
-            (activeKey === '1' && localStorage.getItem('currentColorTab') === '2')) {
-            window.location.reload();
+        // Reset form khi chuyển sang tab create
+        if (activeKey === '1') {
+            form.resetFields();
+            setLastCreatedColor('');
         }
     };
 
@@ -85,8 +89,13 @@ const Managecolor = () => {
                     duration: 3
                 });
                 form.resetFields();
-                // Không tự động hiển thị kết quả nữa
                 setLastCreatedColor(values.colorName);
+                
+                // Reset search forms and color data to ensure clean state
+                searchNameForm.resetFields();
+                searchCodeForm.resetFields();
+                setColorData(null);
+                setShouldRefresh(false);
             } else {
                 message.error(response.data.message || 'Lỗi khi tạo màu');
             }
@@ -137,20 +146,45 @@ const Managecolor = () => {
 
     // Search Color by Code
     const handleSearchByCode = async (values) => {
+        if (!values.colorCode?.trim()) {
+            message.warning('Vui lòng nhập mã màu cần tìm');
+            return;
+        }
+        
         try {
             setLoading(true);
-            const response = await api.get(`ElectricVehicleColor/get-color-by-code/${values.colorCode}`);
+            const colorCode = values.colorCode.trim();
+            
+            // URL encode the color code properly (especially for # symbols)
+            const encodedColorCode = encodeURIComponent(colorCode);
+            const searchUrl = `ElectricVehicleColor/get-color-by-code/${encodedColorCode}`;
+            
+            console.log('Original color code:', colorCode);
+            console.log('Encoded color code:', encodedColorCode);
+            console.log('Full URL:', searchUrl);
+            
+            const response = await api.get(searchUrl);
+            console.log('Search by code response:', response.data);
+            
             if (response.data?.isSuccess && response.data.result) {
+                setShouldRefresh(false);
                 setColorData(response.data.result);
                 updateForm.setFieldsValue(response.data.result);
                 message.success('Tìm thấy màu');
             } else {
-                message.warning(`Không tìm thấy màu với mã "${values.colorCode}"`);
+                message.warning(`Không tìm thấy màu với mã "${colorCode}"`);
                 setColorData(null);
                 updateForm.resetFields();
             }
         } catch (error) {
-            message.error('Lỗi khi tìm kiếm: ' + error.message);
+            console.error('Error in handleSearchByCode:', error);
+            console.error('Error response:', error.response);
+            
+            if (error.response?.status === 404) {
+                message.warning(`Không tìm thấy màu với mã "${values.colorCode}"`);
+            } else {
+                message.error('Lỗi khi tìm kiếm: ' + (error.response?.data?.message || error.message));
+            }
             setColorData(null);
             updateForm.resetFields();
         } finally {
@@ -332,7 +366,9 @@ const Managecolor = () => {
                         defaultActiveKey={localStorage.getItem('currentSearchTab') || 'name'}
                         onChange={(key) => {
                             localStorage.setItem('currentSearchTab', key);
-                            searchForm.resetFields();
+                            // Reset forms when switching between search types
+                            searchNameForm.resetFields();
+                            searchCodeForm.resetFields();
                             setColorData(null);
                         }}
                         items={[
@@ -340,7 +376,7 @@ const Managecolor = () => {
                                 key: 'name',
                                 label: 'Tìm theo tên',
                                 children: (
-                                    <Form form={searchForm} layout="vertical" onFinish={handleSearchByName}>
+                                    <Form form={searchNameForm} layout="vertical" onFinish={handleSearchByName}>
                                         <Form.Item
                                             name="colorName"
                                             label="Tên Màu"
@@ -360,13 +396,13 @@ const Managecolor = () => {
                                 key: 'code',
                                 label: 'Tìm theo mã màu',
                                 children: (
-                                    <Form form={searchForm} layout="vertical" onFinish={handleSearchByCode}>
+                                    <Form form={searchCodeForm} layout="vertical" onFinish={handleSearchByCode}>
                                         <Form.Item
                                             name="colorCode"
-                                            label="Mã Màu"
+                                            label="Mã Màu (ID hoặc Hex Code)"
                                             rules={[{ required: true, message: 'Vui lòng nhập mã màu!' }]}
                                         >
-                                            <Input placeholder="Nhập mã màu cần tìm" />
+                                            <Input placeholder="Nhập ID màu hoặc hex code (ví dụ: 1, #FF0000)" />
                                         </Form.Item>
                                         <Form.Item>
                                             <Button type="primary" htmlType="submit" loading={loading}>
