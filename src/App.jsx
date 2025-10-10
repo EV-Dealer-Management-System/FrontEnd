@@ -11,6 +11,7 @@ import PublicRoute from "./Router/PublicRoute";
 import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
 import ContractPage from "./Pages/PublicPage/ContractPage";
 import EVMAdmin from "./Pages/Admin/EVMAdmin";
+
 import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
 import DealerManager from "./Pages/DealerManager/DealerManager";
 import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
@@ -20,6 +21,11 @@ import AdminRoute from "./Router/AdminRoute";
 import DealerStaffRoute from "./Router/DealerStaffRoute";
 import EVMStaffRoute from "./Router/EVMStaffRoute";
 import ContractViewer from "./Pages/PublicPage/ContractView";
+
+import Managemodel from "./Pages/Admin/VehicleManagement/Components/Managemodel";
+import Manageversion from "./Pages/Admin/VehicleManagement/Components/Manageversion";
+import Managecolor from "./Pages/Admin/VehicleManagement/Components/Managecolor";
+
 
 function App() {
   return (
@@ -69,6 +75,7 @@ function App() {
         <Route
           path="/dealer-manager/*"
           element={
+
             <DealerManagerRoute>
               <Routes>
                 <Route path="" element={<DealerManager />} />
@@ -81,6 +88,31 @@ function App() {
                 />
               </Routes>
             </DealerManagerRoute>
+          }
+        />
+        <Route
+            path="/admin/vehicle/model"
+            element={
+            <ProtectedRoute>
+              <Managemodel />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/vehicle/version"
+          element={
+            <ProtectedRoute>
+              <Manageversion />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/vehicle/color"
+          element={
+            <ProtectedRoute>
+              <Managecolor />
+            </ProtectedRoute>
+
           }
         />
 
