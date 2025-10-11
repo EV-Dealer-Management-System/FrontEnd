@@ -45,8 +45,8 @@ function App() {
         <Route path="/email-verification" element={<EmailVerification />} />
         <Route path="/forgot-password" element={<ResetPassword />} />
         <Route path="/api/reset-password" element={<ResetPasswordConfirm />} />
-        <Route path="/contract" element={<ContractPage />} />
-        <Route path="/EContract/View" element={<ContractViewer />} />
+        <Route path="/EContract/contract" element={<PublicRoute><ContractPage /></PublicRoute>} />
+        <Route path="/EContract/View" element={<PublicRoute><ContractViewer /></PublicRoute>} />
         {/* Admin Routes - với catch-all route */}
         <Route
           path="/admin/*"
