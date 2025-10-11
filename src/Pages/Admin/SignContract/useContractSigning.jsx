@@ -23,6 +23,10 @@ const useContractSigning = () => {
         return;
       }
 
+      // Set preview image
+      setPreviewImage(signatureData);
+
+      // Chuyển sang trạng thái xác thực
       setShowSignatureModal(false);
       setSigningLoading(true);
       setShowSmartCAModal(true);
@@ -30,8 +34,8 @@ const useContractSigning = () => {
       const signContractApi = SignContract();
 
       // ✅ Ưu tiên sử dụng positionA và pageSign từ API draft-dealer-contracts
-      let signingPage = pageSign || 1; 
-      let signingPosition = positionA || "50,110,220,180"; 
+      let signingPage = pageSign; 
+      let signingPosition = positionA; 
 
       // Fallback: Sử dụng từ waitingProcessData nếu không có positionA và pageSign
       if (waitingProcessData && !positionA && !pageSign) {
@@ -68,6 +72,15 @@ const useContractSigning = () => {
         confirmTermsConditions: true,
         signatureDisplayMode: signatureDisplayMode
       };
+
+      console.log('Signature data format:', {
+        fullDataURL: signatureData.substring(0, 100) + '...',
+        dataURLLength: signatureData.length,
+        processId: contractId,
+        waitingProcess: waitingProcessData,
+        hasCorrectPrefix: signatureData.startsWith('data:image/png;base64,'),
+        position: positionA
+      });
 
       const result = await signContractApi.handleSignContract(signData);
 

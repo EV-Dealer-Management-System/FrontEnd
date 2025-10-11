@@ -15,7 +15,7 @@ import {
   Modal,
   Layout
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined,FilePdfOutlined,DownloadOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined } from '@ant-design/icons';
+import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined,FilePdfOutlined,DownloadOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined, EditOutlined } from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
 import api from '../../../api/api';
 import { ContractService } from '../../../App/Home/SignContractCustomer'
@@ -28,6 +28,7 @@ import AddSmartCA from '../SignContract/Components/AddSmartCA';
 import SmartCASelector from '../SignContract/Components/SmartCASelector';
 import SmartCAStatusChecker from '../SignContract/Components/SmartCAStatusChecker';
 import useContractSigning from '../SignContract/useContractSigning';
+import PDFEdit from '../SignContract/Components/PDF/PDFEdit';
 import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount';
 const FIXED_USER_ID = "18858";
 import AdminLayout from '../../../Components/Admin/AdminLayout';
@@ -91,6 +92,9 @@ const CreateContract = () => {
   const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
 
+  // PDF Edit states
+  const [showPDFEdit, setShowPDFEdit] = useState(false);
+
   // Sử dụng custom hook để quản lý logic ký hợp đồng
   const {
     showSignatureModal,
@@ -121,15 +125,15 @@ const CreateContract = () => {
     setLoadingPdf(true);
     try {
       // Extract token từ downloadUrl
-      const tokenMatch = downloadUrl.match(/[?&]token=([^&]+)/);
-      const token = tokenMatch ? tokenMatch[1] : null;
+      const tokenMatch = downloadUrl;
+      const token = tokenMatch ? tokenMatch : null;
       if (!token) {
-        message.warning('Không tìm thấy token trong đường dẫn hợp đồng');
+        message.warning('Không tìm thấy url trong response api');
         return null;
       }
       // Gọi API qua backend proxy thay vì fetch trực tiếp
-      const response = await api.get(`/EContract/preview?`, {
-      params: { token },        // cách này sạch hơn so với nối string
+      const response = await api.get(`/EContract/preview`, {
+      params: { downloadUrl },        // cách này sạch hơn so với nối string
       responseType: 'blob'
     });
       
@@ -143,7 +147,7 @@ const CreateContract = () => {
       }
     } catch (error) {
       console.log('Lỗi API preview, sử dụng link gốc:', error.message);
-      // Quan trọng: KHÔNG return downloadUrl trực tiếp vì sẽ gây CORS
+  
       return null;
     } finally {
       setLoadingPdf(false);
@@ -406,6 +410,8 @@ const CreateContract = () => {
         setPdfBlob(null);
         setPdfBlobUrl(null);
         setLoadingPdf(false);
+        // Reset PDF Edit states
+        setShowPDFEdit(false);
         // Reset signing position states
         setPositionA(null);
         setPositionB(null);
@@ -479,6 +485,36 @@ const CreateContract = () => {
                   viewerLink={getPdfDisplayUrl()}
                   loading={loadingPdf}
                 />
+
+                {/* PDF Edit Actions */}
+                <Card className="mb-6 mt-6">
+                  <Title level={4} className="flex items-center">
+                    <EditOutlined className="mr-2" />
+                    Chỉnh sửa PDF
+                  </Title>
+                  <div className="text-center">
+                    <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded p-3 mb-3">
+                      <div className="font-medium">Chỉnh sửa nội dung hợp đồng</div>
+                      <div className="text-sm">Thêm văn bản, ghi chú hoặc chỉnh sửa nội dung PDF trước khi ký</div>
+                    </div>
+                    <Space>
+                      <Button 
+                        type="primary" 
+                        icon={<EditOutlined />}
+                        onClick={() => setShowPDFEdit(true)}
+                        disabled={!contractLink}
+                      >
+                        Mở trình chỉnh sửa PDF
+                      </Button>
+                      <Button 
+                        onClick={handleDownload}
+                        disabled={!contractLink}
+                      >
+                        Tải xuống bản gốc
+                      </Button>
+                    </Space>
+                  </div>
+                </Card>
 
                 {/* Card trạng thái SmartCA giống ContractPage */}
                 <Card className="mb-6 mt-6">
@@ -874,6 +910,20 @@ const CreateContract = () => {
             </p>
           </div>
         )}
+
+        {/* PDF Edit Modal */}
+        <PDFEdit
+          visible={showPDFEdit}
+          onCancel={() => setShowPDFEdit(false)}
+          onSave={(editedPdfBytes) => {
+            message.success('PDF đã được chỉnh sửa và lưu thành công');
+            setShowPDFEdit(false);
+            // TODO: Cập nhật contractLink với PDF đã chỉnh sửa nếu cần
+          }}
+          contractId={contractId}
+          downloadUrl={contractLink}
+          contractNo={contractNo}
+        />
       </div>
     </AdminLayout>
   );

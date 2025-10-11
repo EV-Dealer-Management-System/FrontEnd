@@ -93,7 +93,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         icon: <CarOutlined />,
         routes: [
           {
-            path: '/admin/vehicle/catalog',
+            path: '/admin/vehicle/model',
             name: 'Danh mục xe',
             icon: <DatabaseOutlined />,
             component: './VehicleCatalog',
