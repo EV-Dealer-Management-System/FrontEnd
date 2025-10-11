@@ -50,15 +50,15 @@ export const createAccountApi = {
     }
 
     if (!formData.fullNameManager || formData.fullNameManager.trim().length < 2) {
-      errors.push('Họ tên quản lý phải có ít nhất 2 ký tự');
+      errors.push('Họ tên quản lý đại lý phải có ít nhất 2 ký tự');
     }
 
     if (!formData.emailManager || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emailManager)) {
-      errors.push('Email quản lý không hợp lệ');
+      errors.push('Email quản lý đại lý không hợp lệ');
     }
 
     if (!formData.phoneNumberManager || !/^0[1-9]{9}$/.test(formData.phoneNumberManager)) {
-      errors.push('Số điện thoại quản lý phải bắt đầu bằng 0 và có đúng 10 chữ số');
+      errors.push('Số điện thoại quản lý đại lý phải bắt đầu bằng 0 và có đúng 10 chữ số');
     }
 
     if (!formData.dealerAddress || formData.dealerAddress.trim().length < 5) {
@@ -71,6 +71,15 @@ export const createAccountApi = {
 
     if (!formData.dealerLevel || ![1, 2, 3].includes(formData.dealerLevel)) {
       errors.push('Cấp độ đại lý phải từ 1 đến 3');
+    }
+
+    // ✅ Validate tỉnh/thành phố và phường/xã - Những field này bắt buộc cho địa chỉ đại lý
+    if (!formData.province) {
+      errors.push('Vui lòng chọn tỉnh/thành phố');
+    }
+
+    if (!formData.ward) {
+      errors.push('Vui lòng chọn phường/xã');
     }
 
     // additionalTerm và regionDealer có thể null nên không cần validate
@@ -93,6 +102,7 @@ export const createAccountApi = {
       fullNameManager: formData.fullNameManager?.trim(),
       emailManager: formData.emailManager?.trim(),
       phoneNumberManager: formData.phoneNumberManager?.trim()
+      // Note: province và ward không gửi lên API vì đã được xử lý thành dealerAddress
     };
   }
 };

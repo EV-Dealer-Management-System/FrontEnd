@@ -32,15 +32,15 @@ function ContractView() {
   const extractTokenFromUrl = useCallback(() => {
     try {
       const urlParams = new URLSearchParams(location.search);
-      const tokenMatch = urlParams.get('token') || urlParams.get('Token');
-      const token = tokenMatch ? tokenMatch : null;
-      if (!token) {
-        throw new Error('Không tìm thấy token trong URL');
+      const urlMatch = urlParams.get('Url') || urlParams.get('url');
+      const url = urlMatch ? urlMatch : null;
+      if (!url) {
+        throw new Error('Không tìm thấy URL trong URL');
       }
-      
-      return token;
+
+      return url;
     } catch (error) {
-      console.error('Error extracting token:', error);
+      console.error('Error extracting URL:', error);
       return null;
     }
   }, [location.search]);
@@ -166,16 +166,16 @@ function ContractView() {
 
   // Initialize - extract token and load PDF
   useEffect(() => {
-    const token = extractTokenFromUrl();
-    
-    if (!token) {
+    const url = extractTokenFromUrl();
+
+    if (!url) {
       setError('URL không chứa token hợp lệ');
       setLoading(false);
       return;
     }
-    const encodedToken = encodeURIComponent(token);
-    setContractToken(encodedToken);
-    loadPdfPreview(encodedToken);
+    const decodedUrl = decodeURIComponent(url);
+    setContractToken(decodedUrl);
+    loadPdfPreview(decodedUrl);
   }, [location.search]);
 
   // Cleanup blob URL when component unmounts

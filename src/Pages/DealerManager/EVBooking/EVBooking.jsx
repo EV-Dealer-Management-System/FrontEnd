@@ -8,7 +8,7 @@ import {
 import { App, Card, Row, Col, Space } from "antd";
 import { createEVBooking } from "../../../App/DealerManager/EVBooking/EVBooking";
 import DealerManagerLayout from "../../../Components/DealerManager/DealerManagerLayout";
-import getAllEVModels from "../../../App/DealerManager/EVBooking/Layouts/getAllEVModel";
+import getAllEVModels from "../../../App/DealerManager/EVBooking/Layouts/GetAllEVModel";
 import getAllEVVersionByModelID from "../../../App/DealerManager/EVBooking/Layouts/GetAllEVVersionByModelID";
 import { getEVColorbyModelAndVersion } from "../../../App/DealerManager/EVBooking/Layouts/GetEVColorbyModelAndVersion";
 
