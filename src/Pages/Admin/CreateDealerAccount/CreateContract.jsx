@@ -74,6 +74,11 @@ const CreateContract = () => {
   const [contractId, setContractId] = useState(null);
   const [waitingProcessData, setWaitingProcessData] = useState(null);
 
+  // Lưu thông tin vị trí ký và trang ký từ API response
+  const [positionA, setPositionA] = useState(null);
+  const [positionB, setPositionB] = useState(null);
+  const [pageSign, setPageSign] = useState(null);
+
   // SmartCA flow
   const [showAddSmartCA, setShowAddSmartCA] = useState(false);
   const [showSmartCASelector, setShowSmartCASelector] = useState(false);
@@ -245,10 +250,13 @@ const CreateContract = () => {
         regionDealer: values.regionDealer || null,
         fullNameManager: values.representativeName,
         emailManager: values.email,
-        phoneNumberManager: values.phone
+        phoneNumberManager: values.phone,
+        // ✅ Thêm province và ward vào validation data
+        province: values.province,
+        ward: values.ward
       };
 
-      // Validate form data
+      // Validate form data (bao gồm province và ward)
       const validation = createAccountApi.validateFormData(dealerData);
       if (!validation.isValid) {
         message.error(validation.errors[0]);
@@ -287,6 +295,29 @@ const CreateContract = () => {
           if (downloadUrl) {
             setContractLink(downloadUrl);
             setContractNo(contractNo || 'Không xác định');
+            
+            // ✅ Lưu thông tin vị trí ký và trang ký từ API response
+            if (contractData.positionA) {
+              setPositionA(contractData.positionA);
+              
+            }
+            if (contractData.positionB) {
+              setPositionB(contractData.positionB);
+             
+            }
+            if (contractData.pageSign) {
+              setPageSign(contractData.pageSign);
+              
+            }
+            
+            // Debug: In tất cả signing info
+            console.log('Complete signing info:', {
+              positionA: contractData.positionA,
+              positionB: contractData.positionB,
+              pageSign: contractData.pageSign,
+              contractId: contractIdFromResponse,
+              waitingProcess: contractData.waitingProcess
+            });
             
             // Load PDF preview từ API /EContract/preview
             await loadPdfPreview(downloadUrl);
@@ -375,6 +406,10 @@ const CreateContract = () => {
         setPdfBlob(null);
         setPdfBlobUrl(null);
         setLoadingPdf(false);
+        // Reset signing position states
+        setPositionA(null);
+        setPositionB(null);
+        setPageSign(null);
         resetSigningState();
         message.success('Đã làm mới biểu mẫu');
       }
@@ -414,13 +449,9 @@ const CreateContract = () => {
                         <FileTextOutlined className="mr-2" />
                         PDF Viewer: React-PDF (Native)
                       </Text>
-                      <div className="text-xs text-gray-500 bg-green-50 px-2 py-1 rounded">
-                        Phase 4: Simplified & Optimized
-                      </div>
                     </div>
                   </div>
                 </Card>
-
                 <ContractViewer
                   contractLink={contractLink}
                   contractNo={contractNo}
@@ -791,7 +822,8 @@ const CreateContract = () => {
           visible={showSignatureModal}
           onCancel={() => setShowSignatureModal(false)}
           onSign={(signatureData, signatureDisplayMode) => {
-            handleSignature(signatureData, signatureDisplayMode, contractId, waitingProcessData, contractLink);
+            // ✅ Truyền thêm positionA và pageSign vào handleSignature
+            handleSignature(signatureData, signatureDisplayMode, contractId, waitingProcessData, contractLink, positionA, pageSign);
           }}
           loading={signingLoading}
         />

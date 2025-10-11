@@ -16,7 +16,7 @@ const useContractSigning = () => {
   const [showAddSmartCA, setShowAddSmartCA] = useState(false);
 
 
-  const handleSignature = async (signatureData, signatureDisplayMode, contractId, waitingProcessData) => {
+  const handleSignature = async (signatureData, signatureDisplayMode, contractId, waitingProcessData, contractLink, positionA, pageSign) => {
     try {
       if (!contractId || !signatureData) {
         message.error('Thiếu thông tin hợp đồng hoặc chữ ký.');
@@ -29,11 +29,12 @@ const useContractSigning = () => {
 
       const signContractApi = SignContract();
 
-     
-      let signingPage = 1; 
-      let signingPosition = "50,110,220,180"; 
+      // ✅ Ưu tiên sử dụng positionA và pageSign từ API draft-dealer-contracts
+      let signingPage = pageSign || 1; 
+      let signingPosition = positionA || "50,110,220,180"; 
 
-      if (waitingProcessData) {
+      // Fallback: Sử dụng từ waitingProcessData nếu không có positionA và pageSign
+      if (waitingProcessData && !positionA && !pageSign) {
         if (waitingProcessData.pageSign) {
           signingPage = waitingProcessData.pageSign;
         }
@@ -47,7 +48,11 @@ const useContractSigning = () => {
           comId: waitingProcessData.comId
         });
       } else {
-        console.log('Không có waitingProcessData, sử dụng vị trí mặc định');
+        console.log('Sử dụng vị trí ký từ API draft-dealer-contracts:', {
+          signingPage,
+          signingPosition: positionA,
+          pageSign
+        });
       }
 
       const signData = {
