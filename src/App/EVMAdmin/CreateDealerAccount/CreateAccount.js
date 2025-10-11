@@ -21,7 +21,7 @@ export const createAccountApi = {
       console.log('Dữ liệu gửi lên API:', apiData);
       
       // Gọi API tạo hợp đồng đại lý
-      const response = await api.post('/EContract/dealer-contracts', apiData);
+      const response = await api.post('/EContract/draft-dealer-contracts', apiData);
       
       // Log toàn bộ response để debug
       console.log('API response:', JSON.stringify(response.data, null, 2));

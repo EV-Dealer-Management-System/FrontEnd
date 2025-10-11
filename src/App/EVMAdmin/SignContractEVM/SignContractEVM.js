@@ -17,6 +17,12 @@ export const SignContract = () => {
       // Lấy access token trước khi ký hợp đồng
       const token = await getAccessTokenForEVC();
 
+      // ✅ Validation signature image trước khi gửi
+      if (!contractData.signatureImage) {
+        throw new Error("Vui lòng tạo chữ ký trước khi ký hợp đồng");
+      }
+
+
       // Request body theo đúng schema (không có token)
       const requestBody = {
         processId: contractData.waitingProcess?.id || contractData.processId || "",
@@ -25,8 +31,8 @@ export const SignContract = () => {
         otp: contractData.otp || "",
         signatureDisplayMode: contractData.signatureDisplayMode || 0,
         signatureImage: contractData.signatureImage || "",
-        signingPage: contractData.signingPage || 0,
-        signingPosition: contractData.signingPosition || "",
+        signingPage: contractData.pageSign || 1,  // Default page 1 thay vì 0
+        signingPosition: contractData.positionA || "50,110,220,180",  // Default position nếu không có
         signatureText: contractData.signatureText || "",
         fontSize: contractData.fontSize || 0,
         showReason: contractData.showReason !== undefined ? contractData.showReason : true,
@@ -43,10 +49,12 @@ export const SignContract = () => {
     } catch (error) {
       console.error("Lỗi khi ký hợp đồng:", error);
       
-      // Xử lý các lỗi cụ thể từ server
+      // ✅ Cải thiện error handling
       if (error.response?.data?.message) {
         const errorMessage = error.response.data.message;
-        if (errorMessage.includes("User has not confirmed yet")) {
+        if (errorMessage.includes("Please add a signature image")) {
+          throw new Error("Vui lòng thêm chữ ký trước khi ký hợp đồng");
+        } else if (errorMessage.includes("User has not confirmed yet")) {
           throw new Error("Người dùng chưa xác nhận. Vui lòng kiểm tra OTP hoặc xác nhận điều khoản trước khi ký.");
         } else if (errorMessage.includes("Lỗi ký số")) {
           throw new Error(`Lỗi ký số: ${errorMessage}`);
