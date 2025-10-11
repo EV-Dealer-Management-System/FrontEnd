@@ -71,9 +71,9 @@ function ContractPage() {
     setPdfLoading(true);
     try {
       // Extract token từ downloadUrl (không decode)
-      const tokenMatch = downloadUrl.match(/[?&]token=([^&]+)/);
-      const token = tokenMatch ? tokenMatch[1] : null;
-      
+      const tokenMatch = downloadUrl;
+      const token = tokenMatch ? tokenMatch : null;
+
       if (!token) {
         console.log('Không tìm thấy token, dùng link gốc');
         return downloadUrl;
@@ -81,7 +81,7 @@ function ContractPage() {
 
       // Gọi API qua backend proxy để tránh CORS
     const response = await api.get(`/EContract/preview?`, {
-      params: { token },        // cách này sạch hơn so với nối string
+      params: { downloadUrl },        // cách này sạch hơn so với nối string
       responseType: 'blob'
     });
       
