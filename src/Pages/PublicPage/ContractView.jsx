@@ -32,7 +32,7 @@ function ContractView() {
   const extractTokenFromUrl = useCallback(() => {
     try {
       const urlParams = new URLSearchParams(location.search);
-      const urlMatch = urlParams.get('Url') || urlParams.get('url');
+      const urlMatch = urlParams.get('downloadUrl');
       const url = urlMatch ? urlMatch : null;
       if (!url) {
         throw new Error('Không tìm thấy URL trong URL');
@@ -46,9 +46,9 @@ function ContractView() {
   }, [location.search]);
 
   // Load PDF preview từ API /EContract/preview - tham khảo từ ContractPage.jsx
-  const loadPdfPreview = useCallback(async (token) => {
-    if (!token) {
-      setError('Token không hợp lệ');
+  const loadPdfPreview = useCallback(async (url) => {
+    if (!url) {
+      setError('URL không hợp lệ');
       return false;
     }
     
@@ -56,11 +56,12 @@ function ContractView() {
     setError(null);
     
     try {
-      console.log('Loading PDF with token:', token);
-      
+      console.log('Loading PDF with downloadUrl:', url);
+      const tokenMatch = url.match(/token=([^&]+)/);
+      const token = tokenMatch ? tokenMatch[1] : null;
+      const encodedUrl = encodeURIComponent(url);
       // Gọi API qua backend proxy để tránh CORS - giống ContractPage
-      const response = await api.get('/EContract/preview', {
-        params: { token },
+      const response = await api.get(`/EContract/preview?downloadUrl=${encodedUrl}`, {
         responseType: 'blob',
         timeout: 30000
       });
@@ -173,9 +174,8 @@ function ContractView() {
       setLoading(false);
       return;
     }
-    const decodedUrl = decodeURIComponent(url);
-    setContractToken(decodedUrl);
-    loadPdfPreview(decodedUrl);
+    setContractToken(url);
+    loadPdfPreview(url);
   }, [location.search]);
 
   // Cleanup blob URL when component unmounts

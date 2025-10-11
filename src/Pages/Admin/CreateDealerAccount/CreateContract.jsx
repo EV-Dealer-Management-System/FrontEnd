@@ -132,8 +132,8 @@ const CreateContract = () => {
         return null;
       }
       // Gọi API qua backend proxy thay vì fetch trực tiếp
-      const response = await api.get(`/EContract/preview?downloadUrl=`, {
-      params: { token },        // cách này sạch hơn so với nối string
+      const response = await api.get(`/EContract/preview`, {
+      params: { downloadUrl },        // cách này sạch hơn so với nối string
       responseType: 'blob'
     });
       

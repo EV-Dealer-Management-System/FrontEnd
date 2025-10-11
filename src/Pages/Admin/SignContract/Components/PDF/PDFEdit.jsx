@@ -78,8 +78,8 @@ const PDFEdit = ({
     setLoading(true);
     try {
       // Extract token từ downloadUrl - tương tự logic trong CreateContract.jsx
-      const tokenMatch = downloadUrl.match(/[?&]token=([^&]+)/);
-      const token = tokenMatch ? tokenMatch[1] : null;
+      const tokenMatch = downloadUrl;
+      const token = tokenMatch ? tokenMatch : null;
       
       if (!token) {
         throw new Error('Không tìm thấy token trong URL');
@@ -89,7 +89,7 @@ const PDFEdit = ({
 
       // Gọi API /EContract/preview
       const response = await api.get('/EContract/preview', {
-        params: { token },
+        params: { downloadUrl },
         responseType: 'arraybuffer' // Quan trọng: arraybuffer cho pdf-lib
       });
       
