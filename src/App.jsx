@@ -1,12 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
+
 import LoginPage from "./Pages/Home/Login/LoginPage";
 import RegisterPage from "./Pages/Home/Register/RegisterPage";
 import { MailConfirmation } from "./Pages/Home/Register/partial/MailConfirmation";
 import EmailVerification from "./Pages/Home/Register/partial/EmailVerification";
 import ResetPassword from "./Pages/Home/Login/Partial/ResetPassword";
 import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfirm";
-
 import PublicRoute from "./Router/PublicRoute";
 import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
 import ContractPage from "./Pages/PublicPage/ContractPage";
@@ -20,6 +20,7 @@ import AdminRoute from "./Router/AdminRoute";
 import DealerStaffRoute from "./Router/DealerStaffRoute";
 import EVMStaffRoute from "./Router/EVMStaffRoute";
 import ContractViewer from "./Pages/PublicPage/ContractView";
+import EVMStaff from "./Pages/EVMStaff/EVMStaff";
 
 function App() {
   return (
@@ -84,6 +85,22 @@ function App() {
           }
         />
 
+        {/* EVM Staff Routes - với catch-all route */}
+        <Route
+          path="/evm-staff/*"
+          element={
+            <EVMStaffRoute>
+              <Routes>
+                <Route path="" element={<EVMStaff />} />
+                {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ EVM Staff */}
+                <Route
+                  path="*"  
+                  element={<Navigate to="/evm-staff" replace />}
+                />
+              </Routes>
+            </EVMStaffRoute>
+          }
+        />
         {/* Global catch-all route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
