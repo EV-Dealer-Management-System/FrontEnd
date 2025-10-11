@@ -52,7 +52,7 @@ function App() {
         <Route path="/forgot-password" element={<ResetPassword />} />
         <Route path="/api/reset-password" element={<ResetPasswordConfirm />} />
         <Route path="/contract" element={<ContractPage />} />
-        <Route path="/EContract/preview" element={<ContractViewer />} />
+        <Route path="/EContract/View" element={<ContractViewer />} />
         {/* Admin Routes - với catch-all route */}
         <Route
           path="/admin/*"
