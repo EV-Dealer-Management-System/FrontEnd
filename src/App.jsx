@@ -20,6 +20,7 @@ import AdminRoute from "./Router/AdminRoute";
 import DealerStaffRoute from "./Router/DealerStaffRoute";
 import EVMStaffRoute from "./Router/EVMStaffRoute";
 import ContractViewer from "./Pages/PublicPage/ContractView";
+import EVMStaff from "./Pages/EVMStaff/EVMStaff";
 
 function App() {
   return (
@@ -84,6 +85,22 @@ function App() {
           }
         />
 
+        {/* EVM Staff Routes - với catch-all route */}
+        <Route
+          path="/evm-staff/*"
+          element={
+            <EVMStaffRoute>
+              <Routes>
+                <Route path="" element={<EVMStaff />} />
+                {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ EVM Staff */}
+                <Route
+                  path="*"  
+                  element={<Navigate to="/evm-staff" replace />}
+                />
+              </Routes>
+            </EVMStaffRoute>
+          }
+        />
         {/* Global catch-all route */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
