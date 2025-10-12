@@ -1,10 +1,5 @@
-<<<<<<< Updated upstream
-import React, { useState } from "react";
-import { Table, Card, Modal } from "antd";
-=======
 import React, { useState, useEffect } from "react";
 import { Table, Card, Modal, Spin } from "antd";
->>>>>>> Stashed changes
 import {
   DashboardOutlined,
   UserOutlined,
@@ -12,60 +7,34 @@ import {
   FileSearchOutlined,
   LogoutOutlined,
 } from "@ant-design/icons";
+import { getTotalCustomer } from "../../App/Admin/Admin";
+import { getProvinces } from "../../App/Admin/ProvinceApi"; // 🔥 import API lấy tỉnh
 
 const Admin = () => {
   const [selectedKey, setSelectedKey] = useState("dashboard");
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
-
-<<<<<<< Updated upstream
-=======
-  // ✅ State API
   const [totalCustomer, setTotalCustomer] = useState(null);
   const [loadingCustomer, setLoadingCustomer] = useState(true);
   const [errorCustomer, setErrorCustomer] = useState(null);
 
-  // ✅ Gọi API khi load trang
+  // State cho tỉnh
+  const [provinceModal, setProvinceModal] = useState(false);
+  const [provinceData, setProvinceData] = useState([]);
+  const [loadingProvince, setLoadingProvince] = useState(false);
+
   useEffect(() => {
     const fetchCustomer = async () => {
       try {
-        const res = await fetch(
-          "https://74fa78739c29.ngrok-free.app/api/DashBoard/total-customer",
-          {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-               "ngrok-skip-browser-warning": "true", 
-            },
-          }
-        );
-
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-
-        // 📥 Đọc raw text
-        const text = await res.text();
-        console.log("📥 Raw response:", text);
-
-        // 🔧 Fix: parse chuỗi JSON thủ công
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          throw new Error("❌ Không parse được JSON: " + text.slice(0, 200));
-        }
-
-        console.log("✅ API data:", data);
-
-        if (data.isSuccess) {
-          setTotalCustomer(data.result); // 👉 lấy đúng giá trị "result"
+        const data = await getTotalCustomer();
+        if (data?.isSuccess) {
+          setTotalCustomer(data.result);
           setErrorCustomer(null);
         } else {
-          setErrorCustomer(data.message || "API trả về thất bại");
+          setErrorCustomer(data?.message || "API trả về thất bại");
         }
       } catch (error) {
-        console.error("🚨 Fetch error:", error.message);
-        setErrorCustomer(error.message);
+        console.error("🚨 Fetch error:", error?.message || error);
+        setErrorCustomer(error?.message || "Đã xảy ra lỗi");
       } finally {
         setLoadingCustomer(false);
       }
@@ -74,7 +43,6 @@ const Admin = () => {
     fetchCustomer();
   }, []);
 
->>>>>>> Stashed changes
   // Dummy data
   const users = [
     { key: 1, name: "Duong Le", email: "duong@example.com" },
@@ -93,11 +61,25 @@ const Admin = () => {
     { key: 3, action: "User updated profile", time: "2025-08-28 10:00" },
   ];
 
+  // 🔥 Xử lý khi click vào Admin để xem tỉnh
+  const handleStaffClick = async (record) => {
+    setLoadingProvince(true);
+    setProvinceModal(true);
+
+    try {
+      const data = await getProvinces();
+      if (data?.isSuccess) {
+        setProvinceData(data.result); // result là danh sách tỉnh
+      }
+    } catch (error) {
+      console.error("Lỗi khi load tỉnh:", error);
+    } finally {
+      setLoadingProvince(false);
+    }
+  };
+
   const handleLogout = () => {
-<<<<<<< Updated upstream
-    // Xử lý logout ở đây
     console.log("Đăng xuất thành công");
-    // Thông thường sẽ chuyển hướng đến trang login hoặc xóa token
     setIsLogoutModalVisible(false);
   };
 
@@ -106,9 +88,6 @@ const Admin = () => {
   };
 
   const handleCancel = () => {
-=======
-    console.log("Đăng xuất thành công");
->>>>>>> Stashed changes
     setIsLogoutModalVisible(false);
   };
 
@@ -118,30 +97,22 @@ const Admin = () => {
         return (
           <Card title="📊 Dashboard" style={{ width: "100%" }}>
             <p>Welcome to the Admin Dashboard!</p>
-<<<<<<< Updated upstream
-=======
-            {loadingCustomer ? (
-              <Spin tip="Đang tải số lượng khách hàng..." />
-            ) : errorCustomer ? (
-              <p style={{ color: "red" }}>❌ Lỗi: {errorCustomer}</p>
-            ) : (
-              <p>
-                ✅ Tổng số khách hàng:{" "}
-                <strong style={{ fontSize: "18px", color: "#2563eb" }}>
-                  {totalCustomer}
-                </strong>
-              </p>
-            )}
->>>>>>> Stashed changes
+            <div style={{ marginTop: "12px" }}>
+              {loadingCustomer && <span>Đang tải tổng số khách hàng...</span>}
+              {!loadingCustomer && errorCustomer && (
+                <span style={{ color: "#ef4444" }}>{errorCustomer}</span>
+              )}
+              {!loadingCustomer && !errorCustomer && (
+                <div>
+                  <strong>Tổng số khách hàng:</strong> {totalCustomer}
+                </div>
+              )}
+            </div>
           </Card>
         );
       case "users":
         return (
-<<<<<<< Updated upstream
           <Card title="👤 Users" style={{ width: "100%" }}>
-=======
-          <Card title="👤 Users">
->>>>>>> Stashed changes
             <Table
               dataSource={users}
               columns={[
@@ -154,16 +125,19 @@ const Admin = () => {
         );
       case "staff":
         return (
-<<<<<<< Updated upstream
           <Card title="🧑‍💼 Staff" style={{ width: "100%" }}>
-=======
-          <Card title="🧑‍💼 Staff">
->>>>>>> Stashed changes
             <Table
               dataSource={staff}
               columns={[
                 { title: "Name", dataIndex: "name", key: "name" },
                 { title: "Role", dataIndex: "role", key: "role" },
+                {
+                  title: "Action",
+                  key: "action",
+                  render: (_, record) => (
+                    <a onClick={() => handleStaffClick(record)}>Xem tỉnh</a>
+                  ),
+                },
               ]}
               pagination={false}
             />
@@ -171,11 +145,7 @@ const Admin = () => {
         );
       case "logs":
         return (
-<<<<<<< Updated upstream
           <Card title="📜 Logs" style={{ width: "100%" }}>
-=======
-          <Card title="📜 Logs">
->>>>>>> Stashed changes
             <Table
               dataSource={logs}
               columns={[
@@ -192,7 +162,6 @@ const Admin = () => {
   };
 
   return (
-<<<<<<< Updated upstream
     <div
       style={{
         display: "flex",
@@ -201,7 +170,6 @@ const Admin = () => {
         overflow: "hidden",
       }}
     >
-      {/* CSS trực tiếp để đảm bảo hiển thị đúng */}
       <style>
         {`
           body {
@@ -215,22 +183,31 @@ const Admin = () => {
       {/* Modal xác nhận logout */}
       <Modal
         title="Xác nhận đăng xuất"
-        visible={isLogoutModalVisible}
-        onOk={handleLogout}
-        onCancel={handleCancel}
-=======
-    <div style={{ display: "flex", height: "100vh", width: "100vw" }}>
-      {/* Modal Logout */}
-      <Modal
-        title="Xác nhận đăng xuất"
         open={isLogoutModalVisible}
         onOk={handleLogout}
-        onCancel={() => setIsLogoutModalVisible(false)}
->>>>>>> Stashed changes
+        onCancel={handleCancel}
         okText="Đăng xuất"
         cancelText="Hủy"
       >
         <p>Bạn có chắc chắn muốn đăng xuất không?</p>
+      </Modal>
+
+      {/* Modal hiển thị danh sách tỉnh */}
+      <Modal
+        title="Danh sách tỉnh/thành"
+        open={provinceModal}
+        onCancel={() => setProvinceModal(false)}
+        footer={null}
+      >
+        {loadingProvince ? (
+          <Spin tip="Đang tải..." />
+        ) : (
+          <ul>
+            {provinceData.map((p, index) => (
+              <li key={index}>{p.ProvinceName}</li>
+            ))}
+          </ul>
+        )}
       </Modal>
 
       {/* Sidebar */}
@@ -241,12 +218,8 @@ const Admin = () => {
           color: "white",
           display: "flex",
           flexDirection: "column",
-<<<<<<< Updated upstream
           flexShrink: 0,
-          justifyContent: "space-between", // Để nút logout nằm ở cuối
-=======
           justifyContent: "space-between",
->>>>>>> Stashed changes
         }}
       >
         <div>
@@ -263,7 +236,6 @@ const Admin = () => {
           >
             Admin Panel
           </div>
-<<<<<<< Updated upstream
           <nav style={{ padding: "8px", overflowY: "auto" }}>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               <li
@@ -273,14 +245,6 @@ const Admin = () => {
                   gap: "8px",
                   padding: "8px 16px",
                   borderRadius: "4px",
-=======
-          <nav style={{ padding: "8px" }}>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              <li
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "6px",
->>>>>>> Stashed changes
                   cursor: "pointer",
                   backgroundColor:
                     selectedKey === "dashboard" ? "#2563eb" : "transparent",
@@ -288,7 +252,6 @@ const Admin = () => {
                 }}
                 onClick={() => setSelectedKey("dashboard")}
               >
-<<<<<<< Updated upstream
                 <DashboardOutlined />
                 <span>Dashboard</span>
               </li>
@@ -299,14 +262,6 @@ const Admin = () => {
                   gap: "8px",
                   padding: "8px 16px",
                   borderRadius: "4px",
-=======
-                <DashboardOutlined /> Dashboard
-              </li>
-              <li
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "6px",
->>>>>>> Stashed changes
                   cursor: "pointer",
                   backgroundColor:
                     selectedKey === "users" ? "#2563eb" : "transparent",
@@ -314,7 +269,6 @@ const Admin = () => {
                 }}
                 onClick={() => setSelectedKey("users")}
               >
-<<<<<<< Updated upstream
                 <UserOutlined />
                 <span>Users</span>
               </li>
@@ -325,14 +279,6 @@ const Admin = () => {
                   gap: "8px",
                   padding: "8px 16px",
                   borderRadius: "4px",
-=======
-                <UserOutlined /> Users
-              </li>
-              <li
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "6px",
->>>>>>> Stashed changes
                   cursor: "pointer",
                   backgroundColor:
                     selectedKey === "staff" ? "#2563eb" : "transparent",
@@ -340,7 +286,6 @@ const Admin = () => {
                 }}
                 onClick={() => setSelectedKey("staff")}
               >
-<<<<<<< Updated upstream
                 <TeamOutlined />
                 <span>Staff</span>
               </li>
@@ -351,14 +296,6 @@ const Admin = () => {
                   gap: "8px",
                   padding: "8px 16px",
                   borderRadius: "4px",
-=======
-                <TeamOutlined /> Staff
-              </li>
-              <li
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "6px",
->>>>>>> Stashed changes
                   cursor: "pointer",
                   backgroundColor:
                     selectedKey === "logs" ? "#2563eb" : "transparent",
@@ -366,18 +303,13 @@ const Admin = () => {
                 }}
                 onClick={() => setSelectedKey("logs")}
               >
-<<<<<<< Updated upstream
                 <FileSearchOutlined />
                 <span>Logs</span>
-=======
-                <FileSearchOutlined /> Logs
->>>>>>> Stashed changes
               </li>
             </ul>
           </nav>
         </div>
 
-<<<<<<< Updated upstream
         {/* Nút Logout */}
         <div style={{ padding: "8px", borderTop: "1px solid #374151" }}>
           <div
@@ -395,25 +327,11 @@ const Admin = () => {
           >
             <LogoutOutlined />
             <span>Đăng xuất</span>
-=======
-        <div style={{ padding: "8px", borderTop: "1px solid #374151" }}>
-          <div
-            style={{
-              padding: "10px 16px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              color: "#ef4444",
-            }}
-            onClick={() => setIsLogoutModalVisible(true)}
-          >
-            <LogoutOutlined /> Đăng xuất
->>>>>>> Stashed changes
           </div>
         </div>
       </aside>
 
       {/* Main content */}
-<<<<<<< Updated upstream
       <div
         style={{
           display: "flex",
@@ -422,10 +340,6 @@ const Admin = () => {
           minWidth: 0,
         }}
       >
-        {/* Header */}
-=======
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
->>>>>>> Stashed changes
         <header
           style={{
             height: "64px",
@@ -440,11 +354,6 @@ const Admin = () => {
         >
           Admin Dashboard
         </header>
-
-<<<<<<< Updated upstream
-        {/* Content */}
-=======
->>>>>>> Stashed changes
         <main
           style={{
             flex: 1,
