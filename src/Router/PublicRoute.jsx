@@ -4,10 +4,8 @@ const PublicRoute = ({ children }) => {
   const token = localStorage.getItem("jwt_token");
 
   if (token) {
-    // If user is logged in, redirect to customer dashboard
-    return <Navigate to="/customer" replace />;
+    return <Navigate to="/" replace />;
   }
-
   return children;
 };
 
