@@ -51,7 +51,7 @@ function ManageModel() {
     try {
       console.log("=== LOADING MODELS ===");
       const result = await vehicleApi.getAllModels();
-
+      
       if (result.success) {
         console.log("✅ Models loaded successfully:", result.data);
         setModels(result.data || []);
@@ -99,7 +99,7 @@ function ManageModel() {
       console.log("Current model:", currentModel);
 
       let result;
-
+      
       if (isEditing && currentModel) {
         // Cập nhật model
         console.log("Updating model with ID:", currentModel.id);
@@ -116,18 +116,16 @@ function ManageModel() {
         message.success(
           isEditing ? "Cập nhật model thành công!" : "Tạo model mới thành công!"
         );
-
+        
         // Hiển thị thông tin model vừa tạo/cập nhật
         if (result.data) {
           console.log("✅ Model data:", result.data);
-
+          
           Modal.success({
             title: (
               <Space>
                 <CheckCircleOutlined style={{ color: "#52c41a" }} />
-                {isEditing
-                  ? "Cập nhật Model thành công!"
-                  : "Tạo Model thành công!"}
+                {isEditing ? "Cập nhật Model thành công!" : "Tạo Model thành công!"}
               </Space>
             ),
             content: (
@@ -136,29 +134,13 @@ function ManageModel() {
                   message="Thông tin Model"
                   description={
                     <div>
-                      <p>
-                        <strong>Tên model:</strong>{" "}
-                        {result.data.modelName || values.modelName}
-                      </p>
-                      <p>
-                        <strong>Mô tả:</strong>{" "}
-                        {result.data.description || values.description}
-                      </p>
+                      <p><strong>Tên model:</strong> {result.data.modelName || values.modelName}</p>
+                      <p><strong>Mô tả:</strong> {result.data.description || values.description}</p>
                       {(result.data.imageUrl || values.imageUrl) && (
-                        <p>
-                          <strong>Hình ảnh:</strong>{" "}
-                          <a
-                            href={result.data.imageUrl || values.imageUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Xem hình
-                          </a>
-                        </p>
+                        <p><strong>Hình ảnh:</strong> <a href={result.data.imageUrl || values.imageUrl} target="_blank" rel="noopener noreferrer">Xem hình</a></p>
                       )}
                       {result.data.id && (
-                        <p>
-                          <strong>Model ID (Database):</strong>
+                        <p><strong>Model ID (Database):</strong> 
                           <Text code copyable style={{ marginLeft: 8 }}>
                             {result.data.id}
                           </Text>
@@ -173,7 +155,7 @@ function ManageModel() {
             ),
           });
         }
-
+        
         setIsModalVisible(false);
         form.resetFields();
         await loadModels(); // Reload danh sách
@@ -251,26 +233,28 @@ function ManageModel() {
       dataIndex: "imageUrl",
       key: "imageUrl",
       width: 120,
-      render: (imageUrl) =>
+      render: (imageUrl) => (
         imageUrl ? (
           <Image
             src={imageUrl}
             alt="Model"
             width={80}
             height={50}
-            style={{ objectFit: "cover", borderRadius: 4 }}
+            style={{ objectFit: 'cover', borderRadius: 4 }}
           />
         ) : (
           <Tag color="default">Chưa có</Tag>
-        ),
+        )
+      ),
     },
     {
       title: "Ngày tạo",
       dataIndex: "createdAt",
       key: "createdAt",
       width: 150,
-      render: (date) =>
-        date ? new Date(date).toLocaleDateString("vi-VN") : "N/A",
+      render: (date) => (
+        date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"
+      ),
     },
     {
       title: "Thao tác",
@@ -293,12 +277,7 @@ function ManageModel() {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-            >
+            <Button type="primary" danger size="small" icon={<DeleteOutlined />}>
               Xóa
             </Button>
           </Popconfirm>
@@ -397,7 +376,9 @@ function ManageModel() {
           <Form.Item
             label="Mô tả"
             name="description"
-            rules={[{ max: 1000, message: "Mô tả không được quá 1000 ký tự!" }]}
+            rules={[
+              { max: 1000, message: "Mô tả không được quá 1000 ký tự!" },
+            ]}
           >
             <TextArea
               placeholder="Mô tả chi tiết về model xe..."
@@ -410,9 +391,14 @@ function ManageModel() {
           <Form.Item
             label="URL hình ảnh"
             name="imageUrl"
-            rules={[{ type: "url", message: "URL không hợp lệ!" }]}
+            rules={[
+              { type: 'url', message: "URL không hợp lệ!" },
+            ]}
           >
-            <Input placeholder="https://example.com/image.jpg" size="large" />
+            <Input
+              placeholder="https://example.com/image.jpg"
+              size="large"
+            />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>

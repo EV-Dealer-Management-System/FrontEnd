@@ -45,7 +45,7 @@ import {
 } from "@ant-design/icons";
 import NavigationBar from "../../../Components/Admin/Components/NavigationBar";
 import CreateVehicleWizard from "./Components/CreateVehicleWizard";
-import Managemodel from "./Components/Managemodel";
+import ManageModel from "./Components/ModelManagement";
 import { vehicleApi } from "../../../App/EVMAdmin/VehiclesManagement/Vehicles";
 
 const { Title, Text } = Typography;
@@ -573,7 +573,7 @@ function VehicleManagement() {
                     Quản lý Model
                   </span>
                 ),
-                children: <Managemodel />,
+                children: <ManageModel />,
               },
             ]}
           />

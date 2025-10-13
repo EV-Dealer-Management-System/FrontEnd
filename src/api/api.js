@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-baseURL: "https://api.metrohcmc.xyz/api",
+baseURL: "https://api.electricvehiclesystem.click/api",
 });
 
 // Request interceptor để tự động thêm JWT token

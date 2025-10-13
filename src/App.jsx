@@ -11,7 +11,7 @@ import PublicRoute from "./Router/PublicRoute";
 import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
 import ContractPage from "./Pages/PublicPage/ContractPage";
 import EVMAdmin from "./Pages/Admin/EVMAdmin";
-import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
+import VehicleManagementSimple from "./Pages/Admin/VehicleManagement/VehicleManagementSimple";
 import DealerManager from "./Pages/DealerManager/DealerManager";
 import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
 import GetAllEVBooking from "./Pages/DealerManager/GetAllEVBooking.jsx/GetAllEVBooking";
@@ -46,8 +46,22 @@ function App() {
         <Route path="/email-verification" element={<EmailVerification />} />
         <Route path="/forgot-password" element={<ResetPassword />} />
         <Route path="/api/reset-password" element={<ResetPasswordConfirm />} />
-        <Route path="/EContract/contract" element={<PublicRoute><ContractPage /></PublicRoute>} />
-        <Route path="/EContract/View" element={<PublicRoute><ContractViewer /></PublicRoute>} />
+        <Route
+          path="/EContract/contract"
+          element={
+            <PublicRoute>
+              <ContractPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/EContract/View"
+          element={
+            <PublicRoute>
+              <ContractViewer />
+            </PublicRoute>
+          }
+        />
         {/* Admin Routes - với catch-all route */}
         <Route
           path="/admin/*"
@@ -55,7 +69,14 @@ function App() {
             <AdminRoute>
               <Routes>
                 <Route path="" element={<EVMAdmin />} />
-                <Route path="vehicle/model" element={<VehicleManagement />} />
+                <Route
+                  path="vehicle/model"
+                  element={<VehicleManagementSimple />}
+                />
+                <Route
+                  path="vehicle-management"
+                  element={<VehicleManagementSimple />}
+                />
                 <Route
                   path="dealer/create-contract"
                   element={<CreateContract />}
@@ -94,7 +115,7 @@ function App() {
                 <Route path="" element={<EVMStaff />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ EVM Staff */}
                 <Route
-                  path="*"  
+                  path="*"
                   element={<Navigate to="/evm-staff" replace />}
                 />
               </Routes>
