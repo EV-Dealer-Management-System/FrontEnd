@@ -15,6 +15,7 @@ import { getEVColorbyModelAndVersion } from "../../../App/DealerManager/EVBookin
 import VehicleSelector from "./Components/VehicleSelector";
 import BookingSummary from "./Components/BookingSummary";
 import BookingItemCard from "./Components/BookingItemCard";
+import { getEVAvailableQuantity } from "../../../App/DealerManager/EVBooking/Layouts/GetEVAvailableQuantity";
 
 function EVBooking() {
   const { modal } = App.useApp();
@@ -23,6 +24,7 @@ function EVBooking() {
   const [versions, setVersions] = useState([]);
   const [colorsCache, setColorsCache] = useState({});
   const [bookingDetails, setBookingDetails] = useState([]);
+  const [availableQuantities, setAvailableQuantities] = useState({}); // Lưu số lượng có sẵn theo key: modelId_versionId_colorId
 
   // Lấy danh sách mẫu xe và phiên bản
   useEffect(() => {
@@ -130,6 +132,33 @@ function EVBooking() {
     }
   };
 
+  // Xử lý khi thay đổi color - fetch số lượng có sẵn
+  const handleColorChange = async (colorId, modelId, versionId) => {
+    try {
+      // Fetch số lượng có sẵn
+      const quantityKey = `${modelId}_${versionId}_${colorId}`;
+
+      // Chỉ fetch nếu chưa có trong cache
+      if (!availableQuantities[quantityKey]) {
+        const quantityData = await getEVAvailableQuantity(modelId, versionId, colorId);
+
+        if (quantityData && quantityData.result !== undefined) {
+          // Lưu vào cache
+          setAvailableQuantities((prev) => ({
+            ...prev,
+            [quantityKey]: quantityData.result,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching available quantity:", error);
+      modal.error({
+        title: "Lỗi",
+        content: "Không thể tải số lượng xe có sẵn",
+      });
+    }
+  };
+
   // Xử lý khi submit form
   const handleSubmit = async (values) => {
     try {
@@ -217,8 +246,10 @@ function EVBooking() {
                           models={models}
                           versions={versions}
                           colorsCache={colorsCache}
+                          availableQuantities={availableQuantities}
                           onModelChange={handleModelChange}
                           onVersionChange={handleVersionChange}
+                          onColorChange={handleColorChange}
                           formRef={formRef}
                           index={index}
                         />
