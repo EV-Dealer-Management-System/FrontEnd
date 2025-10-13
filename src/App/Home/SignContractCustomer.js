@@ -124,7 +124,7 @@ export const ContractService = () => {
         signatureImage: signatureImage,
         signingPage: pageSign,
         signingPosition: signingPosition,
-        signatureText: "Khách hàng ký",
+        signatureText: "Đại Diện Đại Lý",
         fontSize: 14,
         showReason: true,
         confirmTermsConditions: true
