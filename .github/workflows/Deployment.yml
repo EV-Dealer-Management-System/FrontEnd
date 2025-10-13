@@ -16,7 +16,19 @@ jobs:
       contents: read
 
     steps:
+    
       - uses: actions/checkout@v4
+
+      - name: Create .env from monolithic secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.FRONTEND_ENV_FILE }}" ]; then
+            echo "Secret FRONTEND_ENV_FILE is empty"; exit 1
+          fi
+          printf "%s" "${{ secrets.FRONTEND_ENV_FILE }}" | tr -d '\r' > .env
+          cp .env .env.production || true
+          chmod 600 .env .env.production || true
 
       - uses: actions/setup-node@v4
         with:
