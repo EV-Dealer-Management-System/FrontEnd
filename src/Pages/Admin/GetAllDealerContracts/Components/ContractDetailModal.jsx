@@ -303,13 +303,13 @@ function ContractDetailModal({ visible, contractId, onClose }) {
                                     <Tag color="processing">
                                         Bước {contractDetail.waitingProcess.orderNo} - {contractDetail.waitingProcess.status.description}
                                     </Tag>
-                                    <div className="text-sm text-gray-600">
+                                    {/* <div className="text-sm text-gray-600">
                                         <span>Process ID: </span>
                                         <span className="font-mono text-xs">{contractDetail.waitingProcess.id}</span>
-                                    </div>
-                                    <div className="text-sm text-gray-600">
+                                    </div> */}
+                                    {/* <div className="text-sm text-gray-600">
                                         <span>Vị trí ký: {contractDetail.waitingProcess.position} (Trang {contractDetail.waitingProcess.pageSign})</span>
-                                    </div>
+                                    </div> */}
                                 </Space>
                             </Descriptions.Item>
                         )}
