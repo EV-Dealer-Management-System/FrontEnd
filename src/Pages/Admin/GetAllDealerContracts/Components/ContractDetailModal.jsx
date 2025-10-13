@@ -44,9 +44,8 @@ function ContractDetailModal({ visible, contractId, onClose }) {
             setLoading(true);
             try {
                 const result = await GetDealerContractByID.getDealerContractByID(contractId);
-                console.log('API result:', result); // Debug log
+                console.log('API result:', result);
                 if (result) {
-                    // API trả về result trực tiếp, không phải result.data
                     setContractDetail(result);
                 } else {
                     message.error('Không thể tải chi tiết hợp đồng');
@@ -110,7 +109,6 @@ function ContractDetailModal({ visible, contractId, onClose }) {
 
     // Reload contract detail sau khi ký thành công
     const handleContractSigned = () => {
-        // Reload lại chi tiết hợp đồng để cập nhật trạng thái mới
         if (contractId) {
             const loadContractDetail = async () => {
                 try {
@@ -151,8 +149,6 @@ function ContractDetailModal({ visible, contractId, onClose }) {
                             Tải xuống hợp đồng
                         </Button>
                     )}
-
-
 
                     {canSignContract() && (
                         <Button
@@ -303,13 +299,6 @@ function ContractDetailModal({ visible, contractId, onClose }) {
                                     <Tag color="processing">
                                         Bước {contractDetail.waitingProcess.orderNo} - {contractDetail.waitingProcess.status.description}
                                     </Tag>
-                                    {/* <div className="text-sm text-gray-600">
-                                        <span>Process ID: </span>
-                                        <span className="font-mono text-xs">{contractDetail.waitingProcess.id}</span>
-                                    </div> */}
-                                    {/* <div className="text-sm text-gray-600">
-                                        <span>Vị trí ký: {contractDetail.waitingProcess.position} (Trang {contractDetail.waitingProcess.pageSign})</span>
-                                    </div> */}
                                 </Space>
                             </Descriptions.Item>
                         )}
@@ -372,7 +361,6 @@ function ContractDetailModal({ visible, contractId, onClose }) {
                 loading={signingLoading}
                 signatureCompleted={signatureCompleted}
             />
-
         </Modal>
     );
 }
