@@ -101,39 +101,51 @@ export const ContractService = () => {
     }
   };
 
-  // Ký hợp đồng điện tử (Step 1) - sử dụng token từ contractInfo.accessToken
-  const handleDigitalSignature = async ({ processId, reason, signatureImage, signatureDisplayMode, waitingProcess, accessToken }) => {
+  // Ký hợp đồng điện tử - sử dụng position từ waitingProcess
+  const handleDigitalSignature = async ({ processId, reason, signatureImage, signatureDisplayMode, waitingProcess, accessToken, contractDetail }) => {
     try {
-      // Chuẩn bị data theo format của SignContract giống CreateAccount.jsx
-      const signData = {
-        processId: processId,
-        reason: reason || "Ký hợp đồng điện tử",
+      if (!signatureImage) {
+        throw new Error("Vui lòng tạo chữ ký trước khi ký hợp đồng");
+      }
+
+      // Lấy pageSign từ waitingProcess (chính là bước hiện tại cần ký)
+      const pageSign = waitingProcess?.pageSign || 2; // Default page 2 như trong response
+
+      // Lấy position từ waitingProcess (chính là vị trí cần ký)
+      const signingPosition = waitingProcess?.position || "406,139,576,229"; // Default position
+
+      // Request body theo schema API
+      const requestBody = {
+        processId: processId || waitingProcess?.id || "",
+        reason: reason || "Ký hợp đồng điện tử - Khách hàng",
         reject: false,
+        otp: "",
+        signatureDisplayMode: signatureDisplayMode || 2,
         signatureImage: signatureImage,
-        signingPage: 0,
-        signingPosition: "393,472,563,562",
-        signatureText: "Đại diện Đại lý ký",
+        signingPage: pageSign,
+        signingPosition: signingPosition,
+        signatureText: "Khách hàng ký",
         fontSize: 14,
         showReason: true,
-        confirmTermsConditions: true,
-        signatureDisplayMode: signatureDisplayMode || 2
+        confirmTermsConditions: true
       };
 
-      console.log('Digital signature data:', {
-        processId: processId,
-        hasSignatureImage: !!signatureImage,
-        signatureDisplayMode: signatureDisplayMode,
-        hasAccessToken: !!accessToken
+      console.log("Customer signing contract with data:", {
+        pageSign: pageSign,
+        signingPosition: signingPosition,
+        processId: requestBody.processId,
+        orderNo: waitingProcess?.orderNo,
+        waitingProcessData: waitingProcess
       });
 
-      // Gọi API ký trực tiếp với token từ contractInfo.accessToken
-      const response = await api.post('/EContract/sign-process', signData, {
+      // Gọi API với access token
+      const response = await api.post('/EContract/sign-process', requestBody, {
         params: {
-          token: accessToken // Sử dụng token từ get-info-to-sign-process-by-code
+          token: accessToken
         }
       });
-      
-      console.log('Digital signature result:', response.data);
+
+      console.log('Customer signature result:', response.data);
       
       if (response.data && response.data.statusCode === 200 && response.data.isSuccess) {
         return {
@@ -148,42 +160,30 @@ export const ContractService = () => {
         throw new Error(errorMessage);
       }
     } catch (error) {
-      console.error('Error in digital signature:', error);
+      console.error('Error in customer digital signature:', error);
       
-      // Xử lý các lỗi cụ thể từ server giống SignContract.js
       if (error.response?.data?.message) {
         const errorMessage = error.response.data.message;
-        if (errorMessage.includes("User has not confirmed yet")) {
+        if (errorMessage.includes("Please add a signature image")) {
+          throw new Error("Vui lòng thêm chữ ký trước khi ký hợp đồng");
+        } else if (errorMessage.includes("User has not confirmed yet")) {
           throw new Error("Người dùng chưa xác nhận. Vui lòng kiểm tra OTP hoặc xác nhận điều khoản trước khi ký.");
         } else if (errorMessage.includes("Lỗi ký số")) {
           throw new Error(`Lỗi ký số: ${errorMessage}`);
+        } else {
+          throw new Error(errorMessage);
         }
       }
       
       return {
         success: false,
-        error: error.response?.data?.message || error.message || 'Không thể ký hợp đồng điện tử.'
+        error: error.message || 'Không thể ký hợp đồng điện tử.'
       };
     }
   };
 
   // Ký hợp đồng với OTP (Step 2 - Xác thực ứng dụng)
-  const handleAppVerification = async ({ processId, otp, signatureText }) => {
-    try {
-      // Giả lập xác thực app - có thể gọi API khác để xác thực OTP
-      // Tạm thời return success để hoàn thành flow
-      return {
-        success: true,
-        message: 'Xác thực ứng dụng thành công!'
-      };
-    } catch (error) {
-      console.error('Error in app verification:', error);
-      return {
-        success: false,
-        error: error.response?.data?.message || error.message || 'Không thể xác thực ứng dụng.'
-      };
-    }
-  };
+ 
 
   // Lấy preview PDF từ token hoặc downloadUrl
   const handleGetPreviewPDF = async (tokenOrUrl) => {
@@ -341,9 +341,7 @@ export const ContractService = () => {
     handleCheckSmartCA,
     handleAddSmartCA,
     handleDigitalSignature,
-    handleAppVerification,
     handleGetPreviewPDF,
-    
     // Utility functions
     getPreviewUrl,
     isSmartCAValid,
