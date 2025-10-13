@@ -33,6 +33,7 @@ function GetAllDealerContractPage() {
             console.log('Raw data from API:', data);
             console.log('Is array?', Array.isArray(data));
             console.log('First item:', data[0]);
+            console.log('First item ID:', data[0]?.id);
 
             if (Array.isArray(data)) {
                 setContracts(data);
@@ -52,6 +53,8 @@ function GetAllDealerContractPage() {
 
     // Hàm xử lý xem chi tiết hợp đồng
     function handleViewContract(contract) {
+        console.log('Selected contract:', contract);
+        console.log('Contract ID for modal:', contract?.id);
         setSelectedContract(contract);
         setModalVisible(true);
     }
@@ -101,7 +104,7 @@ function GetAllDealerContractPage() {
                 {/* Modal chi tiết hợp đồng */}
                 <ContractDetailModal
                     visible={modalVisible}
-                    contract={selectedContract}
+                    contractId={selectedContract?.id}
                     onClose={handleCloseModal}
                 />
             </PageContainer>

@@ -138,7 +138,6 @@ export const SmartCAService = () => {
     // Main API handlers
     handleCheckSmartCA,
     handleAddSmartCA,
-    
     // Utility functions
     isSmartCAValid,
     validateCCCD,
