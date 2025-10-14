@@ -1,13 +1,41 @@
 // Vehicles.js - Business logic cho quản lý Vehicle của EVM Admin
 import api from "../../../api/api";
+import axios from "axios";
 
 // API functions cho Vehicle Management
 export const vehicleApi = {
   // === OVERVIEW FUNCTIONS ===
   
-  // Lấy danh sách tất cả vehicles (tổng hợp từ models, versions, colors)
+  // Lấy danh sách tất cả vehicles thực tế từ API
   getAllVehicles: async function() {
     try {
+      console.log('=== CALLING GET ALL VEHICLES API ===');
+      const response = await api.get('/ElectricVehicle/get-all-vehicles');
+      
+      console.log('✅ Get all vehicles API response:', response);
+      
+      if (response.data?.isSuccess && response.data?.result) {
+        console.log('✅ Got vehicles from API:', response.data.result.length, 'vehicles');
+        return {
+          success: true,
+          data: response.data.result,
+          message: response.data.message || 'Lấy danh sách xe thành công'
+        };
+      } else {
+        console.log('⚠️ API response not successful, using combined data fallback');
+        return await this.getAllVehiclesCombined();
+      }
+    } catch (error) {
+      console.error('❌ Error getting vehicles from API:', error);
+      console.log('🔄 Falling back to combined data approach');
+      return await this.getAllVehiclesCombined();
+    }
+  },
+
+  // Backup method: Lấy danh sách vehicles bằng cách combine data (fallback)
+  getAllVehiclesCombined: async function() {
+    try {
+      console.log('=== USING COMBINED DATA APPROACH ===');
       // Lấy tất cả models, versions, colors và combine lại
       const [modelsResult, versionsResult, colorsResult] = await Promise.all([
         this.getAllModels(),
@@ -1240,10 +1268,11 @@ export const vehicleApi = {
     try {
       console.log('=== CREATE ELECTRIC VEHICLE API CALL ===');
       console.log('Using endpoint: /ElectricVehicle/create-vehicle');
+      console.log('Full URL will be: https://api.electricvehiclesystem.click/api/ElectricVehicle/create-vehicle');
       console.log('Data being sent:', vehicleData);
       
-      // Validate required fields theo API schema (bỏ warehouseId tạm thời)
-      const requiredFields = ['versionId', 'colorId', 'vin'];
+      // Validate required fields theo API schema
+      const requiredFields = ['warehouseId', 'versionId', 'colorId', 'vin'];
       const missingFields = requiredFields.filter(field => !vehicleData[field]);
       
       if (missingFields.length > 0) {
@@ -1256,9 +1285,53 @@ export const vehicleApi = {
       
       console.log('✅ All required fields present:', requiredFields);
       
-      const response = await api.post('/ElectricVehicle/create-vehicle', vehicleData);
+      // Log attachmentKeys specifically
+      if (vehicleData.attachmentKeys && Array.isArray(vehicleData.attachmentKeys)) {
+        console.log('📎 AttachmentKeys (correct format):', vehicleData.attachmentKeys, `(${vehicleData.attachmentKeys.length} keys)`);
+        console.log('📎 AttachmentKeys sample:', vehicleData.attachmentKeys.slice(0, 2));
+      } else if (vehicleData.attachmentKeys) {
+        console.warn('⚠️ AttachmentKeys not an array:', typeof vehicleData.attachmentKeys, vehicleData.attachmentKeys);
+      } else {
+        console.log('📎 No attachmentKeys provided');
+      }
+      
+      // Thử endpoint đầu tiên
+      let response;
+      let usedEndpoint = '/ElectricVehicle/create-vehicle';
+      
+      try {
+        response = await api.post(usedEndpoint, vehicleData);
+        console.log('✅ Create vehicle SUCCESS with endpoint:', usedEndpoint);
+      } catch (firstError) {
+        console.log('❌ Failed with first endpoint:', usedEndpoint, firstError.response?.status);
+        
+        // Thử endpoint backup với prefix khác
+        const backupEndpoint = '/api/ElectricVehicle/create-vehicle';
+        console.log('🔄 Trying backup endpoint:', backupEndpoint);
+        
+        try {
+          // Remove /api from current endpoint, thêm lại full /api
+          const backupApi = axios.create({
+            baseURL: "https://api.electricvehiclesystem.click",
+            headers: {
+              Authorization: api.defaults.headers.Authorization
+            }
+          });
+          
+          response = await backupApi.post(backupEndpoint, vehicleData);
+          usedEndpoint = backupEndpoint;
+          console.log('✅ Create vehicle SUCCESS with backup endpoint:', backupEndpoint);
+        } catch (secondError) {
+          console.log('❌ Both endpoints failed');
+          console.log('First error:', firstError.response?.status, firstError.response?.data);
+          console.log('Second error:', secondError.response?.status, secondError.response?.data);
+          throw firstError; // Throw original error
+        }
+      }
+      
       console.log('Create vehicle response:', response.data);
       console.log('Vehicle response status:', response.status);
+      console.log('Used endpoint:', usedEndpoint);
       
       // Kiểm tra success
       const isSuccessful = response.data?.isSuccess === true || 
@@ -1278,9 +1351,19 @@ export const vehicleApi = {
         return this.createMockVehicle(vehicleData);
       }
     } catch (error) {
+      console.error('❌ CREATE VEHICLE ERROR DETAILS:');
+      console.log('  - Status:', error.response?.status);
+      console.log('  - Status Text:', error.response?.statusText);
+      console.log('  - URL:', error.config?.url);
+      console.log('  - Method:', error.config?.method);
+      console.log('  - Request Data:', error.config?.data);
+      console.log('  - Response Data:', error.response?.data);
+      console.log('  - Headers:', error.config?.headers);
+      
       // Kiểm tra xem có phải lỗi 404 (API chưa implement) không
       if (error.response?.status === 404) {
         console.log('🔄 API endpoint not found (404), using mock data fallback');
+        console.log(`❌ Endpoint ${error.config?.url} không tồn tại trên server`);
         console.log('ℹ️ This is expected during development when backend APIs are not ready');
         return this.createMockVehicle(vehicleData);
       }
@@ -1289,7 +1372,7 @@ export const vehicleApi = {
       console.log('🔄 API error, using mock data fallback:', {
         status: error.response?.status,
         message: error.message,
-        endpoint: '/ElectricVehicle/create-vehicle'
+        endpoint: usedEndpoint
       });
       console.log('🔄 API error, using mock data fallback');
       return this.createMockVehicle(vehicleData);
@@ -1449,7 +1532,7 @@ export const vehicleApi = {
     if (warehouseId) {
       // Get specific warehouse by ID
       try {
-        const endpoint = `/api/Warehouse/get-warehouse-by-id/${warehouseId}`;
+        const endpoint = `/Warehouse/get-warehouse-by-id/${warehouseId}`;
         const response = await api.get(endpoint);
         return {
           success: response.data?.isSuccess === true,
@@ -1473,10 +1556,10 @@ export const vehicleApi = {
     try {
       console.log('=== GET INVENTORY BY ID API CALL ===');
       
-      // Use correct endpoints from attachment
+      // Use correct endpoints without /api/ prefix (already in base URL)
       const endpoint = warehouseId 
-        ? `/api/Warehouse/get-warehouse-by-id/${warehouseId}`
-        : '/api/Warehouse/get-all-warehouses'; // Use /api/ version from attachment
+        ? `/Warehouse/get-warehouse-by-id/${warehouseId}`
+        : '/Warehouse/get-all-warehouses';
       
       console.log('Using endpoint:', endpoint);
       
@@ -1512,43 +1595,128 @@ export const vehicleApi = {
     }
   },
 
-  // Upload image và nhận về URL
+  // Upload image của electric vehicle và nhận về key
+  uploadElectricVehicleImage: async (file) => {
+    try {
+      console.log('=== UPLOAD ELECTRIC VEHICLE IMAGE API CALL ===');
+      console.log('Uploading file:', file.name, file.type, file.size);
+      
+      // Tạo FormData với file
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Dùng endpoint từ attachment - KHÔNG cần /api/ vì base URL đã có
+      const endpoint = '/ElectricVehicle/upload-file-of-electric-vehicle';
+      console.log('🔗 Upload endpoint:', endpoint);
+      console.log('🔗 Full URL will be:', api.defaults.baseURL + endpoint);
+      
+      const response = await api.post(endpoint, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      console.log('Upload electric vehicle image response:', response.data);
+      
+      // Kiểm tra success và lấy key
+      const isSuccessful = response.data?.isSuccess === true || 
+                          response.status === 200;
+      
+      if (isSuccessful && response.data?.result) {
+        console.log('✅ Electric vehicle image upload successful');
+        console.log('✅ Received key:', response.data.result);
+        return {
+          success: true,
+          key: response.data.result, // Key để add vào xe
+          data: response.data.result,
+          message: response.data.message || 'Upload ảnh xe điện thành công!'
+        };
+      } else {
+        console.log('❌ Electric vehicle image upload failed');
+        return {
+          success: false,
+          error: response.data.message || 'Upload ảnh xe điện thất bại'
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error uploading electric vehicle image:', error);
+      console.log('❌ Upload error details:');
+      console.log('  - Status:', error.response?.status);
+      console.log('  - Status Text:', error.response?.statusText);
+      console.log('  - URL:', error.config?.url);
+      console.log('  - Method:', error.config?.method);
+      console.log('  - Response Data:', error.response?.data);
+      
+      let errorMessage = 'Lỗi khi upload ảnh xe điện.';
+      
+      if (error.response?.status === 404) {
+        errorMessage = `Endpoint không tồn tại: ${error.config?.url}. Vui lòng kiểm tra lại API endpoint.`;
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Không có quyền truy cập. Vui lòng đăng nhập lại.';
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response?.data?.message || 'Dữ liệu upload không hợp lệ.';
+      }
+      
+      return {
+        success: false,
+        error: errorMessage,
+        details: {
+          status: error.response?.status,
+          url: error.config?.url,
+          data: error.response?.data
+        }
+      };
+    }
+  },
+
+  // Test method để kiểm tra API connectivity
+  testApiConnection: async () => {
+    try {
+      console.log('=== TESTING API CONNECTION ===');
+      console.log('Base URL:', api.defaults.baseURL);
+      console.log('Testing with simple endpoint...');
+      
+      // Test với endpoint đơn giản nhất
+      const response = await api.get('/ElectricVehicle/get-all-vehicles');
+      console.log('✅ API connection successful!');
+      console.log('Response status:', response.status);
+      return true;
+    } catch (error) {
+      console.log('❌ API connection failed:');
+      console.log('  - Status:', error.response?.status);
+      console.log('  - URL:', error.config?.url);
+      console.log('  - Full URL:', api.defaults.baseURL + '/ElectricVehicle/get-all-vehicles');
+      return false;
+    }
+  },
+
+  // Legacy upload method - giữ cho backward compatibility
   uploadImage: async (formData) => {
     try {
-      console.log('=== UPLOAD IMAGE API CALL ===');
+      console.log('=== UPLOAD IMAGE API CALL (LEGACY) ===');
       console.log('Uploading file...');
       
-      // API endpoint có thể là /api/upload hoặc /api/files/upload
       const response = await api.post('/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       
-      console.log('Upload response:', response.data);
-      
-      // Kiểm tra success
-      const isSuccessful = response.data?.isSuccess === true || 
-                          response.data?.isSuccess === 'true' ||
-                          response.data?.success === true ||
-                          response.status === 200;
+      const isSuccessful = response.data?.isSuccess === true || response.status === 200;
       
       if (isSuccessful) {
-        console.log('✅ Image upload successful');
         return {
           success: true,
           data: response.data.result || response.data.data || response.data,
           message: response.data.message || 'Upload ảnh thành công!'
         };
       } else {
-        console.log('❌ Image upload failed');
         return {
           success: false,
           error: response.data.message || 'Upload ảnh thất bại'
         };
       }
     } catch (error) {
-      console.error('❌ Error uploading image:', error);
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Lỗi khi upload ảnh.'
