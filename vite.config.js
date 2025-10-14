@@ -4,6 +4,39 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    global: 'globalThis',
+    'process.env': 'import.meta.env',
+    'process.platform': '"browser"',
+    'process.version': '"16.0.0"'
+  },
+  resolve: {
+    alias: {
+      '@': '/src'
+    }
+  },
+  optimizeDeps: {
+    include: [
+      'react', 
+      'react-dom', 
+      'axios', 
+      'antd', 
+      'quill', 
+      'react-quilljs',
+      'jwt-decode',
+      'dayjs'
+    ],
+    esbuildOptions: {
+      // Handle CommonJS modules
+      plugins: []
+    }
+  },
+  esbuild: {
+    // Transpile JSX in node_modules if needed
+    include: /\.(jsx?|tsx?)$/,
+    exclude: [],
+    loader: 'jsx'
+  },
   build: {
     rollupOptions: {
       output: {
@@ -13,9 +46,17 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'utils': ['axios']
         }
+      },
+      external: [],
+      // Handle CommonJS modules
+      commonjsOptions: {
+        transformMixedEsModules: true
       }
     },
     chunkSizeWarningLimit: 100000, // Increase warning limit to 1000kB
+    // Ensure proper module format
+    target: 'esnext',
+    minify: 'esbuild'
   },
   server: {
     proxy: {
