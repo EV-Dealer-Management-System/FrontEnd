@@ -33,6 +33,8 @@ const { TextArea } = Input;
 const { Title, Text } = Typography;
 
 function ManageModel() {
+  console.log("🚗 ManageModel component rendering...");
+
   const [loading, setLoading] = useState(false);
   const [models, setModels] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
