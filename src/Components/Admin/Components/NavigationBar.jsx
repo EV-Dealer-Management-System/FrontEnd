@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Button, Badge, Space, Typography, Tooltip, message } from 'antd';
-import { ProLayout, ProConfigProvider } from '@ant-design/pro-components';
+import React, { useState } from "react";
+import { Button, Badge, Space, Typography, Tooltip, message } from "antd";
+import { ProLayout, ProConfigProvider } from "@ant-design/pro-components";
 import {
   UserAddOutlined,
   FileTextOutlined,
@@ -19,9 +19,9 @@ import {
   SolutionOutlined,
   LineChartOutlined,
   GlobalOutlined,
-  QuestionCircleOutlined
-} from '@ant-design/icons';
-import { useNavigate, useLocation } from 'react-router-dom';
+  QuestionCircleOutlined,
+} from "@ant-design/icons";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const { Text } = Typography;
 
@@ -31,47 +31,48 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
   const location = useLocation();
 
   // Sử dụng collapsed từ props hoặc internal state
-  const collapsed = propCollapsed !== undefined ? propCollapsed : internalCollapsed;
+  const collapsed =
+    propCollapsed !== undefined ? propCollapsed : internalCollapsed;
   const setCollapsed = onCollapse || setInternalCollapsed;
 
   // Hàm xử lý logout
   const handleLogout = () => {
     // Xóa JWT token khỏi localStorage
-    localStorage.removeItem('jwt_token');
+    localStorage.removeItem("jwt_token");
     // Xóa thông tin user nếu có
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
     // Hiển thị thông báo logout thành công
-    message.success('Đăng xuất thành công!');
+    message.success("Đăng xuất thành công!");
     // Chuyển về trang login
-    navigate('/');
+    navigate("/");
   };
 
   // Menu items cho EVM Admin với Pro Layout structure
   const route = {
-    path: '/admin',
+    path: "/admin",
     routes: [
       {
-        path: '/admin/dashboard',
-        name: 'Tổng quan',
+        path: "/admin/dashboard",
+        name: "Tổng quan",
         icon: <DashboardOutlined />,
-        component: './Dashboard',
+        component: "./Dashboard",
       },
       {
-        path: '/admin/dealer',
-        name: 'Quản lý đại lý',
+        path: "/admin/dealer",
+        name: "Quản lý đại lý",
         icon: <ShopOutlined />,
         routes: [
           {
-            path: '/admin/dealer/create-account',
-            name: 'Tạo tài khoản đại lý',
+            path: "/admin/dealer/create-account",
+            name: "Tạo tài khoản đại lý",
             icon: <UserAddOutlined />,
-            component: './CreateAccount',
+            component: "./CreateAccount",
           },
           {
-            path: '/admin/dealer/list',
-            name: 'Danh sách đại lý',
+            path: "/admin/dealer/list",
+            name: "Danh sách đại lý",
             icon: <TeamOutlined />,
-            component: './DealerList',
+            component: "./DealerList",
           },
           {
             path: '/admin/dealer/create-contract',
@@ -80,104 +81,106 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: './CreateContract',
           },
           {
-            path: '/admin/dealer/contracts',
-            name: 'Danh sách hợp đồng',
-            icon: <SolutionOutlined />,
-            component: './DealerContracts',
+            path: "/admin/dealer/create-contract",
+            name: "Hợp đồng đại lý",
+            icon: <FileTextOutlined />,
+            component: "./DealerContracts",
           },
           {
-            path: '/admin/dealer/performance',
-            name: 'Hiệu suất đại lý',
+            path: "/admin/dealer/performance",
+            name: "Hiệu suất đại lý",
             icon: <LineChartOutlined />,
-            component: './DealerPerformance',
+            component: "./DealerPerformance",
           },
         ],
       },
       {
-        path: '/admin/vehicle',
-        name: 'Quản lý xe điện',
+        path: "/admin/vehicle",
+        name: "Quản lý xe điện",
         icon: <CarOutlined />,
         routes: [
           {
-            path: '/admin/vehicle/model',
-            name: 'Danh mục xe',
+            path: "/admin/vehicle-management",
+            name: "Danh mục xe",
             icon: <DatabaseOutlined />,
-            component: './VehicleCatalog',
+            component: "./VehicleCatalog",
           },
           {
-            path: '/admin/vehicle/inventory',
-            name: 'Kho xe',
+            path: "/admin/vehicle/inventory",
+            name: "Kho xe",
             icon: <DeploymentUnitOutlined />,
-            component: './Inventory',
+            component: "./Inventory",
           },
           {
-            path: '/admin/vehicle/allocation',
-            name: 'Phân bổ xe cho đại lý',
+            path: "/admin/vehicle/allocation",
+            name: "Phân bổ xe cho đại lý",
             icon: <GlobalOutlined />,
-            component: './VehicleAllocation',
+            component: "./VehicleAllocation",
           },
         ],
       },
       {
-        path: '/admin/reports',
-        name: 'Báo cáo & Phân tích',
+        path: "/admin/reports",
+        name: "Báo cáo & Phân tích",
         icon: <BarChartOutlined />,
         routes: [
           {
-            path: '/admin/reports/sales',
-            name: 'Báo cáo bán hàng',
+            path: "/admin/reports/sales",
+            name: "Báo cáo bán hàng",
             icon: <LineChartOutlined />,
-            component: './SalesReport',
+            component: "./SalesReport",
           },
           {
-            path: '/admin/reports/inventory',
-            name: 'Báo cáo tồn kho',
+            path: "/admin/reports/inventory",
+            name: "Báo cáo tồn kho",
             icon: <DatabaseOutlined />,
-            component: './InventoryReport',
+            component: "./InventoryReport",
           },
           {
-            path: '/admin/reports/forecast',
-            name: 'Dự báo AI',
+            path: "/admin/reports/forecast",
+            name: "Dự báo AI",
             icon: <SolutionOutlined />,
-            component: './AIForecast',
+            component: "./AIForecast",
           },
         ],
       },
       {
-        path: '/admin/settings',
-        name: 'Cài đặt hệ thống',
+        path: "/admin/settings",
+        name: "Cài đặt hệ thống",
         icon: <SettingOutlined />,
-        component: './Settings',
+        component: "./Settings",
       },
       {
-        path: '/',
-        name: 'Đăng Xuất',
+        path: "/",
+        name: "Đăng Xuất",
         icon: <LogoutOutlined />,
-        component: './Settings',
+        component: "./Settings",
       },
     ],
   };
-
-
 
   return (
     <ProConfigProvider hashed={false}>
       <div
         style={{
-          height: '100vh',
+          height: "100vh",
           width: collapsed ? 64 : 280,
-          position: 'fixed',
+          position: "fixed",
           left: 0,
           top: 0,
           zIndex: isMobile ? 1000 : 100,
-          transition: 'all 0.2s ease',
-          transform: isMobile && collapsed ? 'translateX(-100%)' : 'translateX(0)',
+          transition: "all 0.2s ease",
+          transform:
+            isMobile && collapsed ? "translateX(-100%)" : "translateX(0)",
         }}
       >
         <ProLayout
           route={route}
           location={{
-            pathname: location.pathname === '/admin' ? '/admin/dashboard' : location.pathname
+            pathname:
+              location.pathname === "/admin"
+                ? "/admin/dashboard"
+                : location.pathname,
           }}
           collapsed={collapsed}
           onCollapse={setCollapsed}
@@ -202,20 +205,18 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           siderMenuType="sub"
           menuHeaderRender={(logo) => (
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                {logo}
-              </div>
+              <div className="flex items-center gap-2">{logo}</div>
             </div>
           )}
           menuItemRender={(item, dom) => (
             <div
               onClick={() => {
                 if (item.path) {
-                  if (item.path === '/') {
+                  if (item.path === "/") {
                     // Xử lý logout
                     handleLogout();
-                  } else if (item.path === '/admin/dashboard') {
-                    navigate('/admin');
+                  } else if (item.path === "/admin/dashboard") {
+                    navigate("/admin");
                   } else {
                     navigate(item.path);
                   }
@@ -226,21 +227,22 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
               {dom}
             </div>
           )}
-          rightContentRender={() => (
-            <div className="flex items-center"></div>
-          )}
+          rightContentRender={() => <div className="flex items-center"></div>}
           avatarProps={{
-            size: 'small',
+            size: "small",
             render: (props, dom) => dom,
           }}
-
           menuProps={{
-            selectedKeys: [location.pathname === '/admin' ? '/admin/dashboard' : location.pathname],
-            defaultOpenKeys: ['/admin/dealer'],
+            selectedKeys: [
+              location.pathname === "/admin"
+                ? "/admin/dashboard"
+                : location.pathname,
+            ],
+            defaultOpenKeys: ["/admin/dealer"],
           }}
           style={{
-            backgroundColor: '#fff',
-            boxShadow: '2px 0 8px 0 rgba(29,35,41,.05)',
+            backgroundColor: "#fff",
+            boxShadow: "2px 0 8px 0 rgba(29,35,41,.05)",
           }}
         >
           {/* Content sẽ được render bởi parent component */}
