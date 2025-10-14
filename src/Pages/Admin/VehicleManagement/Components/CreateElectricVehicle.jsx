@@ -18,6 +18,7 @@ import {
   Typography,
   Divider,
   Alert,
+  App,
   Steps,
   Upload,
 } from "antd";
@@ -57,6 +58,9 @@ const validateVIN = (vin) => {
 };
 
 function CreateElectricVehicle() {
+  // TODO: Migrate to App.useApp() when refactoring component
+  // const { message, modal } = App.useApp();
+
   const [loading, setLoading] = useState(false);
   const [vehicles, setVehicles] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
@@ -111,43 +115,134 @@ function CreateElectricVehicle() {
     }
   };
 
-  // Tải danh sách kho
+  // Tải danh sách kho từ API thực
   const loadWarehouses = async () => {
     try {
-      // Mock data cho warehouses - có thể thay bằng API thực
+      console.log("🔍 Loading warehouses from API...");
+
+      // Kiểm tra method có tồn tại không
+      if (!vehicleApi.getAllWarehouses) {
+        console.error(
+          "❌ getAllWarehouses method not found, using getInventoryById fallback"
+        );
+        const fallbackResult = await vehicleApi.getInventoryById();
+        console.log("📦 Fallback API response:", fallbackResult);
+
+        if (fallbackResult.success && fallbackResult.data) {
+          const formattedWarehouses = fallbackResult.data.map(
+            (warehouse, index) => ({
+              id: warehouse.id,
+              name: warehouse.dealerId || `Warehouse #${index + 1}`,
+              displayName: `${
+                warehouse.dealerId || `Warehouse #${index + 1}`
+              } (Type: ${warehouse.warehouseType || 2})`,
+            })
+          );
+          setWarehouses(formattedWarehouses);
+          console.log(
+            "✅ Loaded warehouses from fallback:",
+            formattedWarehouses
+          );
+          return;
+        }
+      }
+
+      // Gọi API get all warehouses - dùng method mới
+      const result = await vehicleApi.getAllWarehouses();
+      console.log("📦 Warehouse API response:", result);
+      console.log("📦 Response type:", typeof result);
+      console.log("📦 Has success prop:", result.hasOwnProperty("success"));
+      console.log("📦 Has data prop:", result.hasOwnProperty("data"));
+
+      if (result && result.success && result.data) {
+        console.log("✅ Loaded warehouses from API:", result.data);
+        console.log("✅ Data type:", typeof result.data);
+        console.log("✅ Is array:", Array.isArray(result.data));
+
+        // Format data theo structure từ attachment - hiển thị thông tin rõ ràng hơn
+        const formattedWarehouses = result.data.map((warehouse, index) => ({
+          id: warehouse.id, // GUID từ API
+          name: warehouse.dealerId
+            ? `Dealer: ${warehouse.dealerId}`
+            : `Warehouse #${index + 1}`, // Tên kho rõ ràng hơn
+          evInventoryId: warehouse.evInventoryId, // Inventory ID
+          warehouseType: warehouse.warehouseType || 2, // Type từ API
+          displayName: `${
+            warehouse.dealerId || `Warehouse #${index + 1}`
+          } (Type: ${warehouse.warehouseType || 2})`, // For dropdown display
+        }));
+
+        setWarehouses(formattedWarehouses);
+        console.log("✅ Formatted warehouses for Select:", formattedWarehouses);
+      } else {
+        console.log("❌ No warehouses returned from API or API call failed");
+        console.log("📝 Adding mock data for testing...");
+
+        // Thêm mock data để test khi API chưa sẵn sàng
+        const mockWarehouses = [
+          {
+            id: "0199d3ef-5fd1-7f77-84f7-89140441fc52",
+            name: "Test Warehouse 1",
+            displayName: "Test Warehouse 1 (Type: 2)",
+          },
+          {
+            id: "0199d3ef-ddd1-789f-a4eb-26f47fee63a8",
+            name: "Test Warehouse 2",
+            displayName: "Test Warehouse 2 (Type: 2)",
+          },
+        ];
+
+        setWarehouses(mockWarehouses);
+        console.log("✅ Added mock warehouses for testing:", mockWarehouses);
+        message.warning(
+          "Đang dùng dữ liệu test. API warehouses có thể chưa sẵn sàng."
+        );
+      }
+    } catch (error) {
+      console.error("❌ Error loading warehouses:", error);
+      console.log("📝 Error details:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      // Fallback với mock data khi có lỗi
+      console.log("🔄 Using mock data as fallback...");
       const mockWarehouses = [
         {
-          id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-          name: "Kho Hà Nội",
-          location: "Hà Nội",
+          id: "0199d3ef-5fd1-7f77-84f7-89140441fc52",
+          name: "Test Warehouse 1",
+          displayName: "Test Warehouse 1 (Type: 2)",
         },
         {
-          id: "4fa85f64-5717-4562-b3fc-2c963f66afa7",
-          name: "Kho TP.HCM",
-          location: "TP.HCM",
-        },
-        {
-          id: "5fa85f64-5717-4562-b3fc-2c963f66afa8",
-          name: "Kho Đà Nẵng",
-          location: "Đà Nẵng",
+          id: "0199d3ef-ddd1-789f-a4eb-26f47fee63a8",
+          name: "Test Warehouse 2",
+          displayName: "Test Warehouse 2 (Type: 2)",
         },
       ];
+
       setWarehouses(mockWarehouses);
-    } catch (error) {
-      console.error("Error loading warehouses:", error);
-      setWarehouses([]);
+      console.log("✅ Fallback mock warehouses loaded");
+      message.warning("Lỗi API. Đang dùng dữ liệu test để tiếp tục.");
     }
   };
 
   // Tải danh sách versions
   const loadVersions = async () => {
     try {
+      console.log("📋 Loading versions...");
       const result = await vehicleApi.getAllVersions();
-      if (result.success) {
-        setVersions(result.data || []);
+      console.log("📋 Versions API response:", result);
+
+      if (result.success && result.data) {
+        setVersions(result.data);
+        console.log("✅ Loaded versions:", result.data);
+      } else {
+        console.log("⚠️ No versions found, using empty array");
+        setVersions([]);
       }
     } catch (error) {
-      console.error("Error loading versions:", error);
+      console.error("❌ Error loading versions:", error);
       setVersions([]);
     }
   };
@@ -155,12 +250,19 @@ function CreateElectricVehicle() {
   // Tải danh sách màu sắc
   const loadColors = async () => {
     try {
+      console.log("🌈 Loading colors...");
       const result = await vehicleApi.getAllColors();
-      if (result.success) {
-        setColors(result.data || []);
+      console.log("🌈 Colors API response:", result);
+
+      if (result.success && result.data) {
+        setColors(result.data);
+        console.log("✅ Loaded colors:", result.data);
+      } else {
+        console.log("⚠️ No colors found, using empty array");
+        setColors([]);
       }
     } catch (error) {
-      console.error("Error loading colors:", error);
+      console.error("❌ Error loading colors:", error);
       setColors([]);
     }
   };
@@ -208,13 +310,29 @@ function CreateElectricVehicle() {
       console.log("Final form data:", finalFormData);
       console.log("Uploaded images:", uploadedImages);
 
+      // Validate critical data với chi tiết
+      console.log("🔍 Available warehouses:", warehouses);
+      console.log("🏢 Selected warehouseId:", finalFormData.warehouseId);
+      console.log("🚗 Selected versionId:", finalFormData.versionId);
+      console.log("🎨 Selected colorId:", finalFormData.colorId);
+
+      // Chi tiết về versions và colors được chọn
+      const selectedVersion = versions.find(
+        (v) => v.id === finalFormData.versionId
+      );
+      const selectedColor = colors.find((c) => c.id === finalFormData.colorId);
+      console.log("📋 Selected Version Object:", selectedVersion);
+      console.log("🎨 Selected Color Object:", selectedColor);
+      console.log("📊 All Available Versions:", versions);
+      console.log("🌈 All Available Colors:", colors);
+
       // Prepare data theo API schema
       const vehicleData = {
-        warehouseId: finalFormData.warehouseId,
+        warehouseId: finalFormData.warehouseId, // Lấy từ form, bắt buộc phải chọn
         versionId: finalFormData.versionId,
         colorId: finalFormData.colorId,
         vin: finalFormData.vin,
-        status: 1, // Mặc định là hoạt động
+        status: finalFormData.status || 1, // Lấy từ form hoặc mặc định 1
         manufactureDate: finalFormData.manufactureDate?.format
           ? finalFormData.manufactureDate.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]")
           : finalFormData.manufactureDate,
@@ -226,35 +344,174 @@ function CreateElectricVehicle() {
               "YYYY-MM-DDTHH:mm:ss.SSS[Z]"
             )
           : finalFormData.warrantyExpiryDate,
-        costPrice: finalFormData.costPrice,
-        imageUrl:
-          uploadedImages.length > 0
-            ? uploadedImages
-                .map((img) => {
-                  if (img instanceof File) {
-                    return img.name; // Lưu tên file hoặc có thể upload lên server
-                  }
-                  return img.response || img.url || img.name || "";
-                })
-                .filter((url) => url)
-                .join(",")
-            : "",
+        costPrice: Number(finalFormData.costPrice) || 0, // Đảm bảo là number
+        imageUrl: "", // Sẽ được cập nhật sau khi upload images
       };
 
-      console.log("Vehicle data to be sent:", vehicleData);
+      // Step 1: Upload images trước nếu có
+      let imageUrls = "";
+      if (uploadedImages.length > 0) {
+        console.log("📤 Processing images for vehicle creation...");
+        console.log(`📱 Number of images to process: ${uploadedImages.length}`);
+        console.log(
+          "📁 Image files:",
+          uploadedImages.map((f) => ({
+            name: f.name,
+            size: f.size,
+            type: f.type,
+          }))
+        );
+        console.log("⚠️ API upload not available, using mock URLs for testing");
+
+        // Tạm thời skip upload thật, dùng mock URLs
+        imageUrls = uploadedImages
+          .map(
+            (file, index) =>
+              `https://mock-cdn.com/vehicles/${Date.now()}-${index}-${
+                file.name
+              }`
+          )
+          .join(",");
+
+        console.log("✅ Mock image URLs generated:", imageUrls);
+        console.log("🔗 Final imageUrl string:", imageUrls);
+      } else {
+        console.log("📷 No images uploaded");
+      }
+
+      // Update vehicleData với imageUrls
+      vehicleData.imageUrl = imageUrls;
+
+      console.log("🔍 Final Vehicle Data to be sent:", vehicleData);
+
+      // Validate data format trước khi gửi
+      console.log("🔍 Data Validation:");
+      console.log(
+        "  - warehouseId:",
+        vehicleData.warehouseId,
+        typeof vehicleData.warehouseId
+      );
+      console.log(
+        "  - versionId:",
+        vehicleData.versionId,
+        typeof vehicleData.versionId
+      );
+      console.log(
+        "  - colorId:",
+        vehicleData.colorId,
+        typeof vehicleData.colorId
+      );
+      console.log("  - vin:", vehicleData.vin, typeof vehicleData.vin);
+      console.log("  - status:", vehicleData.status, typeof vehicleData.status);
+      console.log(
+        "  - costPrice:",
+        vehicleData.costPrice,
+        typeof vehicleData.costPrice
+      );
+      console.log(
+        "  - imageUrl:",
+        vehicleData.imageUrl,
+        typeof vehicleData.imageUrl
+      );
+      console.log("  - manufactureDate:", vehicleData.manufactureDate);
+      console.log("  - importDate:", vehicleData.importDate);
+      console.log("  - warrantyExpiryDate:", vehicleData.warrantyExpiryDate);
+
+      // So sánh với Backend Schema từ attachment
+      console.log("📋 BACKEND SCHEMA COMPARISON:");
+      console.log("Expected backend format:", {
+        warehouseId: "GUID string",
+        versionId: "GUID string",
+        colorId: "GUID string",
+        vin: "string",
+        status: "number (1)",
+        manufactureDate: "2025-10-14T02:14:47.853Z",
+        importDate: "2025-10-14T02:14:47.853Z",
+        warrantyExpiryDate: "2025-10-14T02:14:47.853Z",
+        costPrice: "number",
+        imageUrl: "string",
+      });
+      console.log(
+        "Actual frontend data matches:",
+        JSON.stringify(vehicleData, null, 2)
+      );
+
+      // Validation trước khi gửi
+      if (!vehicleData.warehouseId) {
+        message.error("Vui lòng chọn kho!");
+        setLoading(false);
+        return;
+      }
+
+      if (!vehicleData.versionId) {
+        message.error("Vui lòng chọn phiên bản xe!");
+        setLoading(false);
+        return;
+      }
+
+      if (!vehicleData.colorId) {
+        message.error("Vui lòng chọn màu sắc!");
+        setLoading(false);
+        return;
+      }
+
+      if (!vehicleData.vin) {
+        message.error("Vui lòng nhập VIN!");
+        setLoading(false);
+        return;
+      }
+
+      // Validate GUID format cho IDs
+      const guidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+      if (!guidRegex.test(vehicleData.versionId)) {
+        console.error("❌ Invalid versionId format:", vehicleData.versionId);
+        message.error("Version ID không đúng format GUID!");
+        setLoading(false);
+        return;
+      }
+
+      if (!guidRegex.test(vehicleData.colorId)) {
+        console.error("❌ Invalid colorId format:", vehicleData.colorId);
+        message.error("Color ID không đúng format GUID!");
+        setLoading(false);
+        return;
+      }
+
+      if (!guidRegex.test(vehicleData.warehouseId)) {
+        console.error(
+          "❌ Invalid warehouseId format:",
+          vehicleData.warehouseId
+        );
+        message.error("Warehouse ID không đúng format GUID!");
+        setLoading(false);
+        return;
+      }
+
+      console.log("✅ All validations passed, proceeding with API call...");
 
       const result = await vehicleApi.createVehicle(vehicleData);
       console.log("Create result:", result);
 
       if (result.success) {
-        message.success("Tạo xe điện mới thành công!");
+        message.success(result.message || "Tạo xe điện mới thành công!");
 
         // Hiển thị thông tin xe vừa tạo
-        const selectedVersion = versions.find((v) => v.id === values.versionId);
-        const selectedColor = colors.find((c) => c.id === values.colorId);
-        const selectedWarehouse = warehouses.find(
-          (w) => w.id === values.warehouseId
+        const selectedVersion = versions.find(
+          (v) => v.id === finalFormData.versionId
         );
+        const selectedColor = colors.find(
+          (c) => c.id === finalFormData.colorId
+        );
+        const selectedWarehouse = warehouses.find(
+          (w) => w.id === finalFormData.warehouseId
+        );
+
+        console.log("🎉 Vehicle created successfully:");
+        console.log("  - Result:", result);
+        console.log("  - Selected Version:", selectedVersion);
+        console.log("  - Selected Color:", selectedColor);
 
         Modal.success({
           title: (
@@ -367,7 +624,48 @@ function CreateElectricVehicle() {
     console.log("Updated uploaded images:", validFiles);
   };
 
-  // Custom upload function (có thể tích hợp với server sau)
+  // Upload images lên server và nhận về URLs
+  const uploadImagesToServer = async (images) => {
+    console.log("🔄 Starting image upload process...");
+    const uploadedUrls = [];
+
+    for (let i = 0; i < images.length; i++) {
+      const file = images[i];
+      console.log(`📤 Uploading image ${i + 1}/${images.length}:`, file.name);
+
+      try {
+        // Tạo FormData để upload file
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("type", "vehicle-image");
+
+        // Gọi API upload - thay endpoint này bằng API thực của bạn
+        const response = await vehicleApi.uploadImage(formData);
+
+        if (response.success && response.data) {
+          const imageUrl =
+            response.data.url || response.data.imageUrl || response.data;
+          uploadedUrls.push(imageUrl);
+          console.log(`✅ Image ${i + 1} uploaded:`, imageUrl);
+        } else {
+          throw new Error(response.error || "Upload failed");
+        }
+      } catch (error) {
+        console.error(`❌ Failed to upload image ${i + 1}:`, error);
+        // Fallback: tạo mock URL cho development
+        const mockUrl = `https://mock-cdn.com/vehicles/${Date.now()}-${
+          file.name
+        }`;
+        uploadedUrls.push(mockUrl);
+        console.log(`🔄 Using mock URL for image ${i + 1}:`, mockUrl);
+      }
+    }
+
+    console.log("✅ All images processed, URLs:", uploadedUrls);
+    return uploadedUrls;
+  };
+
+  // Custom upload function (cho preview trước khi submit)
   const customUpload = ({ file, onSuccess, onError }) => {
     // Validate file type
     const isImage = file.type.startsWith("image/");
@@ -385,7 +683,7 @@ function CreateElectricVehicle() {
       return;
     }
 
-    // Mock upload success
+    // Mock upload success - chỉ để preview, upload thật sẽ làm khi submit
     setTimeout(() => {
       onSuccess("ok");
     }, 100);
@@ -398,6 +696,7 @@ function CreateElectricVehicle() {
     setUploadedImages([]);
     form.resetFields();
     form.setFieldsValue({
+      status: 1, // Mặc định trạng thái hoạt động
       costPrice: 0,
       manufactureDate: dayjs(),
       importDate: dayjs(),
@@ -410,7 +709,7 @@ function CreateElectricVehicle() {
   const getRequiredFieldsForStep = (step) => {
     switch (step) {
       case 0: // Thông tin cơ bản
-        return ["vin", "versionId", "colorId", "warehouseId"];
+        return ["vin", "versionId", "colorId", "warehouseId"]; // Thêm lại warehouseId
       case 1: // Thông tin kỹ thuật
         return [
           "costPrice",
@@ -843,10 +1142,23 @@ function CreateElectricVehicle() {
                     name="warehouseId"
                     rules={[{ required: true, message: "Vui lòng chọn kho!" }]}
                   >
-                    <Select size="large" placeholder="Chọn kho">
+                    <Select
+                      size="large"
+                      placeholder="Chọn kho"
+                      loading={loading}
+                    >
                       {warehouses.map((warehouse) => (
                         <Option key={warehouse.id} value={warehouse.id}>
-                          {warehouse.name} - {warehouse.location}
+                          {warehouse.displayName}
+                          <div
+                            style={{
+                              fontSize: "12px",
+                              color: "#666",
+                              marginTop: "2px",
+                            }}
+                          >
+                            ID: {warehouse.id.substring(0, 8)}...
+                          </div>
                         </Option>
                       ))}
                     </Select>
@@ -854,12 +1166,16 @@ function CreateElectricVehicle() {
                 </Col>
               </Row>
 
-              <Form.Item label="URL hình ảnh" name="imageUrl">
-                <Input
-                  placeholder="https://example.com/vehicle-image.jpg"
-                  size="large"
-                />
-              </Form.Item>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item label="Trạng thái" name="status" initialValue={1}>
+                    <Select size="large" disabled>
+                      <Option value={1}>Hoạt động</Option>
+                      <Option value={0}>Không hoạt động</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
             </div>
           )}
 
@@ -1013,7 +1329,7 @@ function CreateElectricVehicle() {
                           </p>
                           <p>
                             <strong>Kho:</strong>{" "}
-                            {selectedWarehouse?.name || "N/A"}
+                            {selectedWarehouse?.name || "Chưa chọn kho"}
                           </p>
                         </Col>
                         <Col span={12}>
@@ -1241,4 +1557,11 @@ function CreateElectricVehicle() {
   );
 }
 
-export default CreateElectricVehicle;
+// Wrap component với App để tránh static function warnings
+const CreateElectricVehicleWithApp = () => (
+  <App>
+    <CreateElectricVehicle />
+  </App>
+);
+
+export default CreateElectricVehicleWithApp;

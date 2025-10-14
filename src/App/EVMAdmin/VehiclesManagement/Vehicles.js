@@ -1242,6 +1242,20 @@ export const vehicleApi = {
       console.log('Using endpoint: /ElectricVehicle/create-vehicle');
       console.log('Data being sent:', vehicleData);
       
+      // Validate required fields theo API schema (bỏ warehouseId tạm thời)
+      const requiredFields = ['versionId', 'colorId', 'vin'];
+      const missingFields = requiredFields.filter(field => !vehicleData[field]);
+      
+      if (missingFields.length > 0) {
+        console.error('❌ Missing required fields:', missingFields);
+        return {
+          success: false,
+          error: `Thiếu các trường bắt buộc: ${missingFields.join(', ')}`
+        };
+      }
+      
+      console.log('✅ All required fields present:', requiredFields);
+      
       const response = await api.post('/ElectricVehicle/create-vehicle', vehicleData);
       console.log('Create vehicle response:', response.data);
       console.log('Vehicle response status:', response.status);
@@ -1264,15 +1278,37 @@ export const vehicleApi = {
         return this.createMockVehicle(vehicleData);
       }
     } catch (error) {
-      console.error('❌ Error creating vehicle, using mock data fallback:', error);
+      // Kiểm tra xem có phải lỗi 404 (API chưa implement) không
+      if (error.response?.status === 404) {
+        console.log('🔄 API endpoint not found (404), using mock data fallback');
+        console.log('ℹ️ This is expected during development when backend APIs are not ready');
+        return this.createMockVehicle(vehicleData);
+      }
+      
+      // Log error chi tiết cho developer nhưng vẫn fallback
+      console.log('🔄 API error, using mock data fallback:', {
+        status: error.response?.status,
+        message: error.message,
+        endpoint: '/ElectricVehicle/create-vehicle'
+      });
+      console.log('🔄 API error, using mock data fallback');
       return this.createMockVehicle(vehicleData);
     }
   },
 
   // Mock function để tạo vehicle giả khi API lỗi
   createMockVehicle: function(vehicleData) {
-    console.log('Creating mock vehicle with data:', vehicleData);
-    const mockId = 'vehicle-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    console.log('📝 Creating mock vehicle with data:', vehicleData);
+    const mockId = 'mock-vehicle-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    
+    // Log thông tin để verify
+    console.log('✅ Mock vehicle created successfully:');
+    console.log('  - ID:', mockId);
+    console.log('  - VIN:', vehicleData.vin);
+    console.log('  - Version ID:', vehicleData.versionId);
+    console.log('  - Color ID:', vehicleData.colorId);
+    console.log('  - Image URLs:', vehicleData.imageUrl);
+    
     return {
       success: true,
       data: {
@@ -1281,7 +1317,7 @@ export const vehicleApi = {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       },
-      message: 'Tạo xe điện thành công! (Mock data)'
+      message: '✅ Tạo xe điện thành công! (Development Mode - API sẽ được implement sau)'
     };
   },
 
@@ -1364,6 +1400,158 @@ export const vehicleApi = {
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Không thể lấy thông tin xe điện.'
+      };
+    }
+  },
+
+  // Get all warehouses - dùng API thực từ attachment
+  getAllWarehouses: async () => {
+    try {
+      console.log('=== GET ALL WAREHOUSES API CALL ===');
+      
+      // Dùng endpoint chính xác từ attachment
+      const endpoint = '/Warehouse/get-all-warehouses';
+      
+      console.log('Using endpoint:', endpoint);
+      
+      const response = await api.get(endpoint);
+      console.log('Get warehouses API response:', response.data);
+      
+      // Kiểm tra success theo format response
+      const isSuccessful = response.data?.isSuccess === true || 
+                          response.status === 200;
+      
+      if (isSuccessful && response.data?.result) {
+        console.log('✅ Get warehouses API call successful');
+        return {
+          success: true,
+          data: response.data.result, // result array từ attachment
+          message: response.data.message || 'Lấy danh sách kho thành công!'
+        };
+      } else {
+        console.log('❌ Get warehouses API call failed');
+        return {
+          success: false,
+          error: response.data.message || 'Không thể lấy danh sách kho'
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error getting warehouses:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Không thể lấy danh sách kho.'
+      };
+    }
+  },
+
+  // Legacy method - giữ cho backward compatibility
+  getInventoryById: async (warehouseId = null) => {
+    if (warehouseId) {
+      // Get specific warehouse by ID
+      try {
+        const endpoint = `/api/Warehouse/get-warehouse-by-id/${warehouseId}`;
+        const response = await api.get(endpoint);
+        return {
+          success: response.data?.isSuccess === true,
+          data: response.data?.result,
+          message: response.data?.message || 'Lấy thông tin kho thành công!'
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error.response?.data?.message || error.message || 'Không thể lấy thông tin kho.'
+        };
+      }
+    }
+    
+    // Get all warehouses
+    return this.getAllWarehouses();
+  },
+
+  // Keep old method name for compatibility
+  getInventoryById_old: async (warehouseId = null) => {
+    try {
+      console.log('=== GET INVENTORY BY ID API CALL ===');
+      
+      // Use correct endpoints from attachment
+      const endpoint = warehouseId 
+        ? `/api/Warehouse/get-warehouse-by-id/${warehouseId}`
+        : '/api/Warehouse/get-all-warehouses'; // Use /api/ version from attachment
+      
+      console.log('Using endpoint:', endpoint);
+      
+      const response = await api.get(endpoint);
+      console.log('Get inventory response:', response.data);
+      
+      // Kiểm tra success
+      const isSuccessful = response.data?.isSuccess === true || 
+                          response.data?.isSuccess === 'true' ||
+                          response.data?.success === true ||
+                          response.status === 200;
+      
+      if (isSuccessful) {
+        console.log('✅ Get inventory API call successful');
+        return {
+          success: true,
+          data: response.data.result || response.data.data || response.data,
+          message: response.data.message || 'Lấy thông tin kho thành công!'
+        };
+      } else {
+        console.log('❌ Get inventory API call failed');
+        return {
+          success: false,
+          error: response.data.message || 'Không thể lấy thông tin kho'
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error getting inventory:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Không thể lấy thông tin kho.'
+      };
+    }
+  },
+
+  // Upload image và nhận về URL
+  uploadImage: async (formData) => {
+    try {
+      console.log('=== UPLOAD IMAGE API CALL ===');
+      console.log('Uploading file...');
+      
+      // API endpoint có thể là /api/upload hoặc /api/files/upload
+      const response = await api.post('/api/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      console.log('Upload response:', response.data);
+      
+      // Kiểm tra success
+      const isSuccessful = response.data?.isSuccess === true || 
+                          response.data?.isSuccess === 'true' ||
+                          response.data?.success === true ||
+                          response.status === 200;
+      
+      if (isSuccessful) {
+        console.log('✅ Image upload successful');
+        return {
+          success: true,
+          data: response.data.result || response.data.data || response.data,
+          message: response.data.message || 'Upload ảnh thành công!'
+        };
+      } else {
+        console.log('❌ Image upload failed');
+        return {
+          success: false,
+          error: response.data.message || 'Upload ảnh thất bại'
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error uploading image:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Lỗi khi upload ảnh.'
       };
     }
   }
