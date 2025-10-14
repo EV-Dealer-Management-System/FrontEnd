@@ -379,46 +379,117 @@ const CreateContract = () => {
   };
 
   const handleConfirmContract = async () => {
+    console.log('🚀🚀🚀 HANDLE CONFIRM CONTRACT - FUNCTION START 🚀🚀🚀');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    
     // ✅ Validation trước khi gửi
     if (!contractId) {
+      console.error('❌ Missing contractId:', contractId);
       message.error('Không tìm thấy ID hợp đồng');
+      console.log('🛑 EARLY RETURN - No contractId');
       return;
     }
+    
+    console.log('✅ ContractId validation passed:', contractId);
 
-    const finalPositionA = positionA || originalPositionA;
-    const finalPositionB = positionB || originalPositionB;
-    const finalPageSign = pageSign || originalPageSign;
-
-    if (!finalPositionA || !finalPositionB) {
-      message.warning('Thiếu vị trí ký. Vui lòng lưu template trước khi xác nhận.');
-      return;
-    }
+    const finalPositionA = positionA || originalPositionA || "default_position_a";
+    const finalPositionB = positionB || originalPositionB || "default_position_b";
+    const finalPageSign = pageSign || originalPageSign || 0;
 
     console.log('=== CONFIRM CONTRACT VALIDATION ===');
     console.log('Contract ID:', contractId);
-    console.log('Final Position A:', finalPositionA);
-    console.log('Final Position B:', finalPositionB);
-    console.log('Final Page Sign:', finalPageSign);
+    console.log('positionA:', positionA, '→ finalPositionA:', finalPositionA);
+    console.log('positionB:', positionB, '→ finalPositionB:', finalPositionB);
+    console.log('pageSign:', pageSign, '→ finalPageSign:', finalPageSign);
+    console.log('originalPositionA:', originalPositionA);
+    console.log('originalPositionB:', originalPositionB);
+    console.log('originalPageSign:', originalPageSign);
 
+    // ✅ Always proceed, even with default positions  
+    if (!finalPositionA || !finalPositionB) {
+      console.warn('⚠️ Missing positions, using defaults:', { finalPositionA, finalPositionB });
+      // Don't return - proceed with defaults
+    }
+
+    console.log('🔄 About to show Modal.confirm...');
+    
+    // 🚨 EMERGENCY BYPASS - Test API call directly without Modal
+    console.log('🚨 EMERGENCY MODE - BYPASSING MODAL FOR DIRECT TEST');
+    try {
+      setUpdatingContract(true);
+      
+      // ✅ Ensure correct data types for API
+      const apiPayload = {
+        eContractId: String(contractId), // Ensure string
+        positionA: String(finalPositionA), // Ensure string  
+        positionB: String(finalPositionB), // Ensure string
+        pageSign: finalPageSign ? Number(finalPageSign) : 0 // Ensure number, default 0
+      };
+      
+      console.log('🔥🔥🔥 EMERGENCY - DIRECT API CALL 🔥🔥🔥');
+      console.log('API Payload:', JSON.stringify(apiPayload, null, 2));
+      
+      const result = await pdfUpdateService.readyDealerContract(
+        apiPayload.eContractId,
+        apiPayload.positionA,
+        apiPayload.positionB,
+        apiPayload.pageSign
+      );
+      
+      console.log('🎉🎉🎉 EMERGENCY - API SUCCESS 🎉🎉🎉');
+      console.log('Result:', JSON.stringify(result, null, 2));
+      
+      message.success('🚨 EMERGENCY MODE - API Call succeeded!');
+      
+    } catch (error) {
+      console.error('🚨 EMERGENCY - API FAILED:', error);
+      message.error('🚨 Emergency API test failed: ' + error.message);
+    } finally {
+      setUpdatingContract(false);
+    }
+    
+    // Original Modal code (commented out for emergency test)
+    /*
     Modal.confirm({
       title: 'Xác nhận hợp đồng',
       content: 'Bạn có chắc chắn muốn xác nhận hợp đồng này? Sau khi xác nhận, hợp đồng sẽ được gửi đi xét duyệt.',
       okText: 'Xác nhận',
       cancelText: 'Hủy',
       onOk: async () => {
+        console.log('🎯 Modal.confirm OK clicked - User confirmed!');
         try {
-          console.log('=== HANDLE CONFIRM CONTRACT START ===');
+          console.log('🚀 === INSIDE MODAL OK - ABOUT TO CALL API ===');
           setUpdatingContract(true);
+          
+          // ✅ Ensure correct data types for API
+          const apiPayload = {
+            eContractId: String(contractId), // Ensure string
+            positionA: String(finalPositionA), // Ensure string  
+            positionB: String(finalPositionB), // Ensure string
+            pageSign: finalPageSign ? Number(finalPageSign) : 0 // Ensure number, default 0
+          };
+          
+          console.log('=== API PAYLOAD PREPARED ===');
+          console.log('Original contractId:', contractId, typeof contractId);
+          console.log('Original finalPositionA:', finalPositionA, typeof finalPositionA);
+          console.log('Original finalPositionB:', finalPositionB, typeof finalPositionB); 
+          console.log('Original finalPageSign:', finalPageSign, typeof finalPageSign);
+          console.log('API Payload:', JSON.stringify(apiPayload, null, 2));
+          
+          console.log('🔥🔥🔥 ABOUT TO CALL pdfUpdateService.readyDealerContract 🔥🔥🔥');
+          console.log('Service object:', pdfUpdateService);
+          console.log('Service method exists:', typeof pdfUpdateService.readyDealerContract);
           
           // Ready contract với positions hiện tại
           const result = await pdfUpdateService.readyDealerContract(
-            contractId,
-            finalPositionA,
-            finalPositionB,
-            finalPageSign
+            apiPayload.eContractId,
+            apiPayload.positionA,
+            apiPayload.positionB,
+            apiPayload.pageSign
           );
           
-          console.log('=== CONFIRM CONTRACT SUCCESS ===');
+          console.log('🎉🎉🎉 API CALL COMPLETED - GOT RESULT 🎉🎉🎉');
+          console.log('Result type:', typeof result);
           console.log('Result:', JSON.stringify(result, null, 2));
           
           // ✅ Cập nhật trạng thái và thông tin mới từ API
@@ -459,9 +530,30 @@ const CreateContract = () => {
           console.error('Error Stack:', error.stack);
           console.error('Full Error Object:', error);
           
+          // ✅ Enhanced error logging
+          if (error.response) {
+            console.error('HTTP Response Error:');
+            console.error('  Status:', error.response.status);
+            console.error('  Status Text:', error.response.statusText);
+            console.error('  Data:', JSON.stringify(error.response.data, null, 2));
+          }
+          
+          if (error.request) {
+            console.error('HTTP Request Error:');
+            console.error('  Request:', error.request);
+            console.error('  Config:', error.config);
+          }
+          
+          let errorMessage = 'Lỗi không xác định';
+          if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
           message.error({
-            content: `❌ Xác nhận hợp đồng thất bại: ${error.message || 'Lỗi không xác định'}`,
-            duration: 8
+            content: `❌ Xác nhận hợp đồng thất bại: ${errorMessage}`,
+            duration: 10
           });
         } finally {
           console.log('=== CONFIRM CONTRACT FINALLY ===');
@@ -469,6 +561,7 @@ const CreateContract = () => {
         }
       }
     });
+    */
   };
 
 
@@ -616,7 +709,20 @@ const CreateContract = () => {
                         Chỉnh sửa nội dung
                       </Button>
                       
-                      {showConfirmButton && (
+                      {/* 🐛 DEBUG: Log chi tiết về trạng thái nút xác nhận */}
+                      {console.log('=== BUTTON VISIBILITY DEBUG ===', {
+                        showConfirmButton,
+                        contractConfirmed,
+                        contractId,
+                        positionA,
+                        positionB,
+                        pageSign,
+                        originalPositionA,
+                        originalPositionB,
+                        originalPageSign
+                      })}
+                      
+                      {showConfirmButton ? (
                         <Button 
                           type="primary"
                           size="large"
@@ -627,6 +733,10 @@ const CreateContract = () => {
                         >
                           Xác nhận hợp đồng
                         </Button>
+                      ) : (
+                        <div className="text-red-600 text-sm p-2 border border-red-300 rounded bg-red-50">
+                          ⚠️ Nút xác nhận chưa hiển thị. showConfirmButton = {String(showConfirmButton)}
+                        </div>
                       )}
                     </Space>
                   </div>

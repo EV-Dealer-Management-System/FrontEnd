@@ -105,21 +105,25 @@ export function PDFUpdateService() {
   const readyDealerContract = async (eContractId, positionA, positionB, pageSign) => {
     try {
       console.log('=== PDFUpdateService.readyDealerContract START ===');
-      console.log('eContractId:', eContractId);
-      console.log('positionA:', positionA);
-      console.log('positionB:', positionB);
-      console.log('pageSign:', pageSign);
+      console.log('🔍 Input Parameters:');
+      console.log('  eContractId:', eContractId, typeof eContractId);
+      console.log('  positionA:', positionA, typeof positionA);
+      console.log('  positionB:', positionB, typeof positionB);
+      console.log('  pageSign:', pageSign, typeof pageSign);
       
+      // ✅ Ensure correct data types per API spec
       const requestPayload = {
-        eContractId,
-        positionA,
-        positionB,
-        pageSign
+        eContractId: String(eContractId),           // API requires string
+        positionA: String(positionA),               // API requires string
+        positionB: String(positionB),               // API requires string  
+        pageSign: Number(pageSign) || 0             // API requires number, default 0
       };
       
-      console.log('Request payload:', JSON.stringify(requestPayload, null, 2));
-      console.log('Sending API request to /EContract/ready-dealer-contracts...');
+      console.log('Final Request Payload:', JSON.stringify(requestPayload, null, 2));
+      console.log('API Base URL:', api.defaults.baseURL);
+      console.log('Sending POST request to /EContract/ready-dealer-contracts...');
       
+      console.log('⏳ Making API call...');
       const response = await api.post('/EContract/ready-dealer-contracts', requestPayload, {
         headers: {
           'Content-Type': 'application/json'
@@ -127,8 +131,11 @@ export function PDFUpdateService() {
       });
 
       console.log('=== PDFUpdateService.readyDealerContract RESPONSE ===');
+      console.log('✅ Response received!');
       console.log('Response Status:', response.status);
       console.log('Response Status Text:', response.statusText);
+      console.log('Final Request URL:', response.config.url);
+      console.log('Actual Request Data Sent:', response.config.data);
       console.log('Response Headers:', JSON.stringify(response.headers, null, 2));
       console.log('Response Data (FULL):', JSON.stringify(response.data, null, 2));
 
@@ -152,21 +159,31 @@ export function PDFUpdateService() {
       throw new Error(response.data?.message || 'Ready contract failed');
     } catch (error) {
       console.error('=== PDFUpdateService.readyDealerContract ERROR ===');
-      console.error('Error Type:', error.constructor.name);
-      console.error('Error Message:', error.message);
-      console.error('Error Stack:', error.stack);
+      console.error('❌ Error Type:', error.constructor.name);
+      console.error('❌ Error Message:', error.message);
+      console.error('❌ Error Stack:', error.stack);
       
+      // ✅ Check if request was actually sent
       if (error.response) {
-        console.error('HTTP Error Response:');
+        // Request was sent, server responded with error
+        console.error('🔴 HTTP Error Response (Server responded):');
         console.error('  Status:', error.response.status);
         console.error('  Status Text:', error.response.statusText);
-        console.error('  Headers:', JSON.stringify(error.response.headers, null, 2));
-        console.error('  Data (FULL):', JSON.stringify(error.response.data, null, 2));
-      }
-      
-      if (error.request) {
-        console.error('HTTP Request Config:', JSON.stringify(error.config, null, 2));
-        console.error('HTTP Request (FULL):', error.request);
+        console.error('  Request URL:', error.response.config?.url);
+        console.error('  Request Data:', error.response.config?.data);
+        console.error('  Response Headers:', JSON.stringify(error.response.headers, null, 2));
+        console.error('  Response Data:', JSON.stringify(error.response.data, null, 2));
+      } else if (error.request) {
+        // Request was sent but no response received
+        console.error('🟡 Network/Timeout Error (No response received):');
+        console.error('  Request URL:', error.config?.url);
+        console.error('  Request Data:', error.config?.data);
+        console.error('  Request Config:', JSON.stringify(error.config, null, 2));
+        console.error('  Request Object:', error.request);
+      } else {
+        // Error in request setup
+        console.error('🟠 Request Setup Error:');
+        console.error('  Error Details:', error);
       }
       
       throw new Error(error.response?.data?.message || error.message || 'Không thể hoàn tất hợp đồng');
