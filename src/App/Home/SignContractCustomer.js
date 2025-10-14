@@ -112,7 +112,7 @@ export const ContractService = () => {
       const pageSign = waitingProcess?.pageSign || 2; // Default page 2 như trong response
 
       // Lấy position từ waitingProcess (chính là vị trí cần ký)
-      const signingPosition = waitingProcess?.position || "406,139,576,229"; // Default position
+      const signingPosition = waitingProcess?.position || "406,44,576,134"; // Default position
 
       // Request body theo schema API
       const requestBody = {
