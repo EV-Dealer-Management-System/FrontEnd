@@ -12,7 +12,7 @@ import {
   FullscreenExitOutlined
 } from '@ant-design/icons';
 import api from '../../../../../api/api';
-import { pdfCacheService } from '../../../../../App/PDFconfig/PDFCacheService';
+import { pdfCacheService } from '../../../../../App/Home/PDFconfig/PDFCacheService';
 
 // Cấu hình worker cho pdfjs sử dụng file trong public
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(

@@ -1,697 +1,776 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import { Document, Page } from 'react-pdf';
+import React, { useState, useEffect, useRef } from 'react';
+import { useQuill } from 'react-quilljs';
+import Quill from 'quill';
+import 'quill/dist/quill.snow.css';
 import { 
+  Modal, 
   Button, 
   Card, 
   Space, 
   message, 
   Spin, 
-  Input, 
-  ColorPicker, 
-  InputNumber,
-  Select,
-  Modal,
+  Typography,
   Row,
   Col,
-  Typography,
-  Divider
+  Input,
+  Tabs
 } from 'antd';
 import { 
   EditOutlined, 
   SaveOutlined, 
-  UndoOutlined, 
-  RedoOutlined,
-  ZoomInOutlined,
-  ZoomOutOutlined,
-  DownloadOutlined,
+  EyeOutlined,
   CloseOutlined,
-  PlusOutlined
+  FileTextOutlined,
+  CodeOutlined,
+  EditFilled,
+  CheckCircleOutlined
 } from '@ant-design/icons';
-import api from '../../../../../api/api';
+import { PDFUpdateService } from '../../../../../App/Home/PDFconfig/PDFUpdate';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 const { TextArea } = Input;
 
-// PDF Editor Component - Chỉnh sửa PDF với pdf-lib
-const PDFEdit = ({ 
-  contractId, 
-  downloadUrl,
+// Cấu hình ReactQuill modules
+const quillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'color': [] }, { 'background': [] }],
+    [{ 'align': [] }],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    ['blockquote'],
+    ['link'],
+    ['clean']
+  ],
+};
+
+const quillFormats = [
+  'header', 'bold', 'italic', 'underline', 'strike',
+  'color', 'background', 'align', 
+  'list', 'blockquote', 'link'
+];
+
+// PDF Template Editor với react-quilljs (React 19 compatible)
+function PDFEdit({
+  contractId,
   contractNo,
   visible = false,
-  onSave, 
-  onCancel 
-}) => {
-  // Phase 2: State Management
-  // PDF States
-  const [originalPdfBytes, setOriginalPdfBytes] = useState(null);
-  const [editedPdfBytes, setEditedPdfBytes] = useState(null);
-  const [pdfDoc, setPdfDoc] = useState(null);
-  const [pdfUrl, setPdfUrl] = useState(null);
-  
-  // UI States
+  onSave,
+  onConfirm,
+  onCancel,
+  // Signature position props
+  positionA,
+  positionB,
+  pageSign,
+  onPositionsUpdate
+}) {
+  // States cơ bản
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [numPages, setNumPages] = useState(0);
-  const [scale, setScale] = useState(1.0);
-  
-  // Edit States
-  const [editMode, setEditMode] = useState('text'); // 'text', 'annotation'
-  const [editHistory, setEditHistory] = useState([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  
-  // Text Edit States
-  const [textElements, setTextElements] = useState([]);
-  const [selectedElement, setSelectedElement] = useState(null);
-  const [textColor, setTextColor] = useState('#000000');
-  const [fontSize, setFontSize] = useState(12);
-  const [newText, setNewText] = useState('');
-  const [showTextInput, setShowTextInput] = useState(false);
-  const [clickPosition, setClickPosition] = useState(null);
+  const [templateData, setTemplateData] = useState(null);
+  const [htmlContent, setHtmlContent] = useState('');
+  const [originalContent, setOriginalContent] = useState('');
+  const [contractSubject, setContractSubject] = useState('');
+  const [activeTab, setActiveTab] = useState('editor');
 
-  // Phase 3: PDF Loading & Processing
-  const loadPdfFromApi = useCallback(async (downloadUrl) => {
-    if (!downloadUrl) return;
+  // Workflow states - ✅ Bỏ isConfirmed và confirmLoading
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // ✅ Flag để đảm bảo Quill đã sẵn sàng trước khi paste nội dung
+  const [quillReady, setQuillReady] = useState(false);
+  
+  // ✅ Flag để tránh load template trùng lặp
+  const [templateLoaded, setTemplateLoaded] = useState(false);
+
+  // Signature position states
+  const [currentPositions, setCurrentPositions] = useState({
+    positionA: positionA || null,
+    positionB: positionB || null,
+    pageSign: pageSign || null
+  });
+
+  // Service
+  const pdfUpdateService = PDFUpdateService();
+
+  // Khởi tạo Quill editor với useQuill hook
+  const { quill, quillRef } = useQuill({
+    modules: quillModules,
+    formats: quillFormats,
+    theme: 'snow',
+    placeholder: 'Nhập nội dung hợp đồng...'
+  });
+
+
+
+  // Function để highlight các placeholder như {{ company.name }}
+  const preprocessHtmlForQuill = (html) => {
+    return html.replace(
+      /\{\{\s*([^}]+)\s*\}\}/g, 
+      '<span class="placeholder-variable bg-blue-50 text-blue-600 px-1 rounded font-mono text-sm">${{ $1 }}</span>'
+    );
+  };
+
+  const postprocessHtmlFromQuill = (html) => {
+    return html.replace(
+      /<span class="[^"]*placeholder-variable[^"]*"[^>]*>\$\{\{\s*([^}]+)\s*\}\}<\/span>/g,
+      '{{ $1 }}'
+    );
+  };
+
+  // Thêm TailwindCSS styles cho react-quilljs
+  useEffect(() => {
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = `
+      .ql-editor {
+        font-family: 'Noto Sans', 'DejaVu Sans', Arial, sans-serif !important;
+        font-size: 12pt !important;
+        line-height: 1.4 !important;
+        min-height: 400px !important;
+        max-height: calc(100vh - 380px) !important;
+        overflow-y: auto !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+      }
+      
+      /* Bảo tồn style HTML trong Quill */
+      .ql-editor p, .ql-editor div, .ql-editor span {
+        margin-bottom: 0.5em !important;
+      }
+      
+      .ql-editor table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-bottom: 1em !important;
+      }
+      
+      .ql-editor td, .ql-editor th {
+        border: 1px solid #ddd !important;
+        padding: 8px !important;
+        text-align: left !important;
+        vertical-align: top !important;
+      }
+      
+      .ql-editor th {
+        background-color: #f5f5f5 !important;
+        font-weight: bold !important;
+      }
+      
+      .ql-editor .text-center {
+        text-align: center !important;
+      }
+      
+      .ql-editor .text-right {
+        text-align: right !important;
+      }
+      
+      .ql-editor .font-bold {
+        font-weight: bold !important;
+      }
+      
+      .ql-editor .underline {
+        text-decoration: underline !important;
+      }
+      
+      .ql-editor strong {
+        font-weight: bold !important;
+      }
+      
+      .ql-editor em {
+        font-style: italic !important;
+      }
+      
+      .ql-editor u {
+        text-decoration: underline !important;
+      }
+      
+      .ql-toolbar {
+        border-color: #d1d5db !important;
+        background-color: #f9fafb !important;
+        border-radius: 6px 6px 0 0 !important;
+      }
+      
+      .ql-container {
+        border-color: #d1d5db !important;
+        border-radius: 0 0 6px 6px !important;
+        height: calc(100vh - 380px) !important;
+        max-height: calc(100vh - 380px) !important;
+      }
+
+      /* Highlight placeholder variables với TailwindCSS classes */
+      .ql-editor .placeholder-variable {
+        background-color: #dbeafe !important;
+        color: #1d4ed8 !important;
+        padding: 2px 4px !important;
+        border-radius: 3px !important;
+        font-family: 'Monaco', 'Consolas', monospace !important;
+        font-size: 13px !important;
+      }
+
+      /* Đảm bảo quill container có đúng kích thước và luôn hiển thị */
+      .ql-editor-container {
+        height: 100% !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+        display: block !important;
+        visibility: visible !important;
+      }
+      
+      .ql-editor-container .ql-container {
+        height: calc(100vh - 380px) !important;
+        max-height: calc(100vh - 380px) !important;
+        display: block !important;
+        visibility: visible !important;
+      }
+      
+      .ql-editor-container .ql-toolbar.ql-snow {
+        border-top: 1px solid #d1d5db !important;
+        display: block !important;
+        visibility: visible !important;
+      }
+      
+      /* Fix cho React 19 và react-quilljs */
+      .quill {
+        display: block !important;
+        visibility: visible !important;
+      }
+      
+      .quill > .ql-container {
+        display: block !important;
+      }
+      
+      .quill > .ql-toolbar {
+        display: block !important;
+      }
+    `;
+    document.head.appendChild(styleSheet);
     
+    return () => {
+      if (document.head.contains(styleSheet)) {
+        document.head.removeChild(styleSheet);
+      }
+    };
+  }, []);
+
+  // State để track việc đang programmatically update
+  const [isUpdatingFromCode, setIsUpdatingFromCode] = useState(false);
+
+  // ✅ Khởi tạo quillReady flag khi quill sẵn sàng
+  useEffect(() => {
+    if (quill) {
+      console.log('✅ Quill editor initialized and ready');
+      setQuillReady(true);
+    } else {
+      setQuillReady(false);
+    }
+  }, [quill]);
+
+  // Sync positions từ parent props
+  useEffect(() => {
+    setCurrentPositions({
+      positionA: positionA || null,
+      positionB: positionB || null,
+      pageSign: pageSign || null
+    });
+  }, [positionA, positionB, pageSign]);
+
+  // Editor luôn được enable - không có trạng thái confirmed trong popup này
+
+  // Reset editor khi tạo contract mới
+  useEffect(() => {
+    if (visible && !contractId) {
+      resetEditor(true); // FIX: Reset content khi tạo contract mới
+    }
+  }, [visible, contractId]);
+
+  // ✅ Đồng bộ Quill editor với htmlContent và track changes - CHỈ dùng quill
+  useEffect(() => {
+    if (quill && quillReady) {
+      let debounceTimer;
+      
+      // Setup listener: luôn postprocess trước khi lưu về state (để htmlContent luôn là raw)
+      const handleTextChange = (delta, oldDelta, source) => {
+        if (source !== 'user' || isUpdatingFromCode) return;
+        
+        // Debounce để tránh update quá nhanh khi gõ
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          const currentHtml = quill.root.innerHTML;
+          const raw = postprocessHtmlFromQuill(currentHtml); // ← trả về {{ ... }}
+          setHtmlContent(raw);
+          setHasUnsavedChanges(true);
+        }, 300); // Delay 300ms
+      };
+      
+      quill.on('text-change', handleTextChange);
+      
+      return () => {
+        quill.off('text-change', handleTextChange);
+        clearTimeout(debounceTimer);
+      };
+    }
+  }, [quill, quillReady, isUpdatingFromCode]);  // ✅ TÁCH BIỆT: Paste nội dung vào Quill - HOẠT ĐỘNG ĐỘC LẬP với loadTemplate
+  useEffect(() => {
+    if (!quill || !quillReady || !htmlContent) return;
+
+    console.log('✅ Auto-syncing HTML to Quill editor, content length:', htmlContent.length);
+    const processed = preprocessHtmlForQuill(htmlContent);
+    setIsUpdatingFromCode(true);
+
+    try {
+      const delta = quill.clipboard.convert(processed);
+      quill.setContents(delta);
+    } catch (error) {
+      console.warn('setContents failed, fallback to dangerouslyPasteHTML:', error);
+      quill.clipboard.dangerouslyPasteHTML(processed);
+    }
+
+    setTimeout(() => setIsUpdatingFromCode(false), 50);
+  }, [quill, quillReady, htmlContent]); // ✅ Tự động sync khi có Quill + content (độc lập API)
+
+  // ✅ Debug Quill initialization - CHỈ log 1 lần khi ready
+  useEffect(() => {
+    if (quill && quillReady) {
+      console.log('=== QUILL READY ===');
+      console.log('Quill:', !!quill);
+      console.log('QuillRef:', !!quillRef);
+      console.log('QuillReady:', quillReady);
+      console.log('Modal visible:', visible);
+      console.log('Contract ID:', contractId);
+      console.log('HTML Content length:', htmlContent?.length || 0);
+    }
+  }, [quillReady]); // CHỈ log khi quillReady thay đổi
+
+  // ✅ Load template NGAY khi modal mở - KHÔNG phụ thuộc quillReady
+  useEffect(() => {
+    if (visible && contractId && !templateLoaded) {
+      console.log('✅ Modal opened → Load template (independent of Quill)');
+      loadTemplate();
+    }
+  }, [visible, contractId]); // ✅ CHỈ phụ thuộc vào modal và contractId
+
+  // Load template từ API
+  const loadTemplate = async () => {
+    if (!contractId) {
+      message.error('Không có ID hợp đồng');
+      return;
+    }
+    
+    // ✅ Tránh load trùng lặp
+    if (templateLoaded) {
+      console.log('Template already loaded, skipping...');
+      return;
+    }
+
     setLoading(true);
     try {
-      // Extract token từ downloadUrl - tương tự logic trong CreateContract.jsx
-      const tokenMatch = downloadUrl;
-      const token = tokenMatch ? tokenMatch : null;
+      const result = await pdfUpdateService.getTemplateByContractId(contractId);
       
-      if (!token) {
-        throw new Error('Không tìm thấy token trong URL');
-      }
-
-      console.log('Loading PDF from API with token:', token);
-
-      // Gọi API /EContract/preview
-      const response = await api.get('/EContract/preview', {
-        params: { downloadUrl },
-        responseType: 'arraybuffer' // Quan trọng: arraybuffer cho pdf-lib
-      });
-      
-      if (response.status === 200) {
-        const pdfBytes = new Uint8Array(response.data);
-        setOriginalPdfBytes(pdfBytes);
+      if (result.success && result.data) {
+        const template = result.data;
+        setTemplateData(template);
         
-        // Load PDF document với pdf-lib
-        await loadPdfDocument(pdfBytes);
+        // Lưu RAW HTML vào state (KHÔNG preprocess)
+        const raw = template.contentHtml || '';
+        setHtmlContent(raw);           // ❗ raw
+        setOriginalContent(raw);       // ❗ raw
+        setContractSubject(template.name || 'Hợp đồng đại lý');
         
-        message.success('Đã tải PDF thành công để chỉnh sửa');
+        // ✅ Không cần force paste - useEffect([quill, quillReady, htmlContent]) sẽ tự động sync
+        console.log('✅ Template loaded, htmlContent updated, Quill will auto-sync');
+        
+        // ✅ Đánh dấu đã load template thành công
+        setTemplateLoaded(true);
+        
+        message.success('Đã tải template thành công');
       }
     } catch (error) {
-      console.error('Lỗi tải PDF:', error);
-      message.error('Không thể tải PDF để chỉnh sửa');
+      console.error('Load template error:', error);
+      message.error(error.message);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const loadPdfDocument = async (pdfBytes) => {
-    try {
-      // Tạo PDFDocument từ bytes
-      const pdfDoc = await PDFDocument.load(pdfBytes);
-      
-      setPdfDoc(pdfDoc);
-      
-      // Tạo URL cho React-PDF preview
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      setPdfUrl(url);
-      
-      // Initialize edit history - Phase 5
-      setEditHistory([{ pdfBytes, timestamp: Date.now() }]);
-      setHistoryIndex(0);
-      setEditedPdfBytes(pdfBytes);
-      
-      console.log('PDF document loaded successfully');
-      
-    } catch (error) {
-      console.error('Lỗi load PDF document:', error);
-      throw error;
-    }
   };
 
-  // Load PDF when component mounts or downloadUrl changes
-  useEffect(() => {
-    if (visible && downloadUrl) {
-      loadPdfFromApi(downloadUrl);
-    }
-  }, [visible, downloadUrl, loadPdfFromApi]);
-
-  // Cleanup URLs when component unmounts
-  useEffect(() => {
-    return () => {
-      if (pdfUrl) {
-        URL.revokeObjectURL(pdfUrl);
-      }
-    };
-  }, [pdfUrl]);
-
-  // Phase 4.1: Text Editing Functions
-  const addTextElement = async (x, y, text, pageNum) => {
-    if (!pdfDoc || !text.trim()) return;
-    
-    try {
-      const pages = pdfDoc.getPages();
-      const page = pages[pageNum - 1];
-      
-      if (!page) {
-        message.error('Trang không tồn tại');
-        return;
-      }
-      
-      // Embed font
-      const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      
-      // Convert hex color to RGB
-      const rgbColor = hexToRgb(textColor);
-      
-      // Add text to PDF
-      page.drawText(text, {
-        x: x,
-        y: page.getHeight() - y, // Flip Y coordinate vì PDF có Y ngược với web
-        size: fontSize,
-        font: helveticaFont,
-        color: rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255)
-      });
-      
-      // Update UI state
-      const newElement = {
-        id: Date.now(),
-        type: 'text',
-        x, y, text, pageNum,
-        fontSize, color: textColor
-      };
-      
-      setTextElements(prev => [...prev, newElement]);
-      await updatePdfPreview();
-      await addToHistory();
-      
-      console.log('Text element added:', newElement);
-      message.success('Đã thêm văn bản');
-      
-    } catch (error) {
-      console.error('Lỗi thêm text:', error);
-      message.error('Không thể thêm văn bản');
-    }
-  };
-
-  const deleteTextElement = async (elementId) => {
-    try {
-      setTextElements(prev => prev.filter(el => el.id !== elementId));
-      await reloadPdfWithElements(elementId, null, true); // true = delete mode
-      message.success('Đã xóa văn bản');
-    } catch (error) {
-      console.error('Lỗi xóa text:', error);
-      message.error('Không thể xóa văn bản');
-    }
-  };
-
-  const reloadPdfWithElements = async (excludeElementId = null, newText = null, deleteMode = false) => {
-    if (!originalPdfBytes) return;
-    
-    try {
-      // Reload original PDF
-      const pdfDoc = await PDFDocument.load(originalPdfBytes);
-      const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      
-      // Re-apply all text elements except the excluded one
-      const elementsToApply = deleteMode 
-        ? textElements.filter(el => el.id !== excludeElementId)
-        : textElements.map(el => 
-            el.id === excludeElementId && newText 
-              ? { ...el, text: newText }
-              : el
-          );
-      
-      for (const element of elementsToApply) {
-        const pages = pdfDoc.getPages();
-        const page = pages[element.pageNum - 1];
-        const rgbColor = hexToRgb(element.color);
-        
-        page.drawText(element.text, {
-          x: element.x,
-          y: page.getHeight() - element.y,
-          size: element.fontSize,
-          font: helveticaFont,
-          color: rgb(rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255)
-        });
-      }
-      
-      setPdfDoc(pdfDoc);
-      await updatePdfPreview();
-      await addToHistory();
-      
-    } catch (error) {
-      console.error('Lỗi reload PDF:', error);
-      message.error('Không thể cập nhật PDF');
-    }
-  };
-
-  // Helper function: Convert hex to RGB
-  const hexToRgb = (hex) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
-    } : { r: 0, g: 0, b: 0 };
-  };
-
-  const updatePdfPreview = async () => {
-    if (!pdfDoc) return;
-    
-    try {
-      // Save PDF document to bytes
-      const pdfBytes = await pdfDoc.save();
-      
-      // Cleanup old URL
-      if (pdfUrl) {
-        URL.revokeObjectURL(pdfUrl);
-      }
-      
-      // Create new URL for preview
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      const newUrl = URL.createObjectURL(blob);
-      
-      setPdfUrl(newUrl);
-      setEditedPdfBytes(pdfBytes);
-      
-    } catch (error) {
-      console.error('Lỗi update preview:', error);
-      message.error('Không thể cập nhật xem trước');
-    }
-  };
-
-  // Phase 5: History Management
-  const addToHistory = async () => {
-    if (!pdfDoc) return;
-    
-    try {
-      const pdfBytes = await pdfDoc.save();
-      const newHistory = editHistory.slice(0, historyIndex + 1);
-      newHistory.push({ pdfBytes, timestamp: Date.now() });
-      
-      // Limit history to 10 items
-      if (newHistory.length > 10) {
-        newHistory.shift();
-      }
-      
-      setEditHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-      setEditedPdfBytes(pdfBytes);
-      
-    } catch (error) {
-      console.error('Lỗi add history:', error);
-    }
-  };
-
-  const undo = async () => {
-    if (historyIndex > 0) {
-      try {
-        const prevState = editHistory[historyIndex - 1];
-        await loadPdfDocument(prevState.pdfBytes);
-        setHistoryIndex(historyIndex - 1);
-        message.success('Đã hoàn tác');
-      } catch (error) {
-        console.error('Lỗi undo:', error);
-        message.error('Không thể hoàn tác');
-      }
-    }
-  };
-
-  const redo = async () => {
-    if (historyIndex < editHistory.length - 1) {
-      try {
-        const nextState = editHistory[historyIndex + 1];
-        await loadPdfDocument(nextState.pdfBytes);
-        setHistoryIndex(historyIndex + 1);
-        message.success('Đã làm lại');
-      } catch (error) {
-        console.error('Lỗi redo:', error);
-        message.error('Không thể làm lại');
-      }
-    }
-  };
-
-  // Phase 6: Save & Export
-  const savePdfChanges = async () => {
-    if (!pdfDoc || !editedPdfBytes) {
-      message.error('Không có thay đổi để lưu');
+  // Lưu thay đổi template (chỉ call update-econtract) - FIX: Thêm timeout safety
+  const handleSave = async () => {
+    if (!htmlContent.trim()) {
+      message.error('Nội dung template không được rỗng');
       return;
     }
+
+    setSaveLoading(true);
     
-    setSaving(true);
+    // FIX: Thêm timeout để tránh promise treo vô hạn
+    const saveTimeout = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Save timeout after 30 seconds')), 30000);
+    });
+    
     try {
-      // Convert bytes to array for JSON transmission
-      const pdfArray = Array.from(editedPdfBytes);
+      // Gửi RAW HTML (đã là RAW)
+      const raw = htmlContent;
+      const subject = contractSubject || `Hợp đồng Đại lý ${contractNo}`;
       
-      // TODO: Implement API call to save edited PDF
-      const response = await api.post('/EContract/update-pdf', {
-        contractId: contractId,
-        pdfData: pdfArray
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
+      console.log('=== SAVE TEMPLATE CHANGES ===');
+      console.log('Contract ID:', contractId);
+      console.log('Subject:', subject);
+      console.log('RAW HTML Content Length:', raw.length);
+      
+      // Chỉ gọi update-econtract API với RAW + timeout safety
+      const result = await Promise.race([
+        pdfUpdateService.updateEContract(contractId, raw, subject),
+        saveTimeout
+      ]);
+
+      if (result.success) {
+        console.log('✅ Template changes saved successfully');
+        message.success('Đã lưu thay đổi thành công');
+        setOriginalContent(htmlContent);
+        setHasUnsavedChanges(false);
+        
+        // ✅ Callback với thông tin mới từ API response
+        const updateInfo = {
+          htmlContent: raw,
+          downloadUrl: result.downloadUrl,
+          positionA: result.positionA,
+          positionB: result.positionB,
+          pageSign: result.pageSign
+        };
+        
+        onSave?.(updateInfo);
+        
+        // Update current positions từ API response mới
+        if (result.positionA) setCurrentPositions(prev => ({ ...prev, positionA: result.positionA }));
+        if (result.positionB) setCurrentPositions(prev => ({ ...prev, positionB: result.positionB }));
+        if (result.pageSign) setCurrentPositions(prev => ({ ...prev, pageSign: result.pageSign }));
+        
+      } else {
+        console.log('❌ Template save failed:', result.message);
+        message.error(result.message || 'Lưu thay đổi thất bại');
+      }
+    } catch (error) {
+      console.error('=== SAVE TEMPLATE ERROR ===');
+      console.error('Error:', error);
+      message.error(error.message || 'Có lỗi xảy ra khi lưu thay đổi');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  // Bỏ logic xác nhận hoàn tất - chỉ dùng bên ngoài
+
+  // Bỏ second confirmation
+
+  // Bỏ finalize contract - chỉ dùng bên ngoài
+
+  // Reset editor hoàn toàn - FIX: Chỉ reset khi thực sự cần
+  const resetEditor = (shouldResetContent = false) => {
+    console.log('Resetting editor, shouldResetContent:', shouldResetContent);
+    
+    // Reset workflow states
+    setHasUnsavedChanges(false);
+    
+    // Chỉ reset content khi thực sự cần (ví dụ sau khi hoàn tất hợp đồng)
+    if (shouldResetContent) {
+      setHtmlContent('');
+      setOriginalContent('');
+      setContractSubject('');
+      setTemplateData(null);
+      setTemplateLoaded(false); // ✅ Reset flag để cho phép load lại template
+      
+      // Clear Quill content
+      if (quill) {
+        quill.setText('');
+      }
+      
+      // Reset positions
+      setCurrentPositions({
+        positionA: null,
+        positionB: null,
+        pageSign: null
+      });
+    }
+  };
+
+  // Khôi phục nội dung gốc
+  const handleReset = () => {
+    Modal.confirm({
+      title: 'Khôi phục nội dung gốc?',
+      content: 'Thao tác này sẽ xóa tất cả các thay đổi chưa lưu.',
+      okText: 'Khôi phục',
+      cancelText: 'Hủy',
+      onOk: () => {
+        setHtmlContent(originalContent);
+        setHasUnsavedChanges(false);
+        message.success('Đã khôi phục nội dung gốc');
+      }
+    });
+  };
+
+  // ✅ Xử lý đóng modal với 3 lựa chọn: Lưu + Thoát, Thoát không lưu, Ở lại
+  const handleClose = () => {
+    console.log('PDFEdit handleClose called, hasUnsavedChanges:', hasUnsavedChanges);
+    
+    if (hasUnsavedChanges) {
+      Modal.confirm({
+        title: 'Có thay đổi chưa được lưu',
+        content: 'Bạn muốn thực hiện hành động nào?',
+        okText: 'Lưu và Thoát',
+        cancelText: 'Ở lại',
+        okType: 'primary',
+        onOk: async () => {
+          try {
+            console.log('User chose: Save and Exit');
+            await handleSave(); // Lưu trước khi thoát
+            onCancel(); // Thoát sau khi lưu thành công
+          } catch (error) {
+            console.error('Save failed:', error);
+            // Nếu lưu thất bại, không thoát
+          }
+        },
+        onCancel: () => {
+          // Hiển thị modal phụ để chọn "Thoát không lưu" hay "Ở lại"
+          Modal.confirm({
+            title: 'Bạn có chắc chắn?',
+            content: 'Tất cả thay đổi sẽ bị mất. Bạn có muốn thoát không lưu?',
+            okText: 'Thoát không lưu',
+            cancelText: 'Ở lại tiếp tục chỉnh sửa',
+            okType: 'danger',
+            onOk: () => {
+              console.log('User chose: Exit without saving');
+              onCancel(); // Force close không lưu
+            },
+            onCancel: () => {
+              console.log('User chose: Stay in modal');
+              // Không làm gì, ở lại modal
+            }
+          });
         }
       });
-      
-      if (response.status === 200) {
-        message.success('Đã lưu thay đổi thành công');
-        onSave?.(editedPdfBytes);
-      }
-      
-    } catch (error) {
-      console.error('Lỗi lưu PDF:', error);
-      // For now, just show success since API endpoint doesn't exist yet
-      message.success('Thay đổi đã được lưu (demo mode)');
-      onSave?.(editedPdfBytes);
-    } finally {
-      setSaving(false);
+    } else {
+      console.log('No unsaved changes, closing directly');
+      onCancel();
     }
   };
 
-  const downloadEditedPdf = async () => {
-    if (!editedPdfBytes) {
-      message.error('Không có PDF để tải xuống');
-      return;
+  // Xử lý đóng trực tiếp không cần confirm
+  const handleForceClose = () => {
+    console.log('PDFEdit force close called');
+    onCancel();
+  };
+
+  // ✅ Reset states khi modal đóng
+  useEffect(() => {
+    if (!visible) {
+      // Reset các flag và states
+      setIsUpdatingFromCode(false);
+      setLoading(false);
+      setSaveLoading(false);
+      setQuillReady(false);
+      setTemplateLoaded(false); // ✅ Reset để cho phép reload template lần sau
+      console.log('✅ Modal closed → Reset all states');
     }
-    
-    try {
-      const blob = new Blob([editedPdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `edited-${contractNo || 'contract'}-${Date.now()}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      URL.revokeObjectURL(url);
-      message.success('Đã tải xuống PDF');
-      
-    } catch (error) {
-      console.error('Lỗi download PDF:', error);
-      message.error('Không thể tải xuống PDF');
-    }
-  };
+  }, [visible]);
 
-  // Handle page click to add text
-  const handlePageClick = (event, pageNumber) => {
-    if (editMode !== 'text') return;
-    
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / scale;
-    const y = (event.clientY - rect.top) / scale;
-    
-    setClickPosition({ x, y, pageNumber });
-    setShowTextInput(true);
-    setNewText('');
-  };
-
-  const handleAddText = () => {
-    if (!newText.trim() || !clickPosition) return;
-    
-    addTextElement(
-      clickPosition.x, 
-      clickPosition.y, 
-      newText, 
-      clickPosition.pageNumber
-    );
-    
-    setShowTextInput(false);
-    setNewText('');
-    setClickPosition(null);
-  };
-
-  // Phase 7: UI Components
-  const EditToolbar = () => (
-    <Card className="mb-4">
-      <Row gutter={[16, 16]} align="middle">
-        <Col>
-          <Space>
-            <Button.Group>
-              <Button 
-                icon={<UndoOutlined />} 
-                onClick={undo}
-                disabled={historyIndex <= 0}
-                size="small"
-              >
-                Hoàn tác
-              </Button>
-              <Button 
-                icon={<RedoOutlined />} 
-                onClick={redo}
-                disabled={historyIndex >= editHistory.length - 1}
-                size="small"
-              >
-                Làm lại
-              </Button>
-            </Button.Group>
-          </Space>
-        </Col>
-        
-        <Col>
-          <Space>
-            <Text>Chế độ:</Text>
-            <Select 
-              value={editMode} 
-              onChange={setEditMode}
-              style={{ width: 120 }}
-              size="small"
-            >
-              <Option value="text">Văn bản</Option>
-              <Option value="annotation">Ghi chú</Option>
-            </Select>
-          </Space>
-        </Col>
-        
-        {editMode === 'text' && (
-          <>
-            <Col>
-              <Space>
-                <Text>Size:</Text>
-                <InputNumber 
-                  value={fontSize} 
-                  onChange={setFontSize}
-                  min={8} max={72}
-                  size="small"
-                  style={{ width: 80 }}
-                />
-              </Space>
-            </Col>
-            <Col>
-              <Space>
-                <Text>Màu:</Text>
-                <ColorPicker 
-                  value={textColor} 
-                  onChange={(color) => setTextColor(color.toHexString())}
-                  size="small"
-                />
-              </Space>
-            </Col>
-          </>
-        )}
-        
-        <Col>
-          <Space>
-            <Button.Group>
-              <Button 
-                icon={<ZoomOutOutlined />} 
-                onClick={() => setScale(prev => Math.max(0.5, prev - 0.1))}
-                size="small"
-              />
-              <Button size="small" style={{ minWidth: 60 }}>
-                {Math.round(scale * 100)}%
-              </Button>
-              <Button 
-                icon={<ZoomInOutlined />} 
-                onClick={() => setScale(prev => Math.min(2.0, prev + 0.1))}
-                size="small"
-              />
-            </Button.Group>
-          </Space>
-        </Col>
-        
-        <Col flex="auto" />
-        
-        <Col>
-          <Space>
-            <Button 
-              icon={<DownloadOutlined />}
-              onClick={downloadEditedPdf}
-              size="small"
-            >
-              Tải xuống
-            </Button>
-            <Button 
-              type="primary" 
-              icon={<SaveOutlined />}
-              onClick={savePdfChanges}
-              loading={saving}
-              size="small"
-            >
-              Lưu thay đổi
-            </Button>
-            <Button 
-              icon={<CloseOutlined />}
-              onClick={onCancel}
-              size="small"
-            >
-              Đóng
-            </Button>
-          </Space>
-        </Col>
-      </Row>
-    </Card>
-  );
-
-  // Text Element Component
-  const TextElement = ({ element }) => (
-    <div
-      style={{
-        position: 'absolute',
-        left: element.x * scale,
-        top: element.y * scale,
-        fontSize: element.fontSize * scale,
-        color: element.color,
-        cursor: 'pointer',
-        border: selectedElement?.id === element.id ? '1px dashed #1890ff' : 'none',
-        background: selectedElement?.id === element.id ? 'rgba(24, 144, 255, 0.1)' : 'transparent'
-      }}
-      onClick={(e) => {
-        e.stopPropagation();
-        setSelectedElement(element);
-      }}
-      onDoubleClick={(e) => {
-        e.stopPropagation();
-        deleteTextElement(element.id);
-      }}
-      title="Double click để xóa"
-    >
-      {element.text}
-    </div>
-  );
-
-  // Main render
   return (
     <Modal
       title={
         <div className="flex items-center justify-between">
-          <span>
+          <span className="flex items-center">
             <EditOutlined className="mr-2" />
-            Chỉnh sửa PDF - {contractNo || 'Contract'}
+            Chỉnh sửa Template Hợp đồng - {contractNo}
           </span>
-          <Text type="secondary" className="text-sm">
-            {numPages} trang | {textElements.length} văn bản
-          </Text>
+          <div className="flex items-center space-x-2">
+            {hasUnsavedChanges && (
+              <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-medium">
+                ⚠️ Có thay đổi chưa lưu
+              </span>
+            )}
+            <Text type="secondary" className="text-sm">
+              {templateData?.code}
+            </Text>
+          </div>
         </div>
       }
       open={visible}
-      onCancel={onCancel}
+      onCancel={handleClose}
       width="95vw"
       style={{ top: 20 }}
       styles={{
         body: { 
           height: 'calc(100vh - 150px)', 
-          padding: '0 24px 24px 24px',
-          overflow: 'hidden'
+          padding: '16px',
+          overflow: 'auto'
         }
       }}
       footer={null}
-      destroyOnClose
+      forceRender
+      destroyOnClose={false} // Giữ editor trong DOM
     >
-      <div className="pdf-edit-container h-full flex flex-col">
-        <EditToolbar />
-        
+      <div className="h-full flex flex-col">
+        {/* Toolbar với workflow buttons */}
+        <Card className="mb-4" size="small">
+          <Row gutter={[16, 8]} align="middle">
+            <Col>
+              <Space className="flex flex-wrap">
+                {/* Save Changes Button */}
+                <Button 
+                  type="primary" 
+                  icon={saveLoading ? <Spin size="small" /> : <SaveOutlined />}
+                  onClick={handleSave}
+                  loading={saveLoading}
+                  disabled={!hasUnsavedChanges}
+                  className="bg-blue-500 hover:bg-blue-600 border-blue-500"
+                >
+                  {saveLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </Button>
+                
+                {/* Bỏ nút "Xác nhận hoàn tất" - chỉ dùng nút xác nhận bên ngoài */}
+                
+                {/* Reset Button */}
+                <Button 
+                  onClick={handleReset}
+                  disabled={!hasUnsavedChanges}
+                  className="border-gray-300 hover:border-orange-500"
+                >
+                  Khôi phục
+                </Button>
+              </Space>
+            </Col>
+
+            {/* Status Display */}
+            <Col>
+              {hasUnsavedChanges && (
+                <div className="flex items-center text-yellow-600">
+                  <EditOutlined className="mr-1" />
+                  <span>Có thay đổi chưa lưu</span>
+                </div>
+              )}
+              {!hasUnsavedChanges && (
+                <div className="flex items-center text-gray-500">
+                  <span>Sẵn sàng lưu</span>
+                </div>
+              )}
+            </Col>
+
+            <Col flex="auto" />
+
+            {/* Bỏ nút Đóng khỏi toolbar - chỉ dùng X trên header */}
+          </Row>
+        </Card>
+
+        {/* Content Area */}
         {loading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <Spin size="large" tip="Đang tải PDF để chỉnh sửa..." />
-          </div>
-        ) : pdfUrl ? (
-          <div className="flex-1 overflow-auto border rounded">
-            <div className="p-4 bg-gray-50">
-              <Document
-                file={pdfUrl}
-                onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-                loading={<Spin tip="Đang tải trang..." />}
-              >
-                {Array.from(new Array(numPages), (el, index) => (
-                  <div key={`page_${index + 1}`} className="mb-4 relative inline-block">
-                    <div 
-                      className="relative cursor-crosshair border shadow-md"
-                      onClick={(e) => handlePageClick(e, index + 1)}
-                    >
-                      <Page
-                        pageNumber={index + 1}
-                        scale={scale}
-                        loading={<Spin />}
-                      />
-                      {/* Overlay cho text elements */}
-                      <div className="absolute inset-0 pointer-events-none">
-                        {textElements
-                          .filter(el => el.pageNum === index + 1)
-                          .map(el => (
-                            <div key={el.id} className="pointer-events-auto">
-                              <TextElement element={el} />
-                            </div>
-                          ))
-                        }
-                      </div>
-                    </div>
-                    <div className="text-center mt-2 text-sm text-gray-500">
-                      Trang {index + 1}
-                    </div>
-                  </div>
-                ))}
-              </Document>
-            </div>
+          <div className="flex-1 flex items-center justify-center bg-gray-50 rounded">
+            <Spin size="large" tip="Đang tải template..." />
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <EditOutlined className="text-4xl text-gray-400 mb-4" />
-              <Text type="secondary">Không có PDF để chỉnh sửa</Text>
-            </div>
+          <div className="flex-1 overflow-hidden">
+            <Tabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              className="h-full"
+              type="card"
+              items={[
+                {
+                  key: 'editor',
+                  label: (
+                    <span>
+                      <EditFilled />
+                      Chỉnh sửa nội dung
+                    </span>
+                  ),
+                  children: (
+                    <div className="h-full overflow-hidden">                      
+                        {quill && quillReady ? (
+                          <div className="h-full overflow-hidden">
+                            <div className="ql-editor-container h-full">
+                              <div 
+                                ref={quillRef} 
+                                className="border border-gray-300 rounded bg-white h-full"
+                                style={{ 
+                                  height: 'calc(100vh - 320px)',
+                                  maxHeight: 'calc(100vh - 320px)',
+                                  visibility: 'visible',
+                                  opacity: 1
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center h-full border border-gray-300 rounded bg-gray-50">
+                            <Spin size="large" tip="Đang khởi tạo editor..." />
+                            <div className="ml-4 text-sm text-gray-500">
+                              Quill: {quill ? '✓' : '✗'}, Ready: {quillReady ? '✓' : '✗'}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  )
+                },
+                {
+                  key: 'preview',
+                  label: (
+                    <span>
+                      <EyeOutlined />
+                      Xem trước
+                    </span>
+                  ),
+                  children: (
+                    <div
+                      style={{
+                        height: 'calc(100vh - 300px)',
+                        overflowY: 'auto',
+                        background: '#fff',
+                        border: '1px solid #ddd',
+                        borderRadius: 8,
+                        padding: 16,
+                        fontFamily: 'Noto Sans, DejaVu Sans, Arial, sans-serif',
+                        fontSize: '12pt',
+                        lineHeight: '1.4'
+                      }}
+                      dangerouslySetInnerHTML={{ __html: htmlContent }} // render RAW
+                    />
+                  )
+                },
+                {
+                  key: 'html',
+                  label: (
+                    <span>
+                      <CodeOutlined />
+                      HTML
+                    </span>
+                  ),
+                  children: (
+                    <div className="h-full overflow-hidden">
+                      <TextArea
+                        value={htmlContent} // ghi/đọc RAW
+                        onChange={(e) => {
+                          setHtmlContent(e.target.value); // lưu RAW
+                          setHasUnsavedChanges(true);
+                        }}
+                        placeholder="Chỉnh sửa HTML trực tiếp (dành cho kỹ thuật viên)..."
+                        className="h-full resize-none border-gray-300 focus:border-blue-500"
+                        disabled={false}
+                        style={{ 
+                          height: 'calc(100vh - 300px)',
+                          maxHeight: 'calc(100vh - 300px)',
+                          fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                          fontSize: '14px',
+                          lineHeight: '1.5',
+                          backgroundColor: 'white',
+                          color: 'inherit'
+                        }}
+                      />
+                    </div>
+                  )
+                }
+              ]}
+            />
           </div>
         )}
-        
-        {/* Text Input Modal */}
-        <Modal
-          title="Thêm văn bản"
-          open={showTextInput}
-          onOk={handleAddText}
-          onCancel={() => {
-            setShowTextInput(false);
-            setNewText('');
-            setClickPosition(null);
-          }}
-          okText="Thêm"
-          cancelText="Hủy"
-          width={400}
-        >
-          <div className="space-y-4">
-            <TextArea
-              value={newText}
-              onChange={(e) => setNewText(e.target.value)}
-              placeholder="Nhập nội dung văn bản..."
-              rows={3}
-              autoFocus
-            />
-            <div className="text-sm text-gray-500">
-              Vị trí: ({Math.round(clickPosition?.x || 0)}, {Math.round(clickPosition?.y || 0)}) 
-              - Trang {clickPosition?.pageNumber}
-            </div>
-          </div>
-        </Modal>
       </div>
     </Modal>
   );
-};
+}
 
 export default PDFEdit;

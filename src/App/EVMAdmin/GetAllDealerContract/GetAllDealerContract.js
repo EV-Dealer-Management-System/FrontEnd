@@ -1,9 +1,18 @@
 import api from "../../../api/api";
+
 export const GetAllDealerContract = {
-    // Lấy tất cả hợp đồng đại lý từ backend API
-    getAllDealerContracts: async () => {
+    // Lấy tất cả hợp đồng đại lý từ backend API với query parameters
+    getAllDealerContracts: async (pageNumber = 1, pageSize = 1000, eContractStatus = 2) => {
         try {
-            const response = await api.get('/Econtract/get-econtract-list');
+            // Tạo query parameters - mặc định lấy status = 2 (Sẵn sàng)
+            const params = {
+                pageNumber: pageNumber,
+                pageSize: pageSize,
+                eContractStatus: eContractStatus
+            };
+
+            const response = await api.get('/Econtract/get-all-econtract-list', { params });
+            
             // Kiểm tra response structure từ backend
             if (response.data?.isSuccess && Array.isArray(response.data.result)) {
                 console.log('Loaded dealer contracts from backend:', response.data.result.length);

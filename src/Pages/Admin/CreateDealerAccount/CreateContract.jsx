@@ -7,6 +7,7 @@ import {
   Row,
   Col,
   message,
+  notification,
   Select,
   Space,
   Typography,
@@ -15,23 +16,29 @@ import {
   Modal,
   Layout
 } from 'antd';
-import { UserAddOutlined, ShopOutlined, EnvironmentOutlined, MailOutlined, PhoneOutlined,FilePdfOutlined,DownloadOutlined, FileTextOutlined, ApartmentOutlined, GlobalOutlined, EditOutlined } from '@ant-design/icons';
+import { 
+  UserAddOutlined, 
+  ShopOutlined, 
+  EnvironmentOutlined, 
+  MailOutlined, 
+  PhoneOutlined,
+  FilePdfOutlined,
+  DownloadOutlined, 
+  FileTextOutlined, 
+  ApartmentOutlined, 
+  GlobalOutlined, 
+  EditOutlined,
+  CheckCircleOutlined 
+} from '@ant-design/icons';
 import { locationApi } from '../../../api/api';
 import api from '../../../api/api';
-import { ContractService } from '../../../App/Home/SignContractCustomer'
 import ContractViewer from '../SignContract/Components/ContractViewer';
-import SignatureModal from '../SignContract/Components/SignatureModal';
-import SignaturePositionModal from '../SignContract/Components/SignaturePositionModal';
-import SmartCAModal from '../SignContract/Components/SmartCAModal';
-import AppVerifyModal from '../SignContract/Components/AppVerifyModal';
-import AddSmartCA from '../SignContract/Components/AddSmartCA';
-import SmartCASelector from '../SignContract/Components/SmartCASelector';
-import SmartCAStatusChecker from '../SignContract/Components/SmartCAStatusChecker';
-import useContractSigning from '../SignContract/useContractSigning';
 import PDFEdit from '../SignContract/Components/PDF/PDFEdit';
 import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount';
-const FIXED_USER_ID = "18858";
+import { PDFUpdateService } from '../../../App/Home/PDFconfig/PDFUpdate';
 import AdminLayout from '../../../Components/Admin/AdminLayout';
+
+const FIXED_USER_ID = "18858";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -70,53 +77,36 @@ const CreateContract = () => {
   const [wards, setWards] = useState([]);
   const [loadingProvinces, setLoadingProvinces] = useState(true);
   const [loadingWards, setLoadingWards] = useState(false);
+  
+  // Contract states
   const [contractLink, setContractLink] = useState(null);
   const [contractNo, setContractNo] = useState(null);
   const [contractId, setContractId] = useState(null);
   const [waitingProcessData, setWaitingProcessData] = useState(null);
 
-  // Lưu thông tin vị trí ký và trang ký từ API response
+  // Workflow states - mới thêm
+  const [contractConfirmed, setContractConfirmed] = useState(false);
+  const [showConfirmButton, setShowConfirmButton] = useState(false);
+  const [updatingContract, setUpdatingContract] = useState(false);
+
+  // Lưu thông tin vị trí ký từ API response
   const [positionA, setPositionA] = useState(null);
   const [positionB, setPositionB] = useState(null);
   const [pageSign, setPageSign] = useState(null);
-
-  // SmartCA flow
-  const [showAddSmartCA, setShowAddSmartCA] = useState(false);
-  const [showSmartCASelector, setShowSmartCASelector] = useState(false);
-  const [smartCAInfo, setSmartCAInfo] = useState(null);
-  const [selectedSmartCA, setSelectedSmartCA] = useState(null);
-  const [checkingSmartCA, setCheckingSmartCA] = useState(false);
+  const [originalPositionA, setOriginalPositionA] = useState(null);
+  const [originalPositionB, setOriginalPositionB] = useState(null);
+  const [originalPageSign, setOriginalPageSign] = useState(null);
 
   // PDF preview states
   const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
 
-  // PDF Edit states
-  const [showPDFEdit, setShowPDFEdit] = useState(false);
-
-  // Sử dụng custom hook để quản lý logic ký hợp đồng
-  const {
-    showSignatureModal,
-    setShowSignatureModal,
-    signingLoading,
-    contractSigned,
-    signatureCompleted,
-    showSmartCAModal,
-    setShowSmartCAModal,
-    showAppVerifyModal,
-    setShowAppVerifyModal,
-    previewImage,
-    showPositionModal,
-    setShowPositionModal,
-    handleSignature,
-    handlePositionConfirm,
-    handleAppVerification,
-    resetSigningState
-  } = useContractSigning();
-
-  // Initialize contract service
-  const contractService = ContractService();
+  // PDF Template Edit states
+  const [showTemplateEdit, setShowTemplateEdit] = useState(false);
+  
+  // Initialize services
+  const pdfUpdateService = PDFUpdateService();
 
   // Load PDF preview từ API /EContract/preview
   const loadPdfPreview = React.useCallback(async (downloadUrl) => {
@@ -193,7 +183,7 @@ const CreateContract = () => {
     loadProvinces();
   }, []);
 
-  // Load wards when province changes - GỌI API backend
+  // Load wards when province changes - GỌI API backend với fallback
   const handleProvinceChange = async (provinceCode) => {
     if (!provinceCode) {
       setWards([]);
@@ -203,21 +193,22 @@ const CreateContract = () => {
 
     try {
       setLoadingWards(true);
-      // Gọi API backend để lấy wards theo provinceCode
+      // Gọi API backend để lấy wards/districts theo provinceCode (có fallback)
       const wardsList = await locationApi.getWardsByProvinceCode(provinceCode);
 
       if (Array.isArray(wardsList)) {
         setWards(wardsList);
+        console.log(`Loaded ${wardsList.length} wards/districts for province ${provinceCode}`);
       } else {
-        console.warn('Wards data is not an array:', wardsList);
+        console.warn('Wards/districts data is not an array:', wardsList);
         setWards([]);
-        message.warning('Dữ liệu phường/xã không hợp lệ');
+        message.warning('Dữ liệu phường/xã/quận/huyện không hợp lệ');
       }
 
       form.setFieldsValue({ ward: undefined });
     } catch (error) {
-      message.error('Không thể tải danh sách phường/xã');
-      console.error('Error loading wards:', error);
+      message.error('Không thể tải danh sách phường/xã/quận/huyện');
+      console.error('Error loading wards/districts:', error);
       setWards([]); // Đảm bảo set array rỗng khi có lỗi
     } finally {
       setLoadingWards(false);
@@ -270,87 +261,68 @@ const CreateContract = () => {
 
       console.log('Dữ liệu gửi đi:', dealerData);
 
-      // Create dealer contract
-      const result = await createAccountApi.createDealerContract(dealerData);
+      // ✅ Sử dụng endpoint mới /EContract/draft-dealer-contracts
+      const response = await api.post('/EContract/draft-dealer-contracts', dealerData);
+      
+      // Log full response để debug
+      console.log('=== DRAFT DEALER CONTRACT API RESPONSE ===');
+      console.log('Full response:', JSON.stringify(response.data, null, 2));
+      console.log('Status:', response.status);
+      console.log('Headers:', response.headers);
 
-      if (result.isSuccess || result.success) {
-        message.success('Tạo hợp đồng thành công!');
-
-        let contractData = null;
-        console.log('Full API response:', JSON.stringify(result, null, 2));
-
-        if (result.result?.data) {
-          contractData = result.result.data;
-          console.log('Lấy dữ liệu từ result.result.data:', contractData);
-        } else if (result.data) {
-          contractData = result.data;
-          console.log('Lấy dữ liệu từ result.data:', contractData);
-        }
-
+      if (response.data?.isSuccess) {
+        const contractData = response.data.result?.data;
+        
+        // Log contract data chi tiết
+        console.log('=== CONTRACT DATA ===');
+        console.log('Contract ID:', contractData?.id);
+        console.log('Contract No:', contractData?.no);
+        console.log('Download URL:', contractData?.downloadUrl);
+        console.log('Positions:', {
+          positionA: contractData?.positionA,
+          positionB: contractData?.positionB,
+          pageSign: contractData?.pageSign
+        });
+        
         if (contractData) {
-          const contractIdFromResponse = contractData.id;
-          const downloadUrl = contractData.downloadUrl;
-          const contractNo = contractData.no;
-          const processId = contractData.waitingProcess?.id || contractIdFromResponse;
-
-          setContractId(processId);
-          setWaitingProcessData(contractData.waitingProcess);
-
-          if (downloadUrl) {
-            setContractLink(downloadUrl);
-            setContractNo(contractNo || 'Không xác định');
-            
-            // ✅ Lưu thông tin vị trí ký và trang ký từ API response
-            if (contractData.positionA) {
-              setPositionA(contractData.positionA);
-              
-            }
-            if (contractData.positionB) {
-              setPositionB(contractData.positionB);
-             
-            }
-            if (contractData.pageSign) {
-              setPageSign(contractData.pageSign);
-              
-            }
-            
-            // Debug: In tất cả signing info
-            console.log('Complete signing info:', {
-              positionA: contractData.positionA,
-              positionB: contractData.positionB,
-              pageSign: contractData.pageSign,
-              contractId: contractIdFromResponse,
-              waitingProcess: contractData.waitingProcess
-            });
-            
-            // Load PDF preview từ API /EContract/preview
-            await loadPdfPreview(downloadUrl);
-            
-            message.success({
-              content: (
-                <span>
-                  Hợp đồng đã được tạo thành công và sẽ được hiển thị bên dưới!
-                </span>
-              ),
-              duration: 3
-            });
-            // Sau khi tạo hợp đồng, kiểm tra trạng thái SmartCA trước
-            setCheckingSmartCA(true);
-          } else {
-            message.warning('Không tìm thấy đường dẫn hợp đồng');
-            console.error('Download URL không tồn tại trong phản hồi');
-          }
-        } else {
-          message.warning('Không có thông tin hợp đồng trong kết quả trả về');
+          setContractId(contractData.id);
+          setContractLink(contractData.downloadUrl);
+          setContractNo(contractData.no);
+          
+          // Lưu vị trí gốc
+          setOriginalPositionA(contractData.positionA);
+          setOriginalPositionB(contractData.positionB);
+          setOriginalPageSign(contractData.pageSign);
+          
+          // Set current positions
+          setPositionA(contractData.positionA);
+          setPositionB(contractData.positionB);
+          setPageSign(contractData.pageSign);
+          
+          console.log('Signing positions:', {
+            positionA: contractData.positionA,
+            positionB: contractData.positionB,
+            pageSign: contractData.pageSign
+          });
+          
+          await loadPdfPreview(contractData.downloadUrl);
+          setShowConfirmButton(true); // Hiển thị nút xác nhận
+          
+          message.success('Hợp đồng đã được tạo thành công! Vui lòng xem xét và xác nhận.');
         }
       } else {
-        message.error(result.error || 'Có lỗi khi tạo hợp đồng');
+        message.error(response.data?.message || 'Có lỗi khi tạo hợp đồng');
         setContractLink(null);
         setContractNo(null);
       }
     } catch (error) {
-      console.error('Unexpected error:', error);
-      message.error('Có lỗi không mong muốn xảy ra');
+      console.error('API Error:', error);
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        message.error(errorData.message || 'Có lỗi khi tạo hợp đồng');
+      } else {
+        message.error('Có lỗi không mong muốn xảy ra');
+      }
     } finally {
       setLoading(false);
     }
@@ -359,6 +331,237 @@ const CreateContract = () => {
   const onFinishFailed = (errorInfo) => {
     console.log('Failed:', errorInfo);
     message.error('Vui lòng kiểm tra lại thông tin đã nhập');
+  };
+
+  // Handle update contract workflow - ✅ Cập nhật với thông tin mới từ API
+  const handleUpdateContract = async (updateInfo) => {
+    if (!contractId || !contractNo) return;
+    
+    setUpdatingContract(true);
+    try {
+      console.log('=== HANDLE UPDATE CONTRACT ===');
+      console.log('Update info received:', updateInfo);
+      
+      // ✅ Cập nhật positions mới từ API response
+      if (updateInfo.positionA) {
+        setPositionA(updateInfo.positionA);
+        console.log('Updated positionA:', updateInfo.positionA);
+      }
+      if (updateInfo.positionB) {
+        setPositionB(updateInfo.positionB);
+        console.log('Updated positionB:', updateInfo.positionB);
+      }
+      if (updateInfo.pageSign) {
+        setPageSign(updateInfo.pageSign);
+        console.log('Updated pageSign:', updateInfo.pageSign);
+      }
+      
+      // ✅ Cập nhật downloadUrl mới và gọi lại preview
+      if (updateInfo.downloadUrl) {
+        console.log('New downloadUrl:', updateInfo.downloadUrl);
+        setContractLink(updateInfo.downloadUrl);
+        
+        // Gọi lại preview với URL mới
+        await loadPdfPreview(updateInfo.downloadUrl);
+        console.log('PDF preview reloaded with new URL');
+      }
+      
+      message.success('Hợp đồng đã được cập nhật thành công');
+      setShowTemplateEdit(false);
+      setShowConfirmButton(true);
+      
+    } catch (error) {
+      console.error('Update contract error:', error);
+      message.error(error.message || 'Không thể cập nhật hợp đồng');
+    } finally {
+      setUpdatingContract(false);
+    }
+  };
+
+  const handleConfirmContract = async () => {
+    console.log('🚀🚀🚀 HANDLE CONFIRM CONTRACT - FUNCTION START 🚀🚀🚀');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    
+    // ✅ Validation trước khi gửi
+    if (!contractId) {
+      console.error('❌ Missing contractId:', contractId);
+      message.error('Không tìm thấy ID hợp đồng');
+      console.log('🛑 EARLY RETURN - No contractId');
+      return;
+    }
+    
+    console.log('✅ ContractId validation passed:', contractId);
+
+    const finalPositionA = positionA || originalPositionA || "default_position_a";
+    const finalPositionB = positionB || originalPositionB || "default_position_b";
+    const finalPageSign = pageSign || originalPageSign || 0;
+
+    console.log('=== CONFIRM CONTRACT VALIDATION ===');
+    console.log('Contract ID:', contractId);
+    console.log('positionA:', positionA, '→ finalPositionA:', finalPositionA);
+    console.log('positionB:', positionB, '→ finalPositionB:', finalPositionB);
+    console.log('pageSign:', pageSign, '→ finalPageSign:', finalPageSign);
+    console.log('originalPositionA:', originalPositionA);
+    console.log('originalPositionB:', originalPositionB);
+    console.log('originalPageSign:', originalPageSign);
+
+    // ✅ Always proceed, even with default positions  
+    if (!finalPositionA || !finalPositionB) {
+      console.warn('⚠️ Missing positions, using defaults:', { finalPositionA, finalPositionB });
+      // Don't return - proceed with defaults
+    }
+
+    console.log('🔄 About to show Modal.confirm...');
+    
+    // 🚨 EMERGENCY BYPASS - Test API call directly without Modal
+    console.log('🚨 EMERGENCY MODE - BYPASSING MODAL FOR DIRECT TEST');
+    try {
+      setUpdatingContract(true);
+      
+      // ✅ Ensure correct data types for API
+      const apiPayload = {
+        eContractId: String(contractId), // Ensure string
+        positionA: String(finalPositionA), // Ensure string  
+        positionB: String(finalPositionB), // Ensure string
+        pageSign: finalPageSign ? Number(finalPageSign) : 0 // Ensure number, default 0
+      };
+      
+      console.log('🔥🔥🔥 EMERGENCY - DIRECT API CALL 🔥🔥🔥');
+      console.log('API Payload:', JSON.stringify(apiPayload, null, 2));
+      
+      const result = await pdfUpdateService.readyDealerContract(
+        apiPayload.eContractId,
+        apiPayload.positionA,
+        apiPayload.positionB,
+        apiPayload.pageSign
+      );
+      
+      console.log('🎉🎉🎉 EMERGENCY - API SUCCESS 🎉🎉🎉');
+      console.log('Result:', JSON.stringify(result, null, 2));
+      
+      message.success('🚨 EMERGENCY MODE - API Call succeeded!');
+      
+    } catch (error) {
+      console.error('🚨 EMERGENCY - API FAILED:', error);
+      message.error('🚨 Emergency API test failed: ' + error.message);
+    } finally {
+      setUpdatingContract(false);
+    }
+    
+    // Original Modal code (commented out for emergency test)
+    /*
+    Modal.confirm({
+      title: 'Xác nhận hợp đồng',
+      content: 'Bạn có chắc chắn muốn xác nhận hợp đồng này? Sau khi xác nhận, hợp đồng sẽ được gửi đi xét duyệt.',
+      okText: 'Xác nhận',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        console.log('🎯 Modal.confirm OK clicked - User confirmed!');
+        try {
+          console.log('🚀 === INSIDE MODAL OK - ABOUT TO CALL API ===');
+          setUpdatingContract(true);
+          
+          // ✅ Ensure correct data types for API
+          const apiPayload = {
+            eContractId: String(contractId), // Ensure string
+            positionA: String(finalPositionA), // Ensure string  
+            positionB: String(finalPositionB), // Ensure string
+            pageSign: finalPageSign ? Number(finalPageSign) : 0 // Ensure number, default 0
+          };
+          
+          console.log('=== API PAYLOAD PREPARED ===');
+          console.log('Original contractId:', contractId, typeof contractId);
+          console.log('Original finalPositionA:', finalPositionA, typeof finalPositionA);
+          console.log('Original finalPositionB:', finalPositionB, typeof finalPositionB); 
+          console.log('Original finalPageSign:', finalPageSign, typeof finalPageSign);
+          console.log('API Payload:', JSON.stringify(apiPayload, null, 2));
+          
+          console.log('🔥🔥🔥 ABOUT TO CALL pdfUpdateService.readyDealerContract 🔥🔥🔥');
+          console.log('Service object:', pdfUpdateService);
+          console.log('Service method exists:', typeof pdfUpdateService.readyDealerContract);
+          
+          // Ready contract với positions hiện tại
+          const result = await pdfUpdateService.readyDealerContract(
+            apiPayload.eContractId,
+            apiPayload.positionA,
+            apiPayload.positionB,
+            apiPayload.pageSign
+          );
+          
+          console.log('🎉🎉🎉 API CALL COMPLETED - GOT RESULT 🎉🎉🎉');
+          console.log('Result type:', typeof result);
+          console.log('Result:', JSON.stringify(result, null, 2));
+          
+          // ✅ Cập nhật trạng thái và thông tin mới từ API
+          setContractConfirmed(true);
+          setShowConfirmButton(false);
+          
+          // Cập nhật downloadUrl mới nếu có
+          if (result.downloadUrl) {
+            setContractLink(result.downloadUrl);
+            console.log('Updated contract download URL:', result.downloadUrl);
+          }
+          
+          // ✅ Hiển thị thông báo thành công rõ ràng với delay để tránh bị che bởi Modal confirm
+          setTimeout(() => {
+            message.success({
+              content: `🎉 Xác nhận hợp đồng thành công! Hợp đồng ${result.contractNo || contractNo} đã sẵn sàng ký số.`,
+              duration: 10,
+              style: { 
+                marginTop: '60px', // Tránh bị che bởi modal
+                zIndex: 9999 
+              }
+            });
+            
+            // ✅ Thêm notification bổ sung để đảm bảo user thấy được
+            notification.success({
+              message: '🎉 Xác nhận thành công',
+              description: `Hợp đồng ${result.contractNo || contractNo} đã được xác nhận và sẵn sàng cho việc ký số. Các bên liên quan sẽ nhận được thông báo.`,
+              duration: 12,
+              placement: 'topRight',
+              style: { marginTop: '50px' }
+            });
+          }, 300);
+          
+        } catch (error) {
+          console.error('=== CONFIRM CONTRACT ERROR ===');
+          console.error('Error Type:', error.constructor.name);
+          console.error('Error Message:', error.message);
+          console.error('Error Stack:', error.stack);
+          console.error('Full Error Object:', error);
+          
+          // ✅ Enhanced error logging
+          if (error.response) {
+            console.error('HTTP Response Error:');
+            console.error('  Status:', error.response.status);
+            console.error('  Status Text:', error.response.statusText);
+            console.error('  Data:', JSON.stringify(error.response.data, null, 2));
+          }
+          
+          if (error.request) {
+            console.error('HTTP Request Error:');
+            console.error('  Request:', error.request);
+            console.error('  Config:', error.config);
+          }
+          
+          let errorMessage = 'Lỗi không xác định';
+          if (error.response?.data?.message) {
+            errorMessage = error.response.data.message;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
+          message.error({
+            content: `❌ Xác nhận hợp đồng thất bại: ${errorMessage}`,
+            duration: 10
+          });
+        } finally {
+          console.log('=== CONFIRM CONTRACT FINALLY ===');
+          setUpdatingContract(false);
+        }
+      }
+    });
+    */
   };
 
 
@@ -395,7 +598,7 @@ const CreateContract = () => {
   // Reset form and related state
   const resetForm = () => {
     Modal.confirm({
-      title: 'Làm mới biểu mẫu? ',
+      title: 'Làm mới biểu mẫu?',
       content: 'Thao tác này sẽ xóa dữ liệu đã nhập và bắt đầu hợp đồng mới.',
       okText: 'Xác nhận',
       cancelText: 'Hủy',
@@ -406,17 +609,26 @@ const CreateContract = () => {
         setContractId(null);
         setWaitingProcessData(null);
         setWards([]);
+        
         // Reset PDF states
         setPdfBlob(null);
         setPdfBlobUrl(null);
         setLoadingPdf(false);
-        // Reset PDF Edit states
-        setShowPDFEdit(false);
+        
+        // Reset workflow states
+        setContractConfirmed(false);
+        setShowConfirmButton(false);
+        setUpdatingContract(false);
+        setShowTemplateEdit(false);
+        
         // Reset signing position states
         setPositionA(null);
         setPositionB(null);
         setPageSign(null);
-        resetSigningState();
+        setOriginalPositionA(null);
+        setOriginalPositionB(null);
+        setOriginalPageSign(null);
+        
         message.success('Đã làm mới biểu mẫu');
       }
     });
@@ -424,145 +636,142 @@ const CreateContract = () => {
 
   return (
     <AdminLayout>
-      <div className="max-w-6xl mx-auto">
-        <Card className="shadow-lg rounded-xl mb-6">
+      <div className="max-w-6xl mx-auto px-4">
+        <Card 
+          className="shadow-2xl rounded-2xl mb-8 overflow-hidden border-0"
+          style={{
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)'
+          }}
+        >
           <Space direction="vertical" size="large" className="w-full">
-            {/* Header */}
-            <div className="text-center py-5">
+            {/* Header với gradient background */}
+            <div 
+              className="text-center py-8 px-6 -mx-6 -mt-6 mb-4"
+              style={{
+                background: 'linear-gradient(135deg, #ffffffff 0%, #ffffffff 100%)',
+                color: 'white'
+              }}
+            >
               <Title
                 level={2}
-                className="text-blue-500 mb-2 flex items-center justify-center gap-3"
+                className="mb-3 flex items-center justify-center gap-3"
+                style={{ color: 'black', margin: 0 }}
               >
-                <UserAddOutlined />
+                <UserAddOutlined className="text-3xl" />
                 Tạo Hợp Đồng Đại Lý
               </Title>
-              <Text className="text-base text-gray-600">
+              <Text className="text-lg opacity-90" style={{ color: 'black' }}>
                 Quản lý và tạo hợp đồng cho các đại lý xe điện
               </Text>
             </div>
 
-            <Divider className="my-6" />
 
-
-            {/* Contract Display */}
-            {contractLink && (
+            {/* Contract Display - Workflow mới */}
+            {contractLink && !contractConfirmed && (
               <>
-                {/* Phase 4: Chỉ sử dụng React-PDF */}
-                <Card className="mb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Text strong className="text-green-600">
-                        <FileTextOutlined className="mr-2" />
-                        PDF Viewer: React-PDF (Native)
-                      </Text>
-                    </div>
-                  </div>
-                </Card>
+                {/* Contract Viewer */}
                 <ContractViewer
                   contractLink={contractLink}
                   contractNo={contractNo}
-                  contractSigned={contractSigned}
-                  onSign={() => {
-                    // Kiểm tra đã có SmartCA và có chứng thư số hợp lệ chưa
-                    const hasValidSmartCA = smartCAInfo && (
-                      smartCAInfo.defaultSmartCa ||
-                      (smartCAInfo.userCertificates && smartCAInfo.userCertificates.length > 0)
-                    );
-                    if (!hasValidSmartCA) {
-                      message.warning('Bạn chưa có SmartCA hoặc chưa có chứng thư số hợp lệ. Vui lòng thêm SmartCA trước khi ký!');
-                      setShowAddSmartCA(true);
-                      return;
-                    }
-                    if (!selectedSmartCA) {
-                      message.warning('Vui lòng chọn chứng thư số SmartCA trước khi ký hợp đồng!');
-                      setShowSmartCASelector(true);
-                      return;
-                    }
-                    setShowSignatureModal(true);
-                  }}
+                  contractSigned={false}
+                  onSign={null} // Bỏ chức năng ký
                   onDownload={handleDownload}
                   onNewContract={resetForm}
                   viewerLink={getPdfDisplayUrl()}
                   loading={loadingPdf}
                 />
 
-                {/* PDF Edit Actions */}
-                <Card className="mb-6 mt-6">
-                  <Title level={4} className="flex items-center">
-                    <EditOutlined className="mr-2" />
-                    Chỉnh sửa PDF
+                {/* Workflow Actions */}
+                <Card className="mb-6 mt-6 shadow-md rounded-xl border border-gray-200">
+                  <Title level={4} className="flex items-center text-gray-800 mb-4">
+                    <EditOutlined className="mr-2 text-blue-500 text-xl" />
+                    Xem xét và xác nhận hợp đồng
                   </Title>
+                  
                   <div className="text-center">
-                    <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded p-3 mb-3">
-                      <div className="font-medium">Chỉnh sửa nội dung hợp đồng</div>
-                      <div className="text-sm">Thêm văn bản, ghi chú hoặc chỉnh sửa nội dung PDF trước khi ký</div>
+                    <div className="rounded-lg p-4 mb-4 border border-blue-200 bg-blue-50">
+                      <div className="font-semibold text-lg text-blue-700">Hợp đồng đã sẵn sàng</div>
+                      <div className="text-sm mt-1 text-blue-600">
+                        Vui lòng xem xét nội dung hợp đồng và xác nhận để gửi đi xét duyệt
+                      </div>
                     </div>
-                    <Space>
+                    
+                    <Space className="flex flex-wrap justify-center gap-4">
                       <Button 
                         type="primary" 
                         icon={<EditOutlined />}
-                        onClick={() => setShowPDFEdit(true)}
-                        disabled={!contractLink}
+                        onClick={() => setShowTemplateEdit(true)}
+                        size="large"
+                        disabled={contractConfirmed} // ✅ Vô hiệu hóa khi đã xác nhận
+                        className="px-6 py-2 h-auto font-semibold rounded-lg"
                       >
-                        Mở trình chỉnh sửa PDF
+                        Chỉnh sửa nội dung
                       </Button>
-                      <Button 
-                        onClick={handleDownload}
-                        disabled={!contractLink}
-                      >
-                        Tải xuống bản gốc
-                      </Button>
+                      
+                      {/* 🐛 DEBUG: Log chi tiết về trạng thái nút xác nhận */}
+                      {console.log('=== BUTTON VISIBILITY DEBUG ===', {
+                        showConfirmButton,
+                        contractConfirmed,
+                        contractId,
+                        positionA,
+                        positionB,
+                        pageSign,
+                        originalPositionA,
+                        originalPositionB,
+                        originalPageSign
+                      })}
+                      
+                      {showConfirmButton ? (
+                        <Button 
+                          type="primary"
+                          size="large"
+                          onClick={handleConfirmContract}
+                          loading={updatingContract}
+                          disabled={contractConfirmed} // ✅ Vô hiệu hóa khi đã xác nhận
+                          className="px-8 py-2 h-auto font-semibold rounded-lg bg-green-500 hover:bg-green-600 border-green-500"
+                        >
+                          Xác nhận hợp đồng
+                        </Button>
+                      ) : (
+                        <div className="text-red-600 text-sm p-2 border border-red-300 rounded bg-red-50">
+                          ⚠️ Nút xác nhận chưa hiển thị. showConfirmButton = {String(showConfirmButton)}
+                        </div>
+                      )}
                     </Space>
                   </div>
                 </Card>
-
-                {/* Card trạng thái SmartCA giống ContractPage */}
-                <Card className="mb-6 mt-6">
-                  <Title level={4} className="flex items-center">
-                    <SmartCAModal />
-                    Trạng thái SmartCA
-                  </Title>
-                  {!smartCAInfo ? (
-                    <div className="text-center">
-                      <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded p-3 mb-3">
-                        <div className="font-medium">SmartCA chưa sẵn sàng</div>
-                        <div className="text-sm">Bạn cần thêm SmartCA để có thể ký hợp đồng</div>
-                      </div>
-                      <Button type="primary" danger onClick={() => setShowAddSmartCA(true)}>
-                        Thêm SmartCA
-                      </Button>
-                    </div>
-                  ) : !selectedSmartCA ? (
-                    <div className="text-center">
-                      <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded p-3 mb-3">
-                        <div className="font-medium">Đã có SmartCA</div>
-                        <div className="text-sm">Vui lòng chọn chứng thư số để ký hợp đồng</div>
-                      </div>
-                      <Button type="primary" onClick={() => setShowSmartCASelector(true)}>
-                        Chọn Chứng Thư
-                      </Button>
-                      <Button className="ml-2" onClick={() => setShowAddSmartCA(true)}>
-                        Thêm SmartCA Khác
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <div className="bg-green-50 border border-green-200 text-green-700 rounded p-3 mb-3">
-                        <div className="font-medium">SmartCA sẵn sàng</div>
-                        <div className="text-sm">
-                          Sử dụng: {selectedSmartCA.commonName} ({selectedSmartCA.uid})
-                        </div>
-                      </div>
-                      <Button type="primary" onClick={() => setShowSignatureModal(true)}>
-                        Ký Hợp Đồng
-                      </Button>
-                      <Button className="ml-2" onClick={() => setShowSmartCASelector(true)}>
-                        Đổi Chứng Thư
-                      </Button>
-                    </div>
-                  )}
-                </Card>
               </>
+            )}
+
+            {contractConfirmed && (
+              <Card className="mb-6 shadow-md rounded-xl border border-green-200">
+                <div className="text-center p-6">
+                  <div className="rounded-lg p-6 bg-gradient-to-r from-green-50 to-green-100 border border-green-200">
+                    <CheckCircleOutlined className="text-4xl text-green-500 mb-4" />
+                    <div className="font-semibold text-xl text-green-700 mb-3">
+                      🎉 Xác nhận hợp đồng thành công!
+                    </div>
+                    <div className="text-green-600 mb-4">
+                      Hợp đồng <strong>{contractNo}</strong> đã được gửi đi và sẵn sàng cho việc ký số. 
+                      Các bên liên quan sẽ nhận được thông báo để tiến hành ký.
+                    </div>
+                    <div className="bg-white border border-green-300 rounded-lg p-4 mb-4 text-sm text-gray-700">
+                      📋 <strong>Trạng thái:</strong> Chờ ký số<br/>
+                      🔗 <strong>Mã hợp đồng:</strong> {contractNo}<br/>
+                      ⏰ <strong>Thời gian:</strong> {new Date().toLocaleString('vi-VN')}
+                    </div>
+                    <Button 
+                      type="primary"
+                      size="large" 
+                      onClick={resetForm}
+                      className="px-8 py-3 h-auto font-semibold rounded-lg bg-blue-500 hover:bg-blue-600 border-blue-500"
+                    >
+                      Tạo hợp đồng mới
+                    </Button>
+                  </div>
+                </div>
+              </Card>
             )}
 
             {/* Test panel removed - không cần thiết cho nghiệp vụ chính */}
@@ -656,14 +865,14 @@ const CreateContract = () => {
 
                 <FormField
                   name="ward"
-                  label="Phường/Xã"
+                  label="Quận/Huyện/Phường/Xã"
                   icon={<EnvironmentOutlined />}
                   rules={[
-                    { required: true, message: 'Vui lòng chọn phường/xã!' }
+                    { required: true, message: 'Vui lòng chọn quận/huyện/phường/xã!' }
                   ]}
                 >
                   <Select
-                    placeholder="Chọn phường/xã"
+                    placeholder="Chọn quận/huyện/phường/xã"
                     className="rounded-lg"
                     showSearch
                     loading={loadingWards}
@@ -671,11 +880,11 @@ const CreateContract = () => {
                     filterOption={(input, option) =>
                       option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                     }
-                    notFoundContent={loadingWards ? <Spin size="small" /> : 'Không tìm thấy phường/xã'}
+                    notFoundContent={loadingWards ? <Spin size="small" /> : 'Không tìm thấy quận/huyện/phường/xã'}
                   >
                     {wards.map(ward => (
                       <Option key={ward.code} value={ward.code}>
-                        {ward.name}
+                        {ward.name || ward.districtName}
                       </Option>
                     ))}
                   </Select>
@@ -777,15 +986,15 @@ const CreateContract = () => {
                 </FormField>
               </Row>
 
-              {/* Action Buttons */}
-              <Row justify="center" className="mt-8">
+              {/* Action Buttons với custom styling */}
+              <Row justify="center" className="mt-10 mb-4">
                 <Col>
-                  <Space size="large">
+                  <Space size="large" className="flex flex-wrap justify-center">
                     <Button
                       size="large"
                       onClick={resetForm}
-                      className="rounded-lg min-w-32 h-12 text-base font-semibold"
-                      disabled={contractLink !== null}
+                      disabled={contractLink !== null && !contractConfirmed} // ✅ Chỉ disable khi có contract nhưng chưa confirmed
+                      className="px-8 py-3 h-auto text-base font-semibold rounded-xl border-2 border-gray-300 hover:border-gray-400 hover:shadow-md transition-all duration-200"
                     >
                       Làm Mới
                     </Button>
@@ -794,10 +1003,22 @@ const CreateContract = () => {
                       htmlType="submit"
                       loading={loading}
                       size="large"
-                      className="rounded-lg min-w-32 h-12 text-base font-semibold bg-gradient-to-r from-blue-500 to-blue-600 border-none shadow-lg hover:shadow-xl transition-all duration-200"
-                      disabled={contractLink !== null}
+                      disabled={contractLink !== null} // ✅ Vẫn disable khi đã có contract
+                      className="px-12 py-3 h-auto text-base font-semibold rounded-xl border-none shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                      style={{
+                        background: loading 
+                          ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)'
+                          : 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)'
+                      }}
                     >
-                      {loading ? 'Đang tạo...' : 'Tiếp Theo'}
+                      {loading ? (
+                        <span className="flex items-center gap-2">
+                          <Spin size="small" />
+                          Đang tạo...
+                        </span>
+                      ) : (
+                        'Tiếp Theo'
+                      )}
                     </Button>
                   </Space>
                 </Col>
@@ -806,122 +1027,51 @@ const CreateContract = () => {
           </Space>
         </Card>
 
-        {/* Modal thêm SmartCA cho hãng sau khi tạo hợp đồng */}
-        <AddSmartCA
-          visible={showAddSmartCA}
-          onCancel={() => setShowAddSmartCA(false)}
-          onSuccess={() => {
-            setShowAddSmartCA(false);
-            setCheckingSmartCA(true);
-          }}
-          contractInfo={{
-            userId: FIXED_USER_ID,
-            accessToken: localStorage.getItem('jwt_token')
-          }}
-        />
 
-        {/* Kiểm tra sự tồn tại SmartCA sau khi tạo hợp đồng hoặc thêm mới */}
-        {checkingSmartCA && (
-          <SmartCAStatusChecker
-            userId={FIXED_USER_ID}
-            contractService={ContractService()}
-            onChecked={(data) => {
-              setSmartCAInfo(data);
-              setCheckingSmartCA(false);
-              const hasValidSmartCA = data && (data.defaultSmartCa || (data.userCertificates && data.userCertificates.length > 0));
-              if (hasValidSmartCA) {
-                setShowSmartCASelector(true);
-              } else {
-                setShowAddSmartCA(true);
-              }
-            }}
-          />
-        )}
 
-        {/* Modal chọn chứng thư số SmartCA */}
-        <SmartCASelector
-          visible={showSmartCASelector}
-          onCancel={() => setShowSmartCASelector(false)}
-          onSelect={(cert) => {
-            setSelectedSmartCA(cert);
-            setShowSmartCASelector(false);
-            message.success(`Đã chọn chứng thư: ${cert.commonName}`);
-          }}
-          smartCAData={smartCAInfo}
-          loading={false}
-          isExistingSmartCA={true}
-          currentSelectedId={selectedSmartCA?.id}
-        />
-
-        {/* Signature Modal */}
-        <SignatureModal
-          visible={showSignatureModal}
-          onCancel={() => setShowSignatureModal(false)}
-          onSign={(signatureData, signatureDisplayMode) => {
-            // ✅ Truyền thêm positionA và pageSign vào handleSignature
-            handleSignature(signatureData, signatureDisplayMode, contractId, waitingProcessData, contractLink, positionA, pageSign);
-          }}
-          loading={signingLoading}
-        />
-
-        {/* Signature Position Modal */}
-        <SignaturePositionModal
-          visible={showPositionModal}
-          onCancel={() => setShowPositionModal(false)}
-          onConfirm={handlePositionConfirm}
-          contractLink={contractLink}
-          contractNo={contractNo}
-          signaturePreview={previewImage}
-        />
-
-        {/* SmartCA Modal */}
-        <SmartCAModal
-          visible={showSmartCAModal}
-          onCancel={() => {
-            setShowSmartCAModal(false);
-          }}
-          contractNo={contractNo}
-        />
-
-        {/* App Verification Modal */}
-        <AppVerifyModal
-          visible={showAppVerifyModal}
-          onCancel={() => setShowAppVerifyModal(false)}
-          onVerify={() => handleAppVerification(contractNo)}
-          loading={signingLoading}
-          signatureCompleted={signatureCompleted}
-        />
-
-        {/* Trong ContractViewer hoặc PDFModal */}
+        {/* PDF Fallback với custom styling */}
         {!getPdfDisplayUrl() && contractLink && (
-          <div className="flex flex-col items-center justify-center h-64 text-center p-6 bg-gray-50 rounded-lg">
-            <FilePdfOutlined className="text-6xl mb-4 text-blue-400" />
-            <p className="text-lg mb-4 text-gray-700">PDF Preview không khả dụng</p>
-            <Button 
-              type="primary" 
-              icon={<DownloadOutlined />}
-              onClick={() => window.open(contractLink, '_blank')}
-              size="large"
-            >
-              Mở PDF trong tab mới
-            </Button>
-            <p className="text-sm text-gray-500 mt-2">
-              Nhấn để xem PDF trên trang VNPT
-            </p>
-          </div>
+          <Card 
+            className="mb-6 border-2 border-dashed border-blue-300 rounded-xl"
+            style={{
+              background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
+            }}
+          >
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <FilePdfOutlined 
+                className="text-8xl mb-6"
+                style={{ color: '#3b82f6' }}
+              />
+              <Title level={4} className="text-gray-700 mb-4">
+                PDF Preview không khả dụng
+              </Title>
+              <Button 
+                type="primary" 
+                icon={<DownloadOutlined />}
+                onClick={() => window.open(contractLink, '_blank')}
+                size="large"
+                className="px-8 py-3 h-auto font-semibold rounded-xl shadow-md hover:shadow-lg"
+                style={{
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+                  border: 'none'
+                }}
+              >
+                Mở PDF trong tab mới
+              </Button>
+              <Text className="text-sm text-gray-600 mt-3 opacity-80">
+                Nhấn để xem PDF trên trang VNPT
+              </Text>
+            </div>
+          </Card>
         )}
 
-        {/* PDF Edit Modal */}
+        {/* Template Edit Modal - FIX: Thêm key để force re-render */}
         <PDFEdit
-          visible={showPDFEdit}
-          onCancel={() => setShowPDFEdit(false)}
-          onSave={(editedPdfBytes) => {
-            message.success('PDF đã được chỉnh sửa và lưu thành công');
-            setShowPDFEdit(false);
-            // TODO: Cập nhật contractLink với PDF đã chỉnh sửa nếu cần
-          }}
+          key={showTemplateEdit ? contractId : 'hidden'} // ✅ Force re-render mỗi lần mở
+          visible={showTemplateEdit}
+          onCancel={() => setShowTemplateEdit(false)}
+          onSave={handleUpdateContract} // ✅ Sử dụng function mới
           contractId={contractId}
-          downloadUrl={contractLink}
           contractNo={contractNo}
         />
       </div>

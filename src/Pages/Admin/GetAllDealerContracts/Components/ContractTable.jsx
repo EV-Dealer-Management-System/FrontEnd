@@ -1,77 +1,108 @@
-import React from 'react';
-import { Table, Tag, Space, Button, Tooltip } from 'antd';
-import { EyeOutlined, FileTextOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from 'react';
+import { Table, Tag, Space, Button, Tooltip, message } from 'antd';
+import { EyeOutlined, FileTextOutlined, CheckCircleOutlined, ReloadOutlined } from '@ant-design/icons';
+import { GetAllDealerContract } from '../../../../App/EVMAdmin/GetAllDealerContract/GetAllDealerContract';
 
-// Component hiển thị bảng danh sách hợp đồng
-function ContractTable({ contracts, loading, onView }) {
+// Component hiển thị bảng danh sách hợp đồng sẵn sàng (status = 2)
+function ContractTable({ onView }) {
+    const [contracts, setContracts] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    // Tải danh sách hợp đồng sẵn sàng từ API
+    const loadContracts = async () => {
+        setLoading(true);
+        try {
+            // Chỉ lấy hợp đồng có status = 2 (Sẵn sàng)
+            const contractList = await GetAllDealerContract.getAllDealerContracts(1, 1000, 2);
+            setContracts(contractList);
+            console.log('Đã tải danh sách hợp đồng sẵn sàng:', contractList.length);
+        } catch (error) {
+            console.error('Lỗi khi tải danh sách hợp đồng:', error);
+            message.error('Không thể tải danh sách hợp đồng');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Load danh sách hợp đồng khi component mount
+    useEffect(() => {
+        loadContracts();
+    }, []);
+
     // Cấu hình các cột cho bảng
     const columns = [
         {
-            title: 'Mã hợp đồng',
+            title: 'Số hợp đồng',
             dataIndex: 'id',
             key: 'id',
             width: 250,
-            ellipsis: true,
-            render: (text) => {
-                const idStr = String(text || '');
-                return (
-                    <Tooltip title={idStr}>
-                        <Space>
-                            <FileTextOutlined className="text-blue-500" />
-                            <span className="font-mono text-xs">{idStr.slice(0, 8)}...</span>
-                        </Space>
-                    </Tooltip>
-                );
-            },
+            render: (contractId) => (
+                <Tooltip title={contractId}>
+                    <Space>
+                        <FileTextOutlined className="text-blue-500" />
+                        <span className="font-mono text-xs">{String(contractId).slice(0, 8)}...</span>
+                    </Space>
+                </Tooltip>
+            ),
         },
         {
-            title: 'Mã Template',
+            title: 'Tên hợp đồng',
+            dataIndex: 'name',
+            key: 'name',
+            width: 300,
+            render: (name) => (
+                <span className="text-gray-700 font-medium">{name}</span>
+            ),
+        },
+        {
+            title: 'Template ID',
             dataIndex: 'templateId',
             key: 'templateId',
-            width: 250,
-            ellipsis: true,
-            render: (text) => {
-                const templateStr = String(text || '');
-                return (
-                    <span className="font-mono text-xs text-gray-600">{templateStr.slice(0, 8)}...</span>
-                );
-            },
+            width: 200,
+            render: (templateId) => (
+                <Tooltip title={templateId}>
+                    <span className="font-mono text-xs text-gray-500">
+                        {String(templateId).slice(0, 8)}...
+                    </span>
+                </Tooltip>
+            ),
         },
         {
             title: 'Trạng thái',
             dataIndex: 'status',
             key: 'status',
             width: 150,
-            filters: [
-                { text: 'Chứng từ mới', value: 1 },
-                { text: 'Sẵn sàng', value: 2 },
-                { text: 'Đang xử lý', value: 3 },
-                { text: 'Đã hoàn tất', value: 4 },
-                { text: 'Đang hiệu chỉnh', value: 5 },
-                { text: 'Đã hủy', value: -3 },
-                { text: 'Đã xóa', value: -2 },
-                { text: 'Đã bị từ chối', value: -1 },
-            ],
-            onFilter: (value, record) => record.status === value,
-            render: (status) => {
-                // Hiển thị trạng thái chứng từ
-                const statusConfig = {
-                    1: { color: 'blue', icon: <FileTextOutlined />, text: 'Chứng từ mới' },
-                    2: { color: 'cyan', icon: <CheckCircleOutlined />, text: 'Sẵn sàng' },
-                    3: { color: 'processing', icon: null, text: 'Đang xử lý' },
-                    4: { color: 'success', icon: <CheckCircleOutlined />, text: 'Đã hoàn tất' },
-                    5: { color: 'warning', icon: null, text: 'Đang hiệu chỉnh' },
-                    '-3': { color: 'default', icon: null, text: 'Đã hủy' },
-                    '-2': { color: 'default', icon: null, text: 'Đã xóa' },
-                    '-1': { color: 'error', icon: null, text: 'Đã bị từ chối' },
-                };
-                const config = statusConfig[status] || { color: 'default', icon: null, text: 'Không xác định' };
-                return (
-                    <Tag color={config.color} icon={config.icon}>
-                        {config.text}
-                    </Tag>
-                );
-            },
+            render: (status) => (
+                <Tag color="cyan" icon={<CheckCircleOutlined />}>
+                    Sẵn sàng
+                </Tag>
+            ),
+        },
+        {
+            title: 'Người tạo',
+            dataIndex: 'createdBy',
+            key: 'createdBy',
+            width: 200,
+            render: (createdBy) => (
+                <Tooltip title={createdBy}>
+                    <span className="font-mono text-xs text-gray-600">
+                        {String(createdBy).slice(0, 8)}...
+                    </span>
+                </Tooltip>
+            ),
+        },
+        {
+            title: 'Chủ sở hữu',
+            dataIndex: 'ownerBy',
+            key: 'ownerBy',
+            width: 200,
+            render: (ownerBy) => (
+                <Tooltip title={ownerBy}>
+                    <span className="font-mono text-xs text-gray-600">
+                        {String(ownerBy).slice(0, 8)}...
+                    </span>
+                </Tooltip>
+            ),
         },
         {
             title: 'Ngày tạo',
@@ -80,7 +111,6 @@ function ContractTable({ contracts, loading, onView }) {
             width: 180,
             sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
             render: (date) => {
-                // Định dạng ngày tháng
                 return new Date(date).toLocaleString('vi-VN', {
                     year: 'numeric',
                     month: '2-digit',
@@ -91,48 +121,42 @@ function ContractTable({ contracts, loading, onView }) {
             },
         },
         {
-            title: 'Người tạo',
-            dataIndex: 'createdBy',
-            key: 'createdBy',
-            width: 200,
-            ellipsis: true,
-            render: (text) => {
-                const createdByStr = String(text || '');
-                return (
-                    <span className="font-mono text-xs text-gray-600">{createdByStr.slice(0, 8)}...</span>
-                );
-            },
-        },
-        {
-            title: 'Chủ sở hữu',
-            dataIndex: 'ownerBy',
-            key: 'ownerBy',
-            width: 200,
-            ellipsis: true,
-            render: (text) => {
-                const ownerByStr = String(text || '');
-                return (
-                    <span className="font-mono text-xs text-gray-600">{ownerByStr.slice(0, 8)}...</span>
-                );
-            },
+            title: 'Storage URL',
+            dataIndex: 'storageUrl',
+            key: 'storageUrl',
+            width: 120,
+            render: (storageUrl) => (
+                <Tag color={storageUrl ? 'green' : 'default'}>
+                    {storageUrl ? 'Có file' : 'Chưa có'}
+                </Tag>
+            ),
         },
         {
             title: 'Thao tác',
             key: 'action',
-            width: 120,
+            width: 150,
             fixed: 'right',
             render: (_, record) => (
-                <Space size="small">
-                    <Tooltip title="Xem chi tiết">
+                <Space size="small" direction="vertical">
+                    <Button
+                        type="primary"
+                        icon={<EyeOutlined />}
+                        size="small"
+                        onClick={() => onView(record)}
+                        block
+                    >
+                        Xem chi tiết
+                    </Button>
+
+                    {record.storageUrl && (
                         <Button
-                            type="primary"
-                            icon={<EyeOutlined />}
                             size="small"
-                            onClick={() => onView(record)}
+                            onClick={() => window.open(record.storageUrl, '_blank')}
+                            block
                         >
-                            Xem
+                            Tải xuống
                         </Button>
-                    </Tooltip>
+                    )}
                 </Space>
             ),
         },
@@ -140,8 +164,18 @@ function ContractTable({ contracts, loading, onView }) {
 
     return (
         <div>
-            <div className="mb-4 px-4 py-2 bg-gray-50 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-700">Danh sách hợp đồng đại lý</h3>
+            <div className="mb-4 px-4 py-2 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg border flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+                    <CheckCircleOutlined className="mr-2 text-green-500" />
+                    Hợp đồng sẵn sàng ký
+                </h3>
+                <Button
+                    icon={<ReloadOutlined />}
+                    onClick={loadContracts}
+                    loading={loading}
+                >
+                    Tải lại
+                </Button>
             </div>
             <Table
                 columns={columns}
@@ -149,15 +183,15 @@ function ContractTable({ contracts, loading, onView }) {
                 rowKey="id"
                 loading={loading}
                 pagination={{
-                    defaultPageSize: 10,
-                    showSizeChanger: true,
+                    pageSize: 1000,
+                    showSizeChanger: false,
                     showQuickJumper: true,
-                    showTotal: (total) => `Tổng ${total} hợp đồng`,
-                    pageSizeOptions: ['10', '20', '50', '100'],
+                    showTotal: (total) => `Tổng ${total} hợp đồng sẵn sàng`,
                 }}
-                scroll={{ x: 1400 }}
+                scroll={{ x: 1600 }}
                 bordered
                 size="middle"
+                className="shadow-sm"
             />
         </div>
     );
