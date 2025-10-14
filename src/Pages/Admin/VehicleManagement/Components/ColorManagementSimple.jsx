@@ -52,6 +52,8 @@ const popularColors = [
 ];
 
 function ColorManagement() {
+  console.log("🎨 ColorManagement component rendering...");
+
   const [loading, setLoading] = useState(false);
   const [colors, setColors] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);

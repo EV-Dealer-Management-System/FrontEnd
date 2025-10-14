@@ -37,6 +37,8 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 function ManageVersion() {
+  console.log("🔧 ManageVersion component rendering...");
+
   const [loading, setLoading] = useState(false);
   const [versions, setVersions] = useState([]);
   const [models, setModels] = useState([]);

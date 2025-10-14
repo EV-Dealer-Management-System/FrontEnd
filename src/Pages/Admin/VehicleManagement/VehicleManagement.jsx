@@ -47,9 +47,9 @@ import {
 } from "@ant-design/icons";
 import NavigationBar from "../../../Components/Admin/Components/NavigationBar";
 // import CreateVehicleWizard from "./Components/CreateVehicleWizard";
-// import ManageModel from "./Components/ModelManagement";
-// import ManageVersion from "./Components/VersionManagement";
-// import ManageColor from "./Components/ColorManagementSimple";
+import ManageModel from "./Components/ModelManagement";
+import ManageVersion from "./Components/VersionManagement";
+import ColorManagement from "./Components/ColorManagementSimple";
 import CreateElectricVehicle from "./Components/CreateElectricVehicle";
 import { vehicleApi } from "../../../App/EVMAdmin/VehiclesManagement/Vehicles";
 
@@ -778,6 +778,81 @@ function VehicleManagement() {
                   </span>
                 ),
                 children: <CreateElectricVehicle />,
+              },
+              {
+                key: "manage-models",
+                label: (
+                  <span>
+                    <CarOutlined />
+                    Quản lý Model
+                  </span>
+                ),
+                children: (
+                  <div>
+                    <div
+                      style={{
+                        padding: "16px",
+                        background: "#f0f2f5",
+                        marginBottom: "16px",
+                      }}
+                    >
+                      <Text type="secondary">
+                        📋 Tab: Quản lý Model - Component đang tải...
+                      </Text>
+                    </div>
+                    <ManageModel />
+                  </div>
+                ),
+              },
+              {
+                key: "manage-versions",
+                label: (
+                  <span>
+                    <BuildOutlined />
+                    Quản lý Version
+                  </span>
+                ),
+                children: (
+                  <div>
+                    <div
+                      style={{
+                        padding: "16px",
+                        background: "#f0f2f5",
+                        marginBottom: "16px",
+                      }}
+                    >
+                      <Text type="secondary">
+                        🔧 Tab: Quản lý Version - Component đang tải...
+                      </Text>
+                    </div>
+                    <ManageVersion />
+                  </div>
+                ),
+              },
+              {
+                key: "manage-colors",
+                label: (
+                  <span>
+                    <BgColorsOutlined />
+                    Quản lý Màu sắc
+                  </span>
+                ),
+                children: (
+                  <div>
+                    <div
+                      style={{
+                        padding: "16px",
+                        background: "#f0f2f5",
+                        marginBottom: "16px",
+                      }}
+                    >
+                      <Text type="secondary">
+                        🎨 Tab: Quản lý Màu sắc - Component đang tải...
+                      </Text>
+                    </div>
+                    <ColorManagement />
+                  </div>
+                ),
               },
               {
                 key: "debug",
