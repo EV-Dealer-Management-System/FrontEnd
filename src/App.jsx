@@ -14,7 +14,6 @@ import EVMAdmin from "./Pages/Admin/EVMAdmin";
 import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
 import GetAllDealerContractPage from "./Pages/Admin/GetAllDealerContracts/GetAllDealerContract";
 import VehicleManagementSimple from "./Pages/Admin/VehicleManagement/VehicleManagementSimple";
-import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
 import DealerManager from "./Pages/DealerManager/DealerManager";
 import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
 import GetAllEVBooking from "./Pages/DealerManager/GetAllEVBooking.jsx/GetAllEVBooking";

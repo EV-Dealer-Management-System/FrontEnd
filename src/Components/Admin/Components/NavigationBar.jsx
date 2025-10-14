@@ -62,12 +62,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         name: "Quản lý đại lý",
         icon: <ShopOutlined />,
         routes: [
-          {
-            path: "/admin/dealer/create-account",
-            name: "Tạo tài khoản đại lý",
-            icon: <UserAddOutlined />,
-            component: "./CreateAccount",
-          },
+          // {
+          //   path: "/admin/dealer/create-account",
+          //   name: "Tạo tài khoản đại lý",
+          //   icon: <UserAddOutlined />,
+          //   component: "./CreateAccount",
+          // },
           {
             path: "/admin/dealer/list",
             name: "Danh sách đại lý",
@@ -81,17 +81,17 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: './CreateContract',
           },
           {
-            path: "/admin/dealer/create-contract",
+            path: "/admin/dealer/contracts",
             name: "Hợp đồng đại lý",
             icon: <FileTextOutlined />,
             component: "./DealerContracts",
           },
-          {
-            path: "/admin/dealer/performance",
-            name: "Hiệu suất đại lý",
-            icon: <LineChartOutlined />,
-            component: "./DealerPerformance",
-          },
+          // {
+          //   path: "/admin/dealer/performance",
+          //   name: "Hiệu suất đại lý",
+          //   icon: <LineChartOutlined />,
+          //   component: "./DealerPerformance",
+          // },
         ],
       },
       {
