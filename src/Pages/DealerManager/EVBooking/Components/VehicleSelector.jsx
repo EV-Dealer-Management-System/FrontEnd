@@ -7,6 +7,7 @@ import {
 import { Card, Space, Typography, Row, Col } from "antd";
 import { CarOutlined } from "@ant-design/icons";
 import VersionDetails from "./VersionDetails";
+import AvailableQuantityAlert from "./AvailableQuantityAlert";
 
 const { Text } = Typography;
 
@@ -15,8 +16,10 @@ const { Text } = Typography;
  * @param {Array} models - Danh sách mẫu xe
  * @param {Array} versions - Danh sách phiên bản
  * @param {Object} colorsCache - Cache màu xe theo modelId_versionId
+ * @param {Object} availableQuantities - Cache số lượng có sẵn theo modelId_versionId_colorId
  * @param {Function} onModelChange - Callback khi thay đổi mẫu xe
  * @param {Function} onVersionChange - Callback khi thay đổi phiên bản
+ * @param {Function} onColorChange - Callback khi thay đổi màu xe
  * @param {Object} formRef - Reference của form chính
  * @param {Number} index - Index của item trong list
  */
@@ -24,13 +27,41 @@ function VehicleSelector({
   models,
   versions,
   colorsCache,
+  availableQuantities,
   onModelChange,
   onVersionChange,
+  onColorChange,
   formRef,
   index,
 }) {
   const [selectedVersion, setSelectedVersion] = useState(null);
-  const [selectedModel, setSelectedModel] = useState(null);
+
+  // Lấy số lượng có sẵn dựa trên model, version, color đã chọn
+  const getAvailableQuantity = () => {
+    const modelId = formRef.current?.getFieldValue([
+      "bookingDetails",
+      index,
+      "modelId",
+    ]);
+    const versionId = formRef.current?.getFieldValue([
+      "bookingDetails",
+      index,
+      "versionId",
+    ]);
+    const colorId = formRef.current?.getFieldValue([
+      "bookingDetails",
+      index,
+      "colorId",
+    ]);
+
+    if (modelId && versionId && colorId) {
+      const quantityKey = `${modelId}_${versionId}_${colorId}`;
+      return availableQuantities[quantityKey];
+    }
+    return null;
+  };
+
+  const availableQty = getAvailableQuantity();
 
   return (
     <Card
@@ -64,7 +95,6 @@ function VehicleSelector({
               onChange: (value) => {
                 // Reset version khi đổi model
                 setSelectedVersion(null);
-                setSelectedModel(value);
                 if (onModelChange) {
                   onModelChange(value, index);
                 }
@@ -140,6 +170,22 @@ function VehicleSelector({
             fieldProps={{
               showSearch: true,
               optionFilterProp: "label",
+              onChange: (value) => {
+                // Gọi callback để fetch số lượng có sẵn
+                const modelId = formRef.current?.getFieldValue([
+                  "bookingDetails",
+                  index,
+                  "modelId",
+                ]);
+                const versionId = formRef.current?.getFieldValue([
+                  "bookingDetails",
+                  index,
+                  "versionId",
+                ]);
+                if (onColorChange && modelId && versionId) {
+                  onColorChange(value, modelId, versionId, index);
+                }
+              },
             }}
           />
         </Col>
@@ -150,12 +196,36 @@ function VehicleSelector({
             label="Số lượng"
             placeholder="Nhập số lượng"
             min={1}
-            rules={[{ required: true, message: "Vui lòng nhập số lượng" }]}
+            max={availableQty !== null && availableQty !== undefined ? availableQty : undefined}
+            rules={[
+              { required: true, message: "Vui lòng nhập số lượng" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const colorId = getFieldValue(["bookingDetails", index, "colorId"]);
+
+                  // Chỉ validate nếu đã chọn màu và có số lượng available
+                  if (colorId && availableQty !== null && availableQty !== undefined) {
+                    if (!value || value <= availableQty) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(
+                      new Error(`Số lượng không được vượt quá ${availableQty} xe có sẵn`)
+                    );
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
+            dependencies={[["bookingDetails", index, "colorId"]]}
             fieldProps={{
               precision: 0,
               style: { width: "100%" },
             }}
           />
+          {/* Hiển thị thông báo số lượng ngay dưới ô input */}
+          <div style={{ marginTop: -16 }}>
+            <AvailableQuantityAlert availableQuantity={availableQty} />
+          </div>
         </Col>
 
         {/* Hiển thị thông tin chi tiết phiên bản */}

@@ -29,7 +29,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Sử dụng collapsed từ props hoặc internal state
   const collapsed = propCollapsed !== undefined ? propCollapsed : internalCollapsed;
   const setCollapsed = onCollapse || setInternalCollapsed;
@@ -75,8 +75,14 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           },
           {
             path: '/admin/dealer/create-contract',
-            name: 'Hợp đồng đại lý',
+            name: 'Tạo hợp đồng đại lý',
             icon: <FileTextOutlined />,
+            component: './CreateContract',
+          },
+          {
+            path: '/admin/dealer/contracts',
+            name: 'Danh sách hợp đồng',
+            icon: <SolutionOutlined />,
             component: './DealerContracts',
           },
           {
@@ -143,7 +149,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         icon: <SettingOutlined />,
         component: './Settings',
       },
-       {
+      {
         path: '/',
         name: 'Đăng Xuất',
         icon: <LogoutOutlined />,
@@ -170,8 +176,8 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
       >
         <ProLayout
           route={route}
-          location={{ 
-            pathname: location.pathname === '/admin' ? '/admin/dashboard' : location.pathname 
+          location={{
+            pathname: location.pathname === '/admin' ? '/admin/dashboard' : location.pathname
           }}
           collapsed={collapsed}
           onCollapse={setCollapsed}
@@ -227,7 +233,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             size: 'small',
             render: (props, dom) => dom,
           }}
-         
+
           menuProps={{
             selectedKeys: [location.pathname === '/admin' ? '/admin/dashboard' : location.pathname],
             defaultOpenKeys: ['/admin/dealer'],

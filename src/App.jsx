@@ -12,6 +12,7 @@ import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
 import ContractPage from "./Pages/PublicPage/ContractPage";
 import EVMAdmin from "./Pages/Admin/EVMAdmin";
 import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
+import GetAllDealerContractPage from "./Pages/Admin/GetAllDealerContracts/GetAllDealerContract";
 import DealerManager from "./Pages/DealerManager/DealerManager";
 import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
 import GetAllEVBooking from "./Pages/DealerManager/GetAllEVBooking.jsx/GetAllEVBooking";
@@ -60,6 +61,10 @@ function App() {
                   path="dealer/create-contract"
                   element={<CreateContract />}
                 />
+                <Route
+                  path="dealer/contracts"
+                  element={<GetAllDealerContractPage />}
+                />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ admin */}
                 <Route path="*" element={<Navigate to="/admin" replace />} />
               </Routes>
@@ -94,7 +99,7 @@ function App() {
                 <Route path="" element={<EVMStaff />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ EVM Staff */}
                 <Route
-                  path="*"  
+                  path="*"
                   element={<Navigate to="/evm-staff" replace />}
                 />
               </Routes>

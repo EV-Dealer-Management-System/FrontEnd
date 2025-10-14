@@ -14,16 +14,23 @@ export const SignContract = () => {
 
   const handleSignContract = async (contractData) => {
     try {
-      // Lấy access token trước khi ký hợp đồng
       const token = await getAccessTokenForEVC();
 
-      // ✅ Validation signature image trước khi gửi
       if (!contractData.signatureImage) {
         throw new Error("Vui lòng tạo chữ ký trước khi ký hợp đồng");
       }
 
+      const pageSign = contractData.contractDetail?.pageSign || 
+                      contractData.waitingProcess?.pageSign || 
+                      contractData.pageSign || 
+                      1; // Default page 1
 
-      // Request body theo đúng schema (không có token)
+      const signingPosition = contractData.contractDetail?.positionA || 
+                             contractData.waitingProcess?.position || 
+                             contractData.positionA || 
+                             "50,110,220,180"; // Default position
+
+      // Request body theo đúng schema
       const requestBody = {
         processId: contractData.waitingProcess?.id || contractData.processId || "",
         reason: contractData.reason || "",
@@ -31,13 +38,19 @@ export const SignContract = () => {
         otp: contractData.otp || "",
         signatureDisplayMode: contractData.signatureDisplayMode || 0,
         signatureImage: contractData.signatureImage || "",
-        signingPage: contractData.pageSign || 1,  // Default page 1 thay vì 0
-        signingPosition: contractData.positionA || "50,110,220,180",  // Default position nếu không có
+        signingPage: pageSign,
+        signingPosition: signingPosition,
         signatureText: contractData.signatureText || "",
         fontSize: contractData.fontSize || 0,
         showReason: contractData.showReason !== undefined ? contractData.showReason : true,
         confirmTermsConditions: contractData.confirmTermsConditions !== undefined ? contractData.confirmTermsConditions : true
       };
+
+      console.log("Signing contract with data:", {
+        pageSign,
+        signingPosition,
+        processId: requestBody.processId
+      });
 
       // Token được gửi như query parameter theo API doc
       const response = await api.post('/EContract/sign-process', requestBody, {
@@ -49,7 +62,7 @@ export const SignContract = () => {
     } catch (error) {
       console.error("Lỗi khi ký hợp đồng:", error);
       
-      // ✅ Cải thiện error handling
+      // Cải thiện error handling
       if (error.response?.data?.message) {
         const errorMessage = error.response.data.message;
         if (errorMessage.includes("Please add a signature image")) {
