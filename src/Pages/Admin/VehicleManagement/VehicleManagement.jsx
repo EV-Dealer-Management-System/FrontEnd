@@ -46,7 +46,6 @@ import {
   BuildOutlined,
 } from "@ant-design/icons";
 import NavigationBar from "../../../Components/Admin/Components/NavigationBar";
-// import CreateVehicleWizard from "./Components/CreateVehicleWizard";
 import ManageModel from "./Components/ModelManagement";
 import ManageVersion from "./Components/VersionManagement";
 import ColorManagement from "./Components/ColorManagementSimple";
