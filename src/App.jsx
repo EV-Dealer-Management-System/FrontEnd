@@ -12,6 +12,7 @@ import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
 import ContractPage from "./Pages/PublicPage/ContractPage";
 import EVMAdmin from "./Pages/Admin/EVMAdmin";
 import VehicleManagementSimple from "./Pages/Admin/VehicleManagement/VehicleManagementSimple";
+import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
 import DealerManager from "./Pages/DealerManager/DealerManager";
 import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
 import GetAllEVBooking from "./Pages/DealerManager/GetAllEVBooking.jsx/GetAllEVBooking";
@@ -69,13 +70,10 @@ function App() {
             <AdminRoute>
               <Routes>
                 <Route path="" element={<EVMAdmin />} />
-                <Route
-                  path="vehicle/model"
-                  element={<VehicleManagementSimple />}
-                />
+                <Route path="vehicle/model" element={<VehicleManagement />} />
                 <Route
                   path="vehicle-management"
-                  element={<VehicleManagementSimple />}
+                  element={<VehicleManagement />}
                 />
                 <Route
                   path="dealer/create-contract"

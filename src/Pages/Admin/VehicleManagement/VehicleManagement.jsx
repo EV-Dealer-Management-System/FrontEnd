@@ -42,15 +42,58 @@ import {
   SettingOutlined,
   ExportOutlined,
   FilterOutlined,
+  BgColorsOutlined,
+  BuildOutlined,
 } from "@ant-design/icons";
 import NavigationBar from "../../../Components/Admin/Components/NavigationBar";
-import CreateVehicleWizard from "./Components/CreateVehicleWizard";
-import ManageModel from "./Components/ModelManagement";
+// import CreateVehicleWizard from "./Components/CreateVehicleWizard";
+// import ManageModel from "./Components/ModelManagement";
+// import ManageVersion from "./Components/VersionManagement";
+// import ManageColor from "./Components/ColorManagementSimple";
+import CreateElectricVehicle from "./Components/CreateElectricVehicle";
 import { vehicleApi } from "../../../App/EVMAdmin/VehiclesManagement/Vehicles";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
 const { Option } = Select;
+
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: "50px", textAlign: "center" }}>
+          <h2>❌ Đã xảy ra lỗi</h2>
+          <p>Lỗi: {this.state.error?.message || "Unknown error"}</p>
+          <Button
+            type="primary"
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+          >
+            Tải lại trang
+          </Button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 function VehicleManagement() {
   const [collapsed, setCollapsed] = useState(false);
@@ -60,42 +103,61 @@ function VehicleManagement() {
   const [editingRecord, setEditingRecord] = useState(null);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [searchText, setSearchText] = useState("");
-  const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [form] = Form.useForm();
 
-  // API state management
+  // API state management with safe defaults
   const [vehicles, setVehicles] = useState([]);
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Load initial data
+  // Load initial data with error handling
   useEffect(() => {
-    loadVehicles();
-    loadModels();
+    try {
+      console.log("🚀 Initializing VehicleManagement component...");
+      loadVehicles();
+      loadModels();
+    } catch (error) {
+      console.error("❌ Error in useEffect:", error);
+      setError(error.message || "Error initializing component");
+    }
   }, []);
 
-  // Load vehicles from API
+  // Load vehicles from API with enhanced error handling
   const loadVehicles = async () => {
     setTableLoading(true);
+    setError(null);
     try {
+      console.log("🔄 Loading vehicles...");
       const result = await vehicleApi.getAllVehicles();
-      if (result.success) {
-        setVehicles(result.data);
+
+      if (result && result.success) {
+        console.log(
+          "✅ Vehicles loaded successfully:",
+          result.data?.length || 0,
+          "vehicles"
+        );
+        setVehicles(Array.isArray(result.data) ? result.data : []);
+
         if (result.fallback) {
           message.info("API không khả dụng, đang sử dụng dữ liệu mẫu", 3);
         } else {
           message.success("Tải danh sách xe thành công", 2);
         }
       } else {
-        message.error(result.error);
+        console.warn("⚠️ API result not successful:", result);
+        message.error(result?.error || "Không thể tải danh sách xe");
         // Fallback to mock data if API fails
         setVehicles(getMockVehicles());
       }
     } catch (error) {
-      console.error("Error loading vehicles:", error);
-      message.error("Không thể tải danh sách xe");
+      console.error("❌ Error loading vehicles:", error);
+      setError(error.message || "Unknown error");
+      message.error(
+        "Lỗi khi tải danh sách xe: " + (error.message || "Unknown error")
+      );
       // Fallback to mock data
       setVehicles(getMockVehicles());
     } finally {
@@ -103,94 +165,106 @@ function VehicleManagement() {
     }
   };
 
-  // Load models from API
+  // Load models from API with error handling
   const loadModels = async () => {
     try {
+      console.log("🔄 Loading models...");
       const result = await vehicleApi.getAllModels();
-      if (result.success) {
-        setModels(result.data);
+      if (result && result.success) {
+        console.log("✅ Models loaded successfully");
+        setModels(Array.isArray(result.data) ? result.data : []);
       } else {
-        message.error(result.error);
+        console.warn("⚠️ Models API result not successful:", result);
+        setModels([]);
       }
     } catch (error) {
-      console.error("Error loading models:", error);
+      console.error("❌ Error loading models:", error);
+      setModels([]);
+      // Don't show error message for models as it's not critical
     }
   };
 
-  // Mock data fallback
+  // Mock data fallback - structure giống API response
   const getMockVehicles = () => [
     {
-      key: "1",
-      id: "VF001",
-      name: "VinFast VF8",
-      category: "SUV Điện",
-      price: 1200000000,
-      batteryCapacity: 82,
-      range: 420,
-      seats: 7,
-      color: ["Đỏ", "Trắng", "Đen", "Xanh"],
-      stock: 150,
-      status: "active",
-      image: "https://picsum.photos/300/200?random=1",
-      description: "SUV điện cao cấp với công nghệ tiên tiến",
-      manufacturer: "VinFast",
-      year: 2024,
+      id: "01994f39-7894-78bc-a1ed-c88f87499078",
+      warehouseId: "01994f2c-5ff2-7177-8fde-475270081264",
+      versionId: "01994f2d-1c4f-7759-8429-475270081264",
+      colorId: "01994f2d-1cff-7b50-9e88-3bf32018f2fc",
+      vin: "VF001MOCK001",
+      status: 1,
+      manufactureDate: "2025-09-28T10:00Z",
+      importDate: "2025-09-29T10:00Z",
+      warrantyExpiryDate: "2027-09-28T10:00Z",
+      costPrice: 1200000000,
+      imageUrl: null,
+      // Extended info for display
+      versionName: "EV-A1 Standard",
+      colorName: "Đỏ Ruby",
+      warehouseName: "Kho Hà Nội",
     },
     {
-      key: "2",
-      id: "VF002",
-      name: "VinFast VF9",
-      category: "SUV Điện",
-      price: 1500000000,
-      batteryCapacity: 92,
-      range: 450,
-      seats: 7,
-      color: ["Đỏ", "Trắng", "Đen"],
-      stock: 120,
-      status: "active",
-      image: "https://picsum.photos/300/200?random=2",
-      description: "SUV điện hạng sang với không gian rộng rãi",
-      manufacturer: "VinFast",
-      year: 2024,
+      id: "01994f39-7113-71f7-af50-3e38f6e48c95",
+      warehouseId: "01994f2c-5ff2-7977-8f76-a95188b341c5",
+      versionId: "01994f2d-1c4f-7759-8429-475270081264",
+      colorId: "01994f2d-1cff-7b50-9e88-3bf32018f2fc",
+      vin: "VF002MOCK002",
+      status: 1,
+      manufactureDate: "2025-09-27T10:00Z",
+      importDate: "2025-09-28T10:00Z",
+      warrantyExpiryDate: "2027-09-27T10:00Z",
+      costPrice: 1500000000,
+      imageUrl: null,
+      // Extended info for display
+      versionName: "EV-A1 Premium",
+      colorName: "Trắng Ngọc Trai",
+      warehouseName: "Kho TP.HCM",
     },
     {
-      key: "3",
-      id: "VF003",
-      name: "VinFast VF5",
-      category: "Hatchback Điện",
-      price: 800000000,
-      batteryCapacity: 50,
-      range: 300,
-      seats: 5,
-      color: ["Trắng", "Đen", "Xanh"],
-      stock: 200,
-      status: "coming_soon",
-      image: "https://picsum.photos/300/200?random=3",
-      description: "Xe điện compact phù hợp đô thị",
-      manufacturer: "VinFast",
-      year: 2024,
+      id: "01994f39-mock-71f7-af50-sample003",
+      warehouseId: "01994f2c-mock-7977-8f76-warehouse3",
+      versionId: "01994f2d-mock-7759-8429-version003",
+      colorId: "01994f2d-mock-7b50-9e88-color003",
+      vin: "VF003MOCK003",
+      status: 0,
+      manufactureDate: "2025-09-26T10:00Z",
+      importDate: "2025-09-27T10:00Z",
+      warrantyExpiryDate: "2027-09-26T10:00Z",
+      costPrice: 800000000,
+      imageUrl: null,
+      // Extended info for display
+      versionName: "EV-A1 Lite",
+      colorName: "Xanh Đại Dương",
+      warehouseName: "Kho Đà Nẵng",
     },
   ];
 
-  // Tính toán thống kê
-  const totalVehicles = vehicles.length;
-  const totalStock = vehicles.reduce((sum, item) => sum + (item.stock || 0), 0);
-  const categories = [...new Set(vehicles.map((item) => item.category))];
-  const statuses = [...new Set(vehicles.map((item) => item.status))];
+  // Tính toán thống kê theo API response structure (với safe check)
+  const totalVehicles = vehicles?.length || 0;
+  const activeVehicles = vehicles?.filter((v) => v.status === 1)?.length || 0;
+  const totalCostValue =
+    vehicles?.reduce((sum, item) => sum + (item.costPrice || 0), 0) || 0;
+  const statuses = vehicles?.length
+    ? [...new Set(vehicles.map((item) => item.status))]
+    : [];
 
-  // Lọc dữ liệu
+  // Lọc dữ liệu theo structure mới (với safe check)
   const filteredData = useMemo(() => {
+    if (!vehicles || !Array.isArray(vehicles)) {
+      return [];
+    }
+
     return vehicles.filter((item) => {
       const matchSearch =
-        item.name?.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.id?.toLowerCase().includes(searchText.toLowerCase());
-      const matchCategory =
-        filterCategory === "all" || item.category === filterCategory;
+        item.vin?.toLowerCase().includes(searchText.toLowerCase()) ||
+        item.id?.toLowerCase().includes(searchText.toLowerCase()) ||
+        item.versionName?.toLowerCase().includes(searchText.toLowerCase()) ||
+        item.colorName?.toLowerCase().includes(searchText.toLowerCase());
       const matchStatus =
-        filterStatus === "all" || item.status === filterStatus;
-      return matchSearch && matchCategory && matchStatus;
+        filterStatus === "all" || item.status?.toString() === filterStatus;
+      return matchSearch && matchStatus;
     });
-  }, [vehicles, searchText, filterCategory, filterStatus]);
+  }, [vehicles, searchText, filterStatus]);
 
   // Xử lý thêm/sửa xe
   const handleAddOrEditVehicle = async (values) => {
@@ -254,113 +328,115 @@ function VehicleManagement() {
     setIsViewModalVisible(true);
   };
 
-  // Cấu hình cột bảng
+  // Cấu hình cột bảng theo API response thực tế
   const columns = [
     {
-      title: "Hình ảnh",
-      dataIndex: "image",
-      key: "image",
-      width: 100,
-      render: (image, record) => (
-        <Image
-          src={
-            image ||
-            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA2MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjZjAiLz4KPHN2ZyB4PSIyMCIgeT0iMTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjOTk5Ij4KPHN2ZyBmaWxsPSIjOTk5IiB2aWV3Qm94PSIwIDAgMjQgMjQiPgogIDxwYXRoIGQ9Ik05IDNIMTVWNUg5VjNaTTkgOEgxMFYxNkg5VjhaTTggNUM4IDQuNDQ3NzIgOC40NDc3MiA0IDkgNEgxNUM5IDUuMzMzMzMgMTAgNS4zMzMzMyAxMSA1VjhIMTEgVjE2SDEwVjE5SDlWMTZIOVY4SDhWNVoiLz4KICA8L3N2Zz4KICA8L3N2Zz4KICA8dGV4dCB4PSIzMCIgeT0iMjUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSIjOTk5Ij5JbWFnZTwvdGV4dD4KPC9zdmc+"
-          }
-          alt={record.name}
-          width={60}
-          height={40}
-          style={{ borderRadius: 4, objectFit: "cover" }}
-          preview={false}
-          fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA2MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjZjAiLz4KPHN2ZyB4PSIyMCIgeT0iMTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSIjOTk5Ij4KPHBhdGggZD0iTTkgM0gxNVY1SDlWM1pNOSA4SDEwVjE2SDlWOFpNOCA1QzggNC40NDc3MiA4LjQ0NzcyIDQgOSA0SDE1QzkgNS4zMzMzMyAxMCA1LjMzMzMzIDExIDVWOEgxMSBWMTZIMTBWMTlIOVYxNkg5VjhIOFY1WiIvPgo8L3N2Zz4KPHR2ZyB4PSIzMCIgeT0iMjUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSIjOTk5Ij5JbWFnZTwvdGV4dD4KPC9zdmc+"
-        />
-      ),
+      title: "STT",
+      key: "index",
+      width: 60,
+      render: (_, __, index) => index + 1,
     },
     {
-      title: "Mã xe",
-      dataIndex: "id",
-      key: "id",
-      width: 100,
+      title: "VIN",
+      dataIndex: "vin",
+      key: "vin",
+      width: 150,
       render: (text) => (
-        <Text copyable strong style={{ color: "#1890ff" }}>
-          {text}
+        <Text copyable strong style={{ color: "#1890ff", fontSize: "12px" }}>
+          {text || "N/A"}
         </Text>
       ),
     },
     {
-      title: "Tên xe",
-      dataIndex: "name",
-      key: "name",
-      render: (text, record) => (
-        <div>
-          <Text strong>{text}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: "12px" }}>
-            {record.manufacturer} • {record.year}
-          </Text>
-        </div>
-      ),
-    },
-    {
-      title: "Phân loại",
-      dataIndex: "category",
-      key: "category",
-      render: (category) => {
-        const colorMap = {
-          "SUV Điện": "blue",
-          "Sedan Điện": "green",
-          "Hatchback Điện": "orange",
-        };
-        return <Tag color={colorMap[category]}>{category}</Tag>;
+      title: "Version",
+      dataIndex: "versionId",
+      key: "version",
+      width: 120,
+      render: (versionId, record) => {
+        // Hiển thị version name hoặc rút gọn versionId
+        const displayText =
+          record.versionName ||
+          (versionId ? versionId.substring(0, 8) + "..." : "N/A");
+        return (
+          <Tag color="blue" title={versionId}>
+            {displayText}
+          </Tag>
+        );
       },
     },
     {
-      title: "Giá (VND)",
-      dataIndex: "price",
-      key: "price",
-      sorter: (a, b) => a.price - b.price,
+      title: "Màu sắc",
+      dataIndex: "colorId",
+      key: "color",
+      width: 100,
+      render: (colorId, record) => {
+        const displayText =
+          record.colorName ||
+          (colorId ? colorId.substring(0, 8) + "..." : "N/A");
+        return (
+          <Tag color="purple" title={colorId}>
+            {displayText}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: "Kho",
+      dataIndex: "warehouseId",
+      key: "warehouse",
+      width: 100,
+      render: (warehouseId, record) => {
+        const displayText =
+          record.warehouseName ||
+          (warehouseId ? warehouseId.substring(0, 8) + "..." : "N/A");
+        return (
+          <Tag color="orange" title={warehouseId}>
+            {displayText}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: "Giá cost",
+      dataIndex: "costPrice",
+      key: "costPrice",
+      width: 120,
+      sorter: (a, b) => (a.costPrice || 0) - (b.costPrice || 0),
       render: (price) => (
         <Text strong style={{ color: "#52c41a" }}>
-          {vehicleApi.formatPrice(price)}
+          {price ? `${price.toLocaleString("vi-VN")} ₫` : "N/A"}
         </Text>
-      ),
-    },
-    {
-      title: "Thông số",
-      key: "specs",
-      render: (_, record) => (
-        <div>
-          <div style={{ fontSize: "12px" }}>
-            <ThunderboltOutlined /> {record.batteryCapacity} kWh
-          </div>
-          <div style={{ fontSize: "12px" }}>
-            <CarOutlined /> {record.range} km
-          </div>
-          <div style={{ fontSize: "12px" }}>{record.seats} chỗ ngồi</div>
-        </div>
-      ),
-    },
-    {
-      title: "Tồn kho",
-      dataIndex: "stock",
-      key: "stock",
-      sorter: (a, b) => a.stock - b.stock,
-      render: (stock) => (
-        <Badge
-          count={stock}
-          style={{
-            backgroundColor: stock < 100 ? "#ff4d4f" : "#52c41a",
-          }}
-        />
       ),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
+      width: 120,
       render: (status) => {
-        const statusConfig = vehicleApi.formatVehicleStatus(status);
-        return <Badge status={statusConfig.color} text={statusConfig.text} />;
+        const statusMap = {
+          1: { color: "success", text: "Đang hoạt động" },
+          0: { color: "error", text: "Không hoạt động" },
+        };
+        const config = statusMap[status] || {
+          color: "default",
+          text: "Không xác định",
+        };
+        return <Badge status={config.color} text={config.text} />;
+      },
+    },
+    {
+      title: "Ngày sản xuất",
+      dataIndex: "manufactureDate",
+      key: "manufactureDate",
+      width: 120,
+      render: (date) => {
+        if (!date) return "N/A";
+        try {
+          return new Date(date).toLocaleDateString("vi-VN");
+        } catch {
+          return "N/A";
+        }
       },
     },
     {
@@ -399,6 +475,45 @@ function VehicleManagement() {
     },
   ];
 
+  // Error boundary fallback
+  if (error) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <NavigationBar collapsed={collapsed} onCollapse={setCollapsed} />
+        <div
+          className="flex-1 transition-all duration-200"
+          style={{
+            marginLeft: collapsed ? 64 : 280,
+            minHeight: "100vh",
+          }}
+        >
+          <PageContainer
+            header={{
+              title: "Lỗi hệ thống",
+              subTitle: "Đã xảy ra lỗi trong quá trình tải dữ liệu",
+            }}
+          >
+            <Card>
+              <div style={{ textAlign: "center", padding: "50px" }}>
+                <h3>❌ Đã xảy ra lỗi</h3>
+                <p>Lỗi: {error}</p>
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    setError(null);
+                    loadVehicles();
+                  }}
+                >
+                  Thử lại
+                </Button>
+              </div>
+            </Card>
+          </PageContainer>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Navigation Bar */}
@@ -426,6 +541,101 @@ function VehicleManagement() {
           }}
           className="p-6"
         >
+          {/* Quick Action Buttons */}
+          <Card
+            className="mb-4"
+            style={{
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              border: "none",
+              borderRadius: "12px",
+            }}
+          >
+            <div style={{ textAlign: "center" }}>
+              <Title
+                level={4}
+                style={{ margin: "8px 0 16px 0", color: "white" }}
+              >
+                ⚡ Quản lý Hệ thống Xe Điện
+              </Title>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<ThunderboltOutlined />}
+                  onClick={() => setActiveTab("create-vehicle")}
+                  style={{
+                    minWidth: "160px",
+                    background: "#52c41a",
+                    borderColor: "#52c41a",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Tạo Xe Điện
+                </Button>
+                <Button
+                  size="large"
+                  icon={<CarOutlined />}
+                  onClick={() => setActiveTab("manage-models")}
+                  style={{
+                    minWidth: "160px",
+                    background: "rgba(255,255,255,0.9)",
+                    borderColor: "white",
+                    color: "#1890ff",
+                    fontWeight: "500",
+                  }}
+                >
+                  Quản lý Model
+                </Button>
+                <Button
+                  size="large"
+                  icon={<BuildOutlined />}
+                  onClick={() => setActiveTab("manage-versions")}
+                  style={{
+                    minWidth: "160px",
+                    background: "rgba(255,255,255,0.9)",
+                    borderColor: "white",
+                    color: "#722ed1",
+                    fontWeight: "500",
+                  }}
+                >
+                  Quản lý Version
+                </Button>
+                <Button
+                  size="large"
+                  icon={<BgColorsOutlined />}
+                  onClick={() => setActiveTab("manage-colors")}
+                  style={{
+                    minWidth: "160px",
+                    background: "rgba(255,255,255,0.9)",
+                    borderColor: "white",
+                    color: "#eb2f96",
+                    fontWeight: "500",
+                  }}
+                >
+                  Quản lý Màu sắc
+                </Button>
+              </div>
+              <div
+                style={{
+                  marginTop: "12px",
+                  fontSize: "14px",
+                  color: "rgba(255,255,255,0.8)",
+                }}
+              >
+                💡 Chọn chức năng để bắt đầu quản lý thông tin xe điện
+              </div>
+            </div>
+          </Card>
+
+          <Divider style={{ margin: "16px 0" }} />
+
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -454,8 +664,8 @@ function VehicleManagement() {
                       <Col xs={24} sm={12} lg={8}>
                         <Card className="text-center">
                           <Statistic
-                            title="Tổng tồn kho"
-                            value={totalStock}
+                            title="Xe hoạt động"
+                            value={activeVehicles}
                             suffix=" xe"
                             prefix={
                               <DashboardOutlined className="text-green-500" />
@@ -490,44 +700,48 @@ function VehicleManagement() {
                         </Col>
                         <Col xs={24} sm={8} md={4}>
                           <Select
-                            value={filterCategory}
-                            onChange={setFilterCategory}
-                            style={{ width: "100%" }}
-                            placeholder="Loại xe"
-                          >
-                            <Option value="all">Tất cả loại</Option>
-                            {categories.map((cat) => (
-                              <Option key={cat} value={cat}>
-                                {cat}
-                              </Option>
-                            ))}
-                          </Select>
-                        </Col>
-                        <Col xs={24} sm={8} md={4}>
-                          <Select
                             value={filterStatus}
                             onChange={setFilterStatus}
                             style={{ width: "100%" }}
                             placeholder="Trạng thái"
                           >
-                            <Option value="all">Tất cả</Option>
-                            {statuses.map((status) => (
-                              <Option key={status} value={status}>
-                                {status}
-                              </Option>
-                            ))}
+                            <Option value="all">Tất cả trạng thái</Option>
+                            <Option value="1">Hoạt động</Option>
+                            <Option value="0">Không hoạt động</Option>
                           </Select>
                         </Col>
                         <Col xs={24} sm={24} md={10}>
-                          <Space>
+                          <Space wrap>
                             <Button
                               type="primary"
-                              icon={<PlusOutlined />}
-                              onClick={() => setIsModalVisible(true)}
+                              icon={<ThunderboltOutlined />}
+                              onClick={() => setActiveTab("create-vehicle")}
+                              size="small"
                             >
-                              Thêm xe mới
+                              Tạo Xe Điện
                             </Button>
-                            <Button icon={<ExportOutlined />}>
+                            <Button
+                              icon={<CarOutlined />}
+                              onClick={() => setActiveTab("manage-models")}
+                              size="small"
+                            >
+                              Model
+                            </Button>
+                            <Button
+                              icon={<BuildOutlined />}
+                              onClick={() => setActiveTab("manage-versions")}
+                              size="small"
+                            >
+                              Version
+                            </Button>
+                            <Button
+                              icon={<BgColorsOutlined />}
+                              onClick={() => setActiveTab("manage-colors")}
+                              size="small"
+                            >
+                              Màu sắc
+                            </Button>
+                            <Button icon={<ExportOutlined />} size="small">
                               Xuất Excel
                             </Button>
                           </Space>
@@ -556,24 +770,52 @@ function VehicleManagement() {
                 ),
               },
               {
-                key: "create-wizard",
+                key: "create-vehicle",
                 label: (
                   <span>
                     <PlusOutlined />
-                    Tạo xe mới (Wizard)
+                    Tạo Xe Điện
                   </span>
                 ),
-                children: <CreateVehicleWizard />,
+                children: <CreateElectricVehicle />,
               },
               {
-                key: "manage-models",
+                key: "debug",
                 label: (
                   <span>
-                    <SettingOutlined />
-                    Quản lý Model
+                    <ThunderboltOutlined />
+                    Debug Info
                   </span>
                 ),
-                children: <ManageModel />,
+                children: (
+                  <Card>
+                    <div style={{ padding: "20px" }}>
+                      <h3>🧪 Vehicle Management Debug</h3>
+                      <p>Total vehicles: {vehicles.length}</p>
+                      <p>Active vehicles: {activeVehicles}</p>
+                      <p>
+                        Total cost value:{" "}
+                        {totalCostValue?.toLocaleString("vi-VN")} ₫
+                      </p>
+
+                      <div style={{ marginTop: "20px" }}>
+                        <h4>Raw Vehicle Data:</h4>
+                        <pre
+                          style={{
+                            background: "#f5f5f5",
+                            padding: "10px",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            maxHeight: "300px",
+                            overflow: "auto",
+                          }}
+                        >
+                          {JSON.stringify(vehicles, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  </Card>
+                ),
               },
             ]}
           />
@@ -861,4 +1103,13 @@ function VehicleManagement() {
   );
 }
 
-export default VehicleManagement;
+// Wrap với Error Boundary
+function VehicleManagementWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <VehicleManagement />
+    </ErrorBoundary>
+  );
+}
+
+export default VehicleManagementWithErrorBoundary;

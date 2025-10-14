@@ -73,6 +73,7 @@ function CreateElectricVehicle() {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({}); // State để lưu form data giữa các steps
   const [uploadedImages, setUploadedImages] = useState([]); // State cho uploaded images
+  const [imageKeys, setImageKeys] = useState([]); // State cho image keys from server
 
   // Load data khi component mount
   useEffect(() => {
@@ -348,10 +349,10 @@ function CreateElectricVehicle() {
         imageUrl: "", // Sẽ được cập nhật sau khi upload images
       };
 
-      // Step 1: Upload images trước nếu có
-      let imageUrls = "";
+      // Step 1: Upload images và thu thập keys
+      let imageKeys = [];
       if (uploadedImages.length > 0) {
-        console.log("📤 Processing images for vehicle creation...");
+        console.log("📤 Uploading images to get keys for vehicle creation...");
         console.log(`📱 Number of images to process: ${uploadedImages.length}`);
         console.log(
           "📁 Image files:",
@@ -361,26 +362,66 @@ function CreateElectricVehicle() {
             type: f.type,
           }))
         );
-        console.log("⚠️ API upload not available, using mock URLs for testing");
 
-        // Tạm thời skip upload thật, dùng mock URLs
-        imageUrls = uploadedImages
-          .map(
-            (file, index) =>
-              `https://mock-cdn.com/vehicles/${Date.now()}-${index}-${
+        try {
+          // Upload từng ảnh và thu thập keys
+          for (let i = 0; i < uploadedImages.length; i++) {
+            const file = uploadedImages[i];
+            console.log(
+              `📤 Uploading image ${i + 1}/${uploadedImages.length}: ${
                 file.name
               }`
-          )
-          .join(",");
+            );
 
-        console.log("✅ Mock image URLs generated:", imageUrls);
-        console.log("🔗 Final imageUrl string:", imageUrls);
+            // Tạo FormData cho từng file
+            const formData = new FormData();
+            formData.append("File", file);
+
+            // Gọi API upload để lấy key
+            const uploadResult = await vehicleApi.uploadElectricVehicleImage(
+              formData
+            );
+
+            if (uploadResult.success && uploadResult.key) {
+              console.log(
+                `✅ Image ${i + 1} uploaded successfully. Key: ${
+                  uploadResult.key
+                }`
+              );
+              imageKeys.push(uploadResult.key);
+            } else {
+              console.error(
+                `❌ Failed to upload image ${i + 1}:`,
+                uploadResult.error
+              );
+              message.error(
+                `Lỗi upload ảnh ${file.name}: ${uploadResult.error}`
+              );
+              setLoading(false);
+              return;
+            }
+          }
+
+          console.log(
+            `✅ All ${uploadedImages.length} images uploaded successfully!`
+          );
+          console.log("🔑 Collected image keys:", imageKeys);
+
+          // Lưu keys vào state để sử dụng sau này
+          setImageKeys(imageKeys);
+        } catch (error) {
+          console.error("❌ Error during image upload process:", error);
+          message.error("Lỗi trong quá trình upload ảnh!");
+          setLoading(false);
+          return;
+        }
       } else {
         console.log("📷 No images uploaded");
       }
 
-      // Update vehicleData với imageUrls
-      vehicleData.imageUrl = imageUrls;
+      // Update vehicleData với attachment keys theo API format
+      vehicleData.attachmentKeys = imageKeys; // Array of keys theo format API expect
+      vehicleData.imageUrl = ""; // Giữ field này để tương thích với API legacy
 
       console.log("🔍 Final Vehicle Data to be sent:", vehicleData);
 
@@ -412,6 +453,11 @@ function CreateElectricVehicle() {
         "  - imageUrl:",
         vehicleData.imageUrl,
         typeof vehicleData.imageUrl
+      );
+      console.log(
+        "  - attachmentKeys:",
+        vehicleData.attachmentKeys,
+        `(${vehicleData.attachmentKeys?.length || 0} keys)`
       );
       console.log("  - manufactureDate:", vehicleData.manufactureDate);
       console.log("  - importDate:", vehicleData.importDate);
@@ -570,6 +616,9 @@ function CreateElectricVehicle() {
 
         setIsCreateModalVisible(false);
         form.resetFields();
+        setFormData({});
+        setUploadedImages([]);
+        setImageKeys([]); // Reset image keys sau khi tạo thành công
         await loadVehicles();
       } else {
         console.error("❌ Submit failed:", result.error);
@@ -694,6 +743,7 @@ function CreateElectricVehicle() {
     setCurrentStep(0);
     setFormData({});
     setUploadedImages([]);
+    setImageKeys([]); // Reset image keys
     form.resetFields();
     form.setFieldsValue({
       status: 1, // Mặc định trạng thái hoạt động
@@ -902,14 +952,36 @@ function CreateElectricVehicle() {
       <Card>
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
           <Col span={24}>
-            <Title level={4}>
-              <CarOutlined style={{ color: "#1890ff", marginRight: 8 }} />
-              Danh sách Xe Điện
-            </Title>
-            <Text type="secondary">
-              Quản lý toàn bộ xe điện trong hệ thống. Tổng cộng:{" "}
-              {vehicles.length} xe
-            </Text>
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <Title level={4}>
+                <CarOutlined style={{ color: "#1890ff", marginRight: 8 }} />
+                Danh sách Xe Điện
+              </Title>
+              <Text type="secondary">
+                Quản lý toàn bộ xe điện trong hệ thống. Tổng cộng:{" "}
+                {vehicles.length} xe
+              </Text>
+
+              {/* Test API Button */}
+              <Button
+                type="dashed"
+                size="small"
+                onClick={async () => {
+                  console.log("🧪 Testing API connection...");
+                  message.info("Đang kiểm tra kết nối API...");
+                  const isConnected = await vehicleApi.testApiConnection();
+                  if (isConnected) {
+                    message.success("✅ API kết nối thành công!");
+                  } else {
+                    message.error(
+                      "❌ API kết nối thất bại. Kiểm tra console để xem chi tiết."
+                    );
+                  }
+                }}
+              >
+                🧪 Test API Connection
+              </Button>
+            </Space>
           </Col>
         </Row>
 
@@ -1351,12 +1423,60 @@ function CreateElectricVehicle() {
                         </Col>
                       </Row>
 
-                      {/* Hiển thị uploaded images */}
+                      {/* Hiển thị uploaded images và keys */}
                       {uploadedImages.length > 0 && (
                         <div style={{ marginTop: 16 }}>
                           <strong>
                             Hình ảnh đã tải lên ({uploadedImages.length}):
                           </strong>
+
+                          {/* Hiển thị image keys nếu có */}
+                          {imageKeys.length > 0 && (
+                            <div
+                              style={{
+                                marginTop: 8,
+                                padding: "8px 12px",
+                                backgroundColor: "#f6ffed",
+                                border: "1px solid #b7eb8f",
+                                borderRadius: 6,
+                              }}
+                            >
+                              <p
+                                style={{
+                                  margin: 0,
+                                  color: "#389e0d",
+                                  fontSize: "14px",
+                                }}
+                              >
+                                ✅ Đã upload thành công {imageKeys.length} ảnh
+                                và nhận được keys từ server
+                              </p>
+                              <details style={{ marginTop: 4 }}>
+                                <summary
+                                  style={{
+                                    cursor: "pointer",
+                                    color: "#595959",
+                                  }}
+                                >
+                                  Xem chi tiết keys
+                                </summary>
+                                <div
+                                  style={{
+                                    marginTop: 4,
+                                    fontSize: "12px",
+                                    fontFamily: "monospace",
+                                  }}
+                                >
+                                  {imageKeys.map((key, index) => (
+                                    <div key={index}>
+                                      Ảnh {index + 1}: {key}
+                                    </div>
+                                  ))}
+                                </div>
+                              </details>
+                            </div>
+                          )}
+
                           <div
                             style={{
                               display: "flex",
@@ -1399,6 +1519,29 @@ function CreateElectricVehicle() {
                                       border: "1px solid #d9d9d9",
                                     }}
                                   />
+                                  {/* Hiển thị key tương ứng với ảnh */}
+                                  {imageKeys[index] && (
+                                    <div
+                                      style={{
+                                        position: "absolute",
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        background: "rgba(0, 0, 0, 0.7)",
+                                        color: "white",
+                                        fontSize: "10px",
+                                        padding: "2px 4px",
+                                        borderRadius: "0 0 8px 8px",
+                                        textAlign: "center",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                      }}
+                                      title={imageKeys[index]}
+                                    >
+                                      Key: {imageKeys[index].substring(0, 8)}...
+                                    </div>
+                                  )}
                                 </div>
                               ) : null;
                             })}
