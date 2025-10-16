@@ -44,12 +44,12 @@ This is a React-based web application for an **Electric Vehicle Dealer Managemen
 ### Folder Structure (Critical Patterns)
 - /src/Pages/: Page components organized by user role (Admin, Customer, Home, Staff)
 - /src/App/: Legacy business logic modules (being migrated to /src/Pages/)
-- /src/Api/api.js: Centralized Axios configuration with JWT interceptors
+- /src/api/api.js: Centralized Axios configuration with JWT interceptors
 - /src/Router/: Route protection logic (ProtectedRoute.jsx, PublicRoute.jsx)
 
 ### Authentication Flow (Critical)
 - *JWT Storage*: Token stored in localStorage.getItem("jwt_token")
-- *Route Protection*: ProtectedRoute redirects to "/" if no token, PublicRoute redirects to "/customer" if token exists
+- *Route Protection*: ProtectedRoute redirects to "/" if no token, PublicRoute redirects to "/login"
 - *Axios Interceptors*: Automatically attach JWT to requests, handle 401 responses
 ### Page Components
 - Use PageContainer from @ant-design/pro-components for consistent layout
