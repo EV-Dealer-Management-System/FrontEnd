@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Card, Button, Tag, Row, Col, Typography, Space, Divider, Alert } from 'antd';
+import { Modal, Card, Button, Tag, Row, Col, Typography, Space, Divider, Alert, message } from 'antd';
 import { SafetyOutlined, CheckCircleOutlined, ClockCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { SmartCAService } from '../../../../App/EVMAdmin/SignContractEVM/SmartCA';
 
 const { Text, Title } = Typography;
 
 const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, isExistingSmartCA = false, currentSelectedId = null }) => {
   const [selectedCertificate, setSelectedCertificate] = useState(null);
+  const [updating, setUpdating] = useState(false);
+  
+  const smartCAService = SmartCAService();
+  const FIXED_USER_ID = "18858"; // ID cứng của hãng
 
   // Tự động chọn certificate hiện tại khi mở modal
   useEffect(() => {
@@ -70,10 +75,36 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
     return new Date(validTo) < new Date();
   }
 
-  // Xử lý chọn chứng chỉ
-  function handleSelect() {
+  // Xử lý chọn chứng chỉ với API call
+  async function handleSelect() {
     if (!selectedCertificate) return;
-    onSelect(selectedCertificate);
+    
+    setUpdating(true);
+    try {
+      console.log('=== SELECTING SMARTCA ===');
+      console.log('Selected certificate:', selectedCertificate);
+      
+      // Gọi API với parameters đúng theo spec
+      const smartCAId = String(selectedCertificate.id); // Đảm bảo là string
+      const smartCAOwnerName = selectedCertificate.commonName || selectedCertificate.name || null;
+      
+      console.log('SmartCA ID:', smartCAId, '(type:', typeof smartCAId, ')');
+      console.log('SmartCA Owner Name:', smartCAOwnerName, '(type:', typeof smartCAOwnerName, ')');
+      
+      const result = await smartCAService.handleUpdateSmartCA(smartCAId, smartCAOwnerName);
+      
+      if (result.success) {
+        message.success('Đã cập nhật SmartCA thành công');
+        onSelect(selectedCertificate);
+      } else {
+        message.error(result.error || 'Có lỗi khi cập nhật SmartCA');
+      }
+    } catch (error) {
+      console.error('Error selecting SmartCA:', error);
+      message.error('Có lỗi khi cập nhật SmartCA');
+    } finally {
+      setUpdating(false);
+    }
   }
 
   return (
@@ -95,14 +126,39 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
           type="primary" 
           onClick={handleSelect}
           disabled={!selectedCertificate}
-          loading={loading}
+          loading={updating || loading}
         >
-          {currentSelectedId ? 'Đổi Chứng Thư' : 'Chọn để ký'}
+          {updating ? 'Đang cập nhật...' : (currentSelectedId ? 'Đổi Chứng Thư' : 'Chọn để ký')}
         </Button>
       ]}
       width={800}
       destroyOnClose
     >
+      {/* Custom CSS cho animations */}
+      <style jsx>{`
+        @keyframes glow {
+          0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+          50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.4); }
+        }
+        .selected-glow {
+          animation: glow 2s ease-in-out infinite;
+        }
+        .border-3 {
+          border-width: 3px;
+        }
+        .bg-blue-25 {
+          background-color: rgba(59, 130, 246, 0.025);
+        }
+        .scale-102 {
+          transform: scale(1.02);
+        }
+        .scale-105 {
+          transform: scale(1.05);
+        }
+        .scale-110 {
+          transform: scale(1.1);
+        }
+      `}</style>
       {/* Thông báo */}
       {isExistingSmartCA && (
         <Alert
@@ -147,31 +203,70 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
               return (
                 <Col span={24} key={cert.id}>
                   <Card
-                    className={`cursor-pointer transition-all duration-200 ${
+                    className={`cursor-pointer transition-all duration-300 transform relative overflow-hidden ${
                       isSelected 
-                        ? 'border-blue-500 shadow-md bg-blue-50' 
+                        ? 'border-3 border-blue-500 shadow-xl bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-50 scale-105 ring-2 ring-blue-200 ring-opacity-50' 
                         : canSelect 
-                          ? 'border-gray-200 hover:border-blue-300 hover:shadow-sm' 
-                          : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                          ? 'border-2 border-gray-300 hover:border-blue-400 hover:shadow-lg hover:scale-102 bg-white hover:bg-blue-25' 
+                          : 'border border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
                     }`}
                     onClick={() => canSelect && setSelectedCertificate(cert)}
                     size="small"
+                    style={{
+                      borderWidth: isSelected ? '3px' : canSelect ? '2px' : '1px',
+                      boxShadow: isSelected 
+                        ? '0 10px 25px -5px rgba(59, 130, 246, 0.25), 0 0 0 1px rgba(59, 130, 246, 0.1)' 
+                        : canSelect 
+                          ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' 
+                          : 'none'
+                    }}
                   >
+                    {/* Background gradient overlay cho selected */}
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-blue-500/5 pointer-events-none" />
+                    )}
+                    
+                    {/* Indicator cho selection - Redesigned */}
+                    {isSelected && (
+                      <div className="absolute top-3 right-3 flex items-center space-x-2 z-10">
+                        <div className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg animate-pulse">
+                          ĐÃ CHỌN
+                        </div>
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                          <CheckCircleOutlined className="text-white text-base" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Left border highlight cho selected */}
+                    {isSelected && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-400 to-blue-600" />
+                    )}
                     <div className="flex justify-between items-start">
                       {/* Thông tin chính */}
                       <div className="flex-1">
                         <div className="flex items-center mb-2">
-                          <Text strong className="text-lg mr-2">
+                          <Text 
+                            strong 
+                            className={`text-lg mr-2 transition-colors duration-300 ${
+                              isSelected ? 'text-blue-700 font-bold' : 'text-gray-900'
+                            }`}
+                          >
                             {cert.commonName || cert.name}
                           </Text>
                           {cert.isDefault && (
-                            <Tag color="blue" className="text-xs">
+                            <Tag color={isSelected ? "blue" : "blue"} className="text-xs font-medium">
                               Mặc định
                             </Tag>
                           )}
                           {isCurrent && (
-                            <Tag color="green" className="text-xs">
+                            <Tag color={isSelected ? "green" : "green"} className="text-xs font-medium">
                               Đang sử dụng
+                            </Tag>
+                          )}
+                          {isSelected && (
+                            <Tag color="gold" className="text-xs font-semibold ml-1 animate-pulse">
+                              ⭐ ĐƯỢC CHỌN
                             </Tag>
                           )}
                         </div>
@@ -227,15 +322,17 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
                         </Space>
                       </div>
 
-                      {/* Radio selection indicator */}
+                      {/* Radio selection indicator - Enhanced */}
                       <div className="ml-4 flex items-center">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        <div className={`w-6 h-6 rounded-full border-3 flex items-center justify-center transition-all duration-300 transform ${
                           isSelected 
-                            ? 'border-blue-500 bg-blue-500' 
-                            : 'border-gray-300'
+                            ? 'border-blue-500 bg-blue-500 shadow-lg scale-110 ring-2 ring-blue-200' 
+                            : canSelect
+                              ? 'border-gray-400 bg-white hover:border-blue-400 hover:scale-105'
+                              : 'border-gray-300 bg-gray-100'
                         }`}>
                           {isSelected && (
-                            <div className="w-2 h-2 rounded-full bg-white"></div>
+                            <div className="w-3 h-3 rounded-full bg-white animate-pulse"></div>
                           )}
                         </div>
                       </div>
