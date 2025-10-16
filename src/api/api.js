@@ -1,60 +1,34 @@
 import axios from "axios";
 
-const sanitizeBaseUrl = (url) =>
-  typeof url === "string" ? url.trim().replace(/\/+$/, "") : undefined;
-
-const resolveBaseUrl = () => {
-  const envUrl = sanitizeBaseUrl(import.meta.env.VITE_API_URL);
-  if (envUrl) {
-    return envUrl;
-  }
-
-  // Fallback mặc định nếu không có environment variable
-  console.warn('VITE_API_URL không được cấu hình. Sử dụng fallback URL.');
-  return 'https://api.electricvehiclesystem.click/api';
-};
-
 const api = axios.create({
-  baseURL: resolveBaseUrl(),
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
   },
-  timeout: 30000, // 30 seconds timeout
+  timeout: 30000, 
 });
-
-// Request interceptor để tự động thêm JWT token và ngrok header
 api.interceptors.request.use(
-  (config) => {
+  function (config) {
     const token = localStorage.getItem("jwt_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // Thêm header để skip ngrok browser warning
-    config.headers['ngrok-skip-browser-warning'] = 'true';
     return config;
   },
-  (error) => {
+  function (error) {
     return Promise.reject(error);
   }
 );
-
-// Response interceptor để xử lý token hết hạn
 api.interceptors.response.use(
-  (response) => {
+  function (response) {
     return response;
   },
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token hết hạn hoặc không hợp lệ
+  function (error) {
+    if (error.response && error.response.status === 401) {
       localStorage.removeItem("jwt_token");
       window.location.href = "/login";
     }
     return Promise.reject(error);
   }
 );
-
-
-// Location API đã được di chuyển sang Address.js
-
 export default api;

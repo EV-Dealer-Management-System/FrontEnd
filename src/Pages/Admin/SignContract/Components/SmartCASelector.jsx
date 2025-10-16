@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Card, Button, Tag, Row, Col, Typography, Space, Divider, Alert, message, Radio } from 'antd';
+import { Modal, Card, Button, Tag, Typography, Space, Divider, Alert, message, Radio } from 'antd';
 import { SafetyOutlined, CheckCircleOutlined, ClockCircleOutlined, InfoCircleOutlined, CrownOutlined } from '@ant-design/icons';
 import { SmartCAService } from '../../../../App/EVMAdmin/SignContractEVM/SmartCA';
 
 const { Text, Title } = Typography;
 
-const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, isExistingSmartCA = false, currentSelectedId = null }) => {
+const SmartCASelector = ({ 
+  visible, 
+  onCancel, 
+  onSelect, 
+  smartCAData, 
+  loading, 
+  isExistingSmartCA = false, 
+  currentSelectedId = null,
+  contractService = null,  // For Customer use case
+  userId = null           // For Customer use case
+}) => {
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [updating, setUpdating] = useState(false);
   
@@ -77,21 +87,35 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
 
   // Xử lý chọn chứng chỉ với API call
   async function handleSelect() {
-    if (!selectedCertificate) return;
+    if (!selectedCertificate) {
+      message.warning('Vui lòng chọn một chứng thư số');
+      return;
+    }
     
     setUpdating(true);
     try {
       console.log('=== SELECTING SMARTCA ===');
       console.log('Selected certificate:', selectedCertificate);
+      console.log('ContractService available:', !!contractService);
+      console.log('UserId:', userId);
       
-      // Gọi API với parameters đúng theo spec
-      const smartCAId = String(selectedCertificate.id); // Đảm bảo là string
-      const smartCAOwnerName = selectedCertificate.commonName || selectedCertificate.name || null;
+      let result;
       
-      console.log('SmartCA ID:', smartCAId, '(type:', typeof smartCAId, ')');
-      console.log('SmartCA Owner Name:', smartCAOwnerName, '(type:', typeof smartCAOwnerName, ')');
-      
-      const result = await smartCAService.handleUpdateSmartCA(smartCAId, smartCAOwnerName);
+      // Determine which service to use based on available props
+      if (contractService && userId) {
+        // Customer case: use contractService with userId
+        result = await contractService.handleUpdateSmartCA(
+          selectedCertificate.id,
+          userId,
+          selectedCertificate.commonName || selectedCertificate.name
+        );
+      } else {
+        // Admin case: use smartCAService with fixed admin ID
+        const smartCAId = String(selectedCertificate.id);
+        const smartCAOwnerName = selectedCertificate.commonName || selectedCertificate.name || null;
+        
+        result = await smartCAService.handleUpdateSmartCA(smartCAId, smartCAOwnerName);
+      }
       
       if (result.success) {
         message.success('Đã cập nhật SmartCA thành công');
@@ -155,6 +179,12 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
         .hover-scale:hover {
           transform: scale(1.02);
         }
+        .ant-radio-group {
+          width: 100% !important;
+        }
+        .ant-card {
+          width: 100% !important;
+        }
       `}</style>
       {/* Thông báo */}
       {isExistingSmartCA && (
@@ -205,8 +235,9 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
                 setSelectedCertificate(cert);
               }}
               className="w-full"
+              style={{ width: '100%' }}
             >
-              <Row gutter={[16, 16]}>
+              <div className="space-y-4 w-full" style={{ width: '100%' }}>
                 {certificates.map((cert) => {
                   const expired = isExpired(cert.validTo);
                   const canSelect = cert.isValid && !expired;
@@ -214,10 +245,10 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
                   const isCurrent = cert.id === currentSelectedId;
 
                   return (
-                    <Col xs={24} key={cert.id}>
+                    <div key={cert.id} className="w-full" style={{ width: '100%' }}>
                       <Card
                         className={`
-                          hover-scale cursor-pointer transition-all duration-300
+                          hover-scale cursor-pointer transition-all duration-300 relative w-full
                           ${isSelected 
                             ? 'border-3 border-blue-500 shadow-xl bg-gradient-to-br from-blue-25 to-blue-50 selected-glow' 
                             : canSelect
@@ -228,9 +259,10 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
                         `}
                         onClick={() => canSelect && setSelectedCertificate(cert)}
                         size="small"
+                        style={{ width: '100%' }}
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start space-x-3 flex-1">
+                        <div className="w-full" style={{ width: '100%' }}>
+                          <div className="flex items-start space-x-3 w-full" style={{ width: '100%' }}>
                             <Radio 
                               value={cert.id} 
                               disabled={!canSelect}
@@ -339,10 +371,10 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
                           </div>
                         )}
                       </Card>
-                    </Col>
+                    </div>
                   );
                 })}
-              </Row>
+              </div>
             </Radio.Group>
           </div>
         )}

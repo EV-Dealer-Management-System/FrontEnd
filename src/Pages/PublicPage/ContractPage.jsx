@@ -12,7 +12,7 @@ import SignatureModal from '../Admin/SignContract/Components/SignatureModal';
 import AppVerifyModal from '../Admin/SignContract/Components/AppVerifyModal';
 import PDFModal from '../Admin/SignContract/Components/PDF/PDFModal';
 import SmartCAModal from '../Admin/SignContract/Components/SmartCAModal';
-import SmartCASelector from '../Customer/Components/SmartCASelector';
+import SmartCASelector from '../Admin/SignContract/Components/SmartCASelector';
 import AddSmartCA from '../Admin/SignContract/Components/AddSmartCA';
 
 const { Title, Text, Paragraph } = Typography;
