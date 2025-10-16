@@ -335,11 +335,58 @@ export const ContractService = () => {
     };
   };
 
+  // Cập nhật SmartCA được chọn - API mới  
+  const handleUpdateSmartCA = async (smartCAId, userId, smartCAOwnerName = null) => {
+    try {
+      console.log('=== UPDATE SMARTCA API CALL - Customer ===');
+      
+      const requestPayload = {
+        id: String(smartCAId),            // Đảm bảo ID là string
+        userId: String(userId),           // ID người dùng hiện tại
+        isSetDefault: true,               // Mặc định true
+        name: smartCAOwnerName || null    // Tên chủ SmartCA hoặc null
+      };
+      
+      console.log('Request payload with types:', {
+        id: requestPayload.id + ' (' + typeof requestPayload.id + ')',
+        userId: requestPayload.userId + ' (' + typeof requestPayload.userId + ')',
+        isSetDefault: requestPayload.isSetDefault + ' (' + typeof requestPayload.isSetDefault + ')',
+        name: requestPayload.name + ' (' + typeof requestPayload.name + ')'
+      });
+      console.log('Full payload:', requestPayload);
+      
+      const response = await api.post('/EContract/update-smartca', requestPayload);
+      
+      console.log('Update SmartCA response:', response.data);
+      
+      if (response.status === 200) {
+        return {
+          success: true,
+          data: response.data,
+          message: 'Cập nhật SmartCA thành công'
+        };
+      }
+      
+      return {
+        success: false,
+        error: 'Phản hồi không hợp lệ từ server'
+      };
+      
+    } catch (error) {
+      console.error('Error updating SmartCA:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Không thể cập nhật SmartCA.'
+      };
+    }
+  };
+
   return {
     // Main API handlers
     handleGetContractInfo,
     handleCheckSmartCA,
     handleAddSmartCA,
+    handleUpdateSmartCA,
     handleDigitalSignature,
     handleGetPreviewPDF,
     // Utility functions

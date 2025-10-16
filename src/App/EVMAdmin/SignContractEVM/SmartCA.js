@@ -117,6 +117,58 @@ export const SmartCAService = () => {
     return { valid: true, message: '' };
   };
 
+  // Cập nhật SmartCA được chọn - API mới  
+  const handleUpdateSmartCA = async (smartCAId, smartCAOwnerName = null) => {
+    try {
+      console.log('=== UPDATE SMARTCA API CALL ===');
+      
+      const requestPayload = {
+        id: String(smartCAId),            // Đảm bảo ID là string
+        userId: "18858",                  // ID cứng của hãng
+        isSetDefault: true,               // Mặc định true
+        name: smartCAOwnerName || null    // Tên chủ SmartCA hoặc null
+      };
+      
+      console.log('Request payload with types:', {
+        id: requestPayload.id + ' (' + typeof requestPayload.id + ')',
+        userId: requestPayload.userId + ' (' + typeof requestPayload.userId + ')',
+        isSetDefault: requestPayload.isSetDefault + ' (' + typeof requestPayload.isSetDefault + ')',
+        name: requestPayload.name + ' (' + typeof requestPayload.name + ')'
+      });
+      console.log('Full payload:', requestPayload);
+      
+      const response = await api.post('/EContract/update-smartca', requestPayload);
+      
+      console.log('Update SmartCA response:', response.data);
+      
+      if (response.status === 200) {
+        return {
+          success: true,
+          data: response.data,
+          message: 'Cập nhật SmartCA thành công'
+        };
+      }
+      
+      return {
+        success: false,
+        error: 'Không thể cập nhật SmartCA'
+      };
+      
+    } catch (error) {
+      console.error('Error updating SmartCA:', error);
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.messages?.[0] ||
+                          error.message || 
+                          'Có lỗi khi cập nhật SmartCA';
+      
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
+  };
+
   // Utility: Format thông tin SmartCA
   const formatSmartCAInfo = (smartCAInfo) => {
     if (!smartCAInfo) return null;
@@ -138,6 +190,7 @@ export const SmartCAService = () => {
     // Main API handlers
     handleCheckSmartCA,
     handleAddSmartCA,
+    handleUpdateSmartCA,
     // Utility functions
     isSmartCAValid,
     validateCCCD,
