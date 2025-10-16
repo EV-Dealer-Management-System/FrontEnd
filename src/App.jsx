@@ -23,6 +23,7 @@ import EVMStaffRoute from "./Router/EVMStaffRoute";
 import ContractViewer from "./Pages/PublicPage/ContractView";
 import EVMStaff from "./Pages/EVMStaff/EVMStaff";
 import ChangePassword from "./Pages/Admin/ChangePassword/ChangePassword";
+import ChangePasswordEVMStaff from "./Pages/EVMStaff/ChangePassword/ChangePassword";
 import GetAllEVMStaff from "./Pages/Admin/GetAllEVMStaff/GetAllEVMStaff";
 import CreateEVMStaffAccount from "./Pages/Admin/CreateEVMStaffAccount/CreateEVMStaffAccount";
 function App() {
@@ -120,6 +121,7 @@ function App() {
             <EVMStaffRoute>
               <Routes>
                 <Route path="" element={<EVMStaff />} />
+                <Route path="settings/change-password" element={<ChangePasswordEVMStaff />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ EVM Staff */}
                 <Route
                   path="*"
