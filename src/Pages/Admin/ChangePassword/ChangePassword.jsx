@@ -161,7 +161,7 @@ function ChangePassword() {
 
                 {/* Modal thông báo kết quả */}
                 <ResultModal
-                    visible={modalVisible}
+                    open={modalVisible}
                     type={modalType}
                     message={modalMessage}
                     onClose={handleModalClose}
