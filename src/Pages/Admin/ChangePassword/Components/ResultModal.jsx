@@ -3,7 +3,7 @@ import { Modal, Space } from 'antd';
 import { CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 
 function ResultModal({
-    visible,
+    open,
     type,
     message,
     onClose
@@ -19,7 +19,7 @@ function ResultModal({
                     <span>{type === 'success' ? 'Thành công' : 'Lỗi'}</span>
                 </Space>
             }
-            visible={visible}
+            open={open}
             onOk={onClose}
             onCancel={onClose}
             okText="Đóng"

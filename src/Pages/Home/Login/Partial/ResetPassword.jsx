@@ -9,24 +9,46 @@ import { message, Typography, Space, Avatar } from "antd";
 import { useNavigate } from "react-router-dom";
 import { MailOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import { handleResetPassword } from "../../../../utils/auth";
+import SuccessModal from "./Components/SuccessModal";
 
 const { Title, Text, Link } = Typography;
 
 const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (values) => {
     setLoading(true);
-    const result = await handleResetPassword(values.email);
-    message[result.success ? "success" : "error"](result.message);
-    setLoading(false);
+    try {
+      const result = await handleResetPassword(values.email);
 
-    if (result.success) {
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+      console.log('Reset password response:', result); // Debug
+
+      // Kiểm tra nhiều trường hợp response
+      if (result.success || result.isSuccess || result.succeeded) {
+        // Hiển thị modal thành công
+        setSubmittedEmail(values.email);
+        setModalVisible(true);
+      } else {
+        // Hiển thị message lỗi
+        message.error(result.message || result.Message || 'Có lỗi xảy ra, vui lòng thử lại');
+      }
+    } catch (error) {
+      console.error('Reset password error:', error);
+      message.error(error.response?.data?.message || error.message || 'Có lỗi xảy ra, vui lòng thử lại');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Đóng modal và điều hướng về login
+  const handleModalClose = () => {
+    setModalVisible(false);
+    setTimeout(() => {
+      navigate("/login");
+    }, 500);
   };
 
   return (
@@ -58,7 +80,7 @@ const ResetPassword = () => {
               size={64}
               icon={<MailOutlined />}
               style={{
-                backgroundColor: "#1677ff",
+                backgroundColor: "#1890ff",
                 marginBottom: "16px",
               }}
             />
@@ -72,7 +94,11 @@ const ResetPassword = () => {
                 submitButtonProps: {
                   loading: loading,
                   size: "large",
-                  style: { width: "100%" },
+                  style: {
+                    width: "100%",
+                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                    border: 'none'
+                  },
                 },
                 resetButtonProps: {
                   style: { display: "none" },
@@ -117,6 +143,13 @@ const ResetPassword = () => {
           </Text>
         </div>
       </div>
+
+      {/* Modal thông báo thành công */}
+      <SuccessModal
+        open={modalVisible}
+        email={submittedEmail}
+        onClose={handleModalClose}
+      />
     </PageContainer>
   );
 };

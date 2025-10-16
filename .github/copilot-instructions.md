@@ -63,8 +63,10 @@ This is a React-based web application for an **Electric Vehicle Dealer Managemen
 
 ### Styling Approach
 - *Ant Design*: Primary UI framework with Pro Components for advanced layouts
-- *TailwindCSS*: Utility classes for spacing, gradients (bg-gradient-to-br), and responsive design
+- *TailwindCSS*: **ALWAYS use TailwindCSS utility classes directly in JSX files** - NO separate .css files
 - *Custom Classes*: Minimal custom CSS, leverage Ant Design's token system
+- **Critical Rule**: When creating new pages, use only inline TailwindCSS classes in .jsx files (e.g., className="flex items-center gap-4 p-6 bg-white rounded-lg shadow-md")
+- **Never create**: Separate .css files for new pages - keep all styling in JSX with Tailwind utilities
 
 ### Adding New Pages
 1. Create component in appropriate /src/Pages/[Role]/ directory
@@ -98,3 +100,19 @@ This is a React-based web application for an **Electric Vehicle Dealer Managemen
 - *Clear and Simple*: Use descriptive Vietnamese or English names, keep logic obvious and explicit
 - *Comments in Vietnamese*: Add explanatory comments for business logic in Vietnamese
 - *EV Business Logic*: Focus on electric vehicle dealership operations - sales, inventory, dealer management
+
+## Styling Rules for New Pages (Critical)
+- **NO .css Files**: Never create separate .css files for new pages
+- **TailwindCSS Only**: Use TailwindCSS utility classes directly in className
+- **Inline Styling**: All styles must be written inline in JSX files
+- **Example**: 
+  ```jsx
+  <div className="flex flex-col gap-4 p-6 bg-white rounded-lg shadow-md">
+    <h1 className="text-2xl font-bold text-gray-800">Title</h1>
+    <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+      Click Me
+    </button>
+  </div>
+  ```
+- **Ant Design + Tailwind**: Combine Ant Design components with Tailwind classes for spacing/layout
+- **Responsive Design**: Use Tailwind responsive prefixes (sm:, md:, lg:, xl:) instead of Ant Design breakpoints
