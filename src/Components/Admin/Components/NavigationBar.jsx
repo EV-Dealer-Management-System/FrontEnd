@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Button, Badge, Space, Typography, Tooltip, message } from "antd";
 import { ProLayout, ProConfigProvider } from "@ant-design/pro-components";
-import { 
-LockOutlined,
+import {
+  LockOutlined,
   UserOutlined,
   UserAddOutlined,
   FileTextOutlined,
@@ -118,6 +118,25 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             name: "Phân bổ xe cho đại lý",
             icon: <GlobalOutlined />,
             component: "./VehicleAllocation",
+          },
+        ],
+      },
+      {
+        path: "/admin/staff",
+        name: "Quản lý nhân viên",
+        icon: <TeamOutlined />,
+        routes: [
+          {
+            path: "/admin/staff/evm-staff",
+            name: "Danh sách nhân viên ",
+            icon: <UserOutlined />,
+            component: "./EVMStaffList",
+          },
+          {
+            path: "/admin/staff/create-evm-staff",
+            name: "Tạo tài khoản nhân viên",
+            icon: <UserAddOutlined />,
+            component: "./CreateEVMStaff",
           },
         ],
       },

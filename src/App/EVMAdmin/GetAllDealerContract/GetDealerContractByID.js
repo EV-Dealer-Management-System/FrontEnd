@@ -4,7 +4,6 @@ export const GetDealerContractByID = {
     getDealerContractByID: async (eContractId) => {
         try {
             const response = await api.get(`/EContract/get-vnpt-econtract-by-id/${eContractId}`);
-            // Kiểm tra response structure từ backend
             if (response.data?.success && response.data.data) {
                 console.log('Loaded dealer contract by ID from backend:', response.data.data);
                 return response.data.data;
