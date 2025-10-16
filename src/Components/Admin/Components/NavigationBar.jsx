@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Button, Badge, Space, Typography, Tooltip, message } from "antd";
 import { ProLayout, ProConfigProvider } from "@ant-design/pro-components";
-import {
+import { 
+LockOutlined,
+  UserOutlined,
   UserAddOutlined,
   FileTextOutlined,
   DashboardOutlined,
@@ -149,6 +151,20 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         name: "Cài đặt hệ thống",
         icon: <SettingOutlined />,
         component: "./Settings",
+        routes: [
+          {
+            path: "/admin/settings/change-password",
+            name: "Đổi mật khẩu",
+            icon: <LockOutlined />,
+            component: "./ChangePassword",
+          },
+          {
+            path: "/admin/settings/user-management",
+            name: "Quản lý người dùng",
+            icon: <UserOutlined />,
+            component: "./UserManagement",
+          },
+        ],
       },
       {
         path: "/",
