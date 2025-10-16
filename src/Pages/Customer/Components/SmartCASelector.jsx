@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Card, Button, Tag, Row, Col, Typography, Space, Divider, Alert, message, Radio } from 'antd';
 import { SafetyOutlined, CheckCircleOutlined, ClockCircleOutlined, InfoCircleOutlined, CrownOutlined } from '@ant-design/icons';
-import { SmartCAService } from '../../../../App/EVMAdmin/SignContractEVM/SmartCA';
 
 const { Text, Title } = Typography;
 
-const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, isExistingSmartCA = false, currentSelectedId = null }) => {
+const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, isExistingSmartCA = false, currentSelectedId = null, contractService, userId }) => {
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [updating, setUpdating] = useState(false);
-  
-  const smartCAService = SmartCAService();
-  const FIXED_USER_ID = "18858"; // ID cứng của hãng
 
   // Tự động chọn certificate hiện tại khi mở modal
   useEffect(() => {
@@ -26,8 +22,6 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
       setSelectedCertificate(null);
     }
   }, [visible, currentSelectedId]);
-
-
 
   // Lấy tất cả certificates từ defaultSmartCa và userCertificates
   function getAllCertificates() {
@@ -54,47 +48,60 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
       });
     }
     
-    return certificates;
+    // Lọc chỉ lấy certificates hợp lệ và chưa hết hạn
+    const validCertificates = certificates.filter(cert => {
+      const isNotExpired = !isExpired(cert.validTo);
+      const hasValidStatus = cert.status?.value === 1 || cert.isValid === true;
+      return isNotExpired && hasValidStatus;
+    });
+    
+    return validCertificates;
   }
 
-  const certificates = getAllCertificates();
-
-  // Format ngày tháng đơn giản
-  function formatDate(dateString) {
-    if (!dateString) return 'N/A';
+  // Kiểm tra certificate hết hạn
+  function isExpired(validTo) {
+    if (!validTo) return false;
     try {
-      return new Date(dateString).toLocaleDateString('vi-VN');
+      return new Date(validTo) < new Date();
     } catch {
-      return 'N/A';
+      return false;
     }
   }
 
-  // Kiểm tra chứng chỉ có hết hạn không
-  function isExpired(validTo) {
-    if (!validTo) return false;
-    return new Date(validTo) < new Date();
+  // Format ngày tháng
+  function formatDate(dateString) {
+    if (!dateString) return 'Không rõ';
+    try {
+      return new Date(dateString).toLocaleDateString('vi-VN');
+    } catch {
+      return 'Không hợp lệ';
+    }
   }
 
-  // Xử lý chọn chứng chỉ với API call
+  // Xử lý chọn certificate với update API
   async function handleSelect() {
-    if (!selectedCertificate) return;
-    
-    setUpdating(true);
+    if (!selectedCertificate) {
+      message.warning('Vui lòng chọn một chứng thư số');
+      return;
+    }
+
+    if (!contractService || !userId) {
+      message.error('Thiếu thông tin cần thiết để cập nhật');
+      return;
+    }
+
     try {
-      console.log('=== SELECTING SMARTCA ===');
-      console.log('Selected certificate:', selectedCertificate);
+      setUpdating(true);
       
-      // Gọi API với parameters đúng theo spec
-      const smartCAId = String(selectedCertificate.id); // Đảm bảo là string
-      const smartCAOwnerName = selectedCertificate.commonName || selectedCertificate.name || null;
-      
-      console.log('SmartCA ID:', smartCAId, '(type:', typeof smartCAId, ')');
-      console.log('SmartCA Owner Name:', smartCAOwnerName, '(type:', typeof smartCAOwnerName, ')');
-      
-      const result = await smartCAService.handleUpdateSmartCA(smartCAId, smartCAOwnerName);
+      // Gọi API update SmartCA thông qua contractService
+      const result = await contractService.handleUpdateSmartCA(
+        selectedCertificate.id,
+        userId,
+        selectedCertificate.commonName
+      );
       
       if (result.success) {
-        message.success('Đã cập nhật SmartCA thành công');
+        message.success('Cập nhật SmartCA thành công');
         onSelect(selectedCertificate);
       } else {
         message.error(result.error || 'Có lỗi khi cập nhật SmartCA');
@@ -106,6 +113,8 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
       setUpdating(false);
     }
   }
+
+  const certificates = getAllCertificates();
 
   return (
     <Modal
@@ -127,6 +136,7 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
           onClick={handleSelect}
           disabled={!selectedCertificate}
           loading={updating || loading}
+          className="bg-blue-500 hover:bg-blue-600 border-blue-500"
         >
           {updating ? 'Đang cập nhật...' : (currentSelectedId ? 'Đổi Chứng Thư' : 'Chọn để ký')}
         </Button>
@@ -156,29 +166,6 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
           transform: scale(1.02);
         }
       `}</style>
-      {/* Thông báo */}
-      {isExistingSmartCA && (
-        <Alert
-          message={currentSelectedId ? "Đổi chứng thư số" : "SmartCA đã được thêm trước đó"}
-          description={currentSelectedId ? 
-            "Bạn có thể chọn chứng thư số khác để ký hợp đồng." :
-            "Bạn đã có SmartCA trong hệ thống. Vui lòng chọn chứng thư số phù hợp để ký hợp đồng."
-          }
-          type="info"
-          icon={<InfoCircleOutlined />}
-          className="mb-4"
-          showIcon
-        />
-      )}
-
-      <div className="mb-4">
-        <Text className="text-gray-600">
-          {currentSelectedId ? 
-            'Chọn chứng thư số khác hoặc giữ nguyên lựa chọn hiện tại.' :
-            'Chọn một chứng thư số để ký hợp đồng. Chỉ các chứng thư còn hiệu lực mới có thể sử dụng.'
-          }
-        </Text>
-      </div>
 
       <div className="max-h-96 overflow-y-auto">
         {certificates.length === 0 ? (
@@ -208,11 +195,9 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
             >
               <Row gutter={[16, 16]}>
                 {certificates.map((cert) => {
-                  const expired = isExpired(cert.validTo);
-                  const canSelect = cert.isValid && !expired;
                   const isSelected = selectedCertificate?.id === cert.id;
-                  const isCurrent = cert.id === currentSelectedId;
-
+                  const isCurrent = currentSelectedId === cert.id;
+                  
                   return (
                     <Col xs={24} key={cert.id}>
                       <Card
@@ -220,20 +205,19 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
                           hover-scale cursor-pointer transition-all duration-300
                           ${isSelected 
                             ? 'border-3 border-blue-500 shadow-xl bg-gradient-to-br from-blue-25 to-blue-50 selected-glow' 
-                            : canSelect
-                              ? 'border border-gray-200 hover:border-blue-300 hover:shadow-lg'
-                              : 'border border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                            : 'border border-gray-200 hover:border-blue-300 hover:shadow-lg'
                           }
                           ${isCurrent ? 'bg-green-50' : ''}
                         `}
-                        onClick={() => canSelect && setSelectedCertificate(cert)}
+                        onClick={() => {
+                          setSelectedCertificate(cert);
+                        }}
                         size="small"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-start space-x-3 flex-1">
                             <Radio 
                               value={cert.id} 
-                              disabled={!canSelect}
                               className={`
                                 mt-1 transition-all duration-200
                                 ${isSelected ? 'scale-110' : 'scale-100'}
@@ -245,14 +229,14 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center space-x-2">
                                   <Text strong className="text-base truncate">
-                                    {cert.commonName || cert.name || 'Không rõ tên'}
+                                    {cert.commonName || cert.uid || 'Không rõ tên'}
                                   </Text>
                                   
                                   {/* Badges */}
                                   <div className="flex space-x-1">
                                     {cert.isDefault && (
                                       <Tag 
-                                        icon={<CheckCircleOutlined />} 
+                                        icon={<CrownOutlined />} 
                                         color="gold" 
                                         className="animate-pulse"
                                       >
@@ -284,11 +268,11 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
                                 
                                 {/* Status badge */}
                                 <Tag 
-                                  color={canSelect ? "green" : expired ? "red" : "orange"} 
-                                  icon={canSelect ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
+                                  color="green" 
+                                  icon={<CheckCircleOutlined />}
                                   className={isSelected ? 'animate-pulse' : ''}
                                 >
-                                  {canSelect ? 'Hợp lệ' : expired ? 'Hết hạn' : 'Không khả dụng'}
+                                  Hợp lệ
                                 </Tag>
                               </div>
 
@@ -300,7 +284,7 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
                                 </div>
                                 
                                 <div className="flex justify-between">
-                                  <Text className="text-gray-600">CCCD/HC/MST:</Text>
+                                  <Text className="text-gray-600">UID:</Text>
                                   <Text className="font-mono text-xs">{cert.uid || 'N/A'}</Text>
                                 </div>
                                 
@@ -311,22 +295,14 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
                                   </Text>
                                 </div>
                                 
-                                <div className="flex justify-between">
-                                  <Text className="text-gray-600">Số serial:</Text>
-                                  <Text className="text-xs text-right ml-2 truncate max-w-xs font-mono" title={cert.serialNumber}>
-                                    {cert.serialNumber ? 
-                                      `${cert.serialNumber.substring(0, 20)}...` : 
-                                      'N/A'
-                                    }
-                                  </Text>
-                                </div>
-
-                                <div className="flex justify-between">
-                                  <Text className="text-gray-600">Gói:</Text>
-                                  <Text className="text-xs">
-                                    {cert.smartCaServiceName || 'SMARTCA CÁ NHÂN CƠ BẢN'}
-                                  </Text>
-                                </div>
+                                {cert.subjectDN && (
+                                  <div className="flex justify-between">
+                                    <Text className="text-gray-600">Subject DN:</Text>
+                                    <Text className="text-xs text-right ml-2 truncate max-w-xs" title={cert.subjectDN}>
+                                      {cert.subjectDN}
+                                    </Text>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -347,17 +323,6 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
           </div>
         )}
       </div>
-
-      {certificates.length > 0 && (
-        <>
-          <Divider />
-          <div className="text-sm text-gray-500">
-            <Text>
-              💡 <strong>Lưu ý:</strong> Chỉ các chứng thư số còn hiệu lực và đang hoạt động mới có thể sử dụng để ký.
-            </Text>
-          </div>
-        </>
-      )}
     </Modal>
   );
 };

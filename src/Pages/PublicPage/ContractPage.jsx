@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Card, Form, Input, Button, Row, Col, Typography, Steps, Space, Tag, Divider, Modal, message } from 'antd';
-import { FileTextOutlined, SafetyOutlined, EditOutlined, CheckCircleOutlined, FilePdfOutlined, ReloadOutlined, DownloadOutlined } from '@ant-design/icons';
+import { FileTextOutlined, SafetyOutlined, EditOutlined, CheckCircleOutlined, FilePdfOutlined, ReloadOutlined, DownloadOutlined, ClockCircleOutlined, InfoCircleOutlined, CrownOutlined } from '@ant-design/icons';
 
 // Reuse service
 import { ContractService } from '../../App/Home/SignContractCustomer';
@@ -12,7 +12,7 @@ import SignatureModal from '../Admin/SignContract/Components/SignatureModal';
 import AppVerifyModal from '../Admin/SignContract/Components/AppVerifyModal';
 import PDFModal from '../Admin/SignContract/Components/PDF/PDFModal';
 import SmartCAModal from '../Admin/SignContract/Components/SmartCAModal';
-import SmartCASelector from '../Admin/SignContract/Components/SmartCASelector';
+import SmartCASelector from '../Customer/Components/SmartCASelector';
 import AddSmartCA from '../Admin/SignContract/Components/AddSmartCA';
 
 const { Title, Text, Paragraph } = Typography;
@@ -465,10 +465,11 @@ function ContractPage() {
     }
   }
 
-  // Xử lý chọn SmartCA certificate
+  // Xử lý chọn SmartCA certificate (API call đã được xử lý trong SmartCASelector)
   function handleSelectSmartCA(certificate) {
     setSelectedSmartCA(certificate);
     setShowSmartCASelector(false);
+    setShowExistingSmartCASelector(false);
     setCurrentStep(3);
     message.success(`Đã chọn chứng thư: ${certificate.commonName}`);
   }
@@ -683,29 +684,29 @@ function ContractPage() {
           onSelect={handleSelectSmartCA}
           smartCAData={smartCAInfo}
           loading={signingLoading}
+          currentSelectedId={selectedSmartCA?.id}
+          contractService={contractService}
+          userId={contractInfo?.processedByUserId}
         />
 
         {/* SmartCA Selector Modal cho existing SmartCA */}
         <SmartCASelector
           visible={showExistingSmartCASelector}
           onCancel={() => setShowExistingSmartCASelector(false)}
-          onSelect={(cert) => {
-            setSelectedSmartCA(cert);
-            setShowExistingSmartCASelector(false);
-            setCurrentStep(3);
-            message.success(`Đã chọn chứng thư: ${cert.commonName}`);
-          }}
+          onSelect={handleSelectSmartCA}
           smartCAData={smartCAInfo}
           loading={signingLoading}
           isExistingSmartCA={true}
           currentSelectedId={selectedSmartCA?.id}
+          contractService={contractService}
+          userId={contractInfo?.processedByUserId}
         />
       </div>
     </div>
   );
 
   }
-// Component hiển thị thông tin SmartCA
+// Component hiển thị thông tin SmartCA với giao diện cải tiến
 const SmartCACard = ({ smartCAInfo, onAddSmartCA, onSign, signingLoading, contractSigned, selectedSmartCA, onSelectCertificate }) => {
   const hasSmartCA = !!smartCAInfo?.defaultSmartCa || 
     (smartCAInfo?.userCertificates && smartCAInfo.userCertificates.length > 0);
@@ -714,54 +715,133 @@ const SmartCACard = ({ smartCAInfo, onAddSmartCA, onSign, signingLoading, contra
 
   return (
     <Card
-      title={<span className="flex items-center"><SafetyOutlined className="text-blue-500 mr-2" />SmartCA</span>}
-      extra={!ready && <Tag color="orange">Chưa sẵn sàng</Tag>}
+      title={
+        <span className="flex items-center">
+          <SafetyOutlined className="text-blue-500 mr-2" />
+          SmartCA
+        </span>
+      }
+      extra={
+        ready ? (
+          <Tag color="green" icon={<CheckCircleOutlined />} className="animate-pulse">
+            Sẵn sàng
+          </Tag>
+        ) : (
+          <Tag color="orange" icon={<ClockCircleOutlined />}>
+            Chưa sẵn sàng
+          </Tag>
+        )
+      }
+      className="shadow-md"
     >
       {!hasSmartCA ? (
-        <div className="text-center">
-          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded p-3 mb-3">
-            <div className="font-medium">SmartCA chưa sẵn sàng</div>
-            <div className="text-sm">Bạn cần thêm SmartCA để có thể ký hợp đồng</div>
+        <div className="text-center p-4">
+          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 text-yellow-700 rounded-lg p-4 mb-4 shadow-sm">
+            <div className="font-semibold text-base flex items-center justify-center mb-2">
+              <InfoCircleOutlined className="mr-2" />
+              SmartCA chưa sẵn sàng
+            </div>
+            <div className="text-sm">Bạn cần thêm SmartCA để có thể ký hợp đồng điện tử</div>
           </div>
-          <Button type="primary" danger onClick={onAddSmartCA} disabled={contractSigned}>
+          <Button 
+            type="primary" 
+            danger 
+            onClick={onAddSmartCA} 
+            disabled={contractSigned}
+            size="large"
+            className="bg-red-500 hover:bg-red-600 border-red-500 shadow-md"
+          >
+            <SafetyOutlined className="mr-2" />
             Thêm SmartCA
           </Button>
         </div>
       ) : !ready ? (
-        <div className="text-center">
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 rounded p-3 mb-3">
-            <div className="font-medium">Đã có SmartCA</div>
-            <div className="text-sm">Vui lòng chọn chứng thư số để ký hợp đồng</div>
+        <div className="text-center p-4">
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 text-blue-700 rounded-lg p-4 mb-4 shadow-sm">
+            <div className="font-semibold text-base flex items-center justify-center mb-2">
+              <CheckCircleOutlined className="mr-2" />
+              Đã có SmartCA trong hệ thống
+            </div>
+            <div className="text-sm">Vui lòng chọn chứng thư số để tiếp tục ký hợp đồng</div>
           </div>
-          <Space>
-            <Button type="primary" onClick={onSelectCertificate} disabled={contractSigned}>
+          <Space size="middle">
+            <Button 
+              type="primary" 
+              onClick={onSelectCertificate} 
+              disabled={contractSigned}
+              size="large"
+              className="bg-blue-500 hover:bg-blue-600 border-blue-500 shadow-md"
+            >
+              <SafetyOutlined className="mr-2" />
               Chọn Chứng Thư
             </Button>
-            <Button onClick={onAddSmartCA} disabled={contractSigned}>
+            <Button 
+              onClick={onAddSmartCA} 
+              disabled={contractSigned}
+              size="large"
+              className="shadow-md"
+            >
               Thêm SmartCA Khác
             </Button>
           </Space>
         </div>
       ) : (
-        <div className="text-center">
-          <div className="bg-green-50 border border-green-200 text-green-700 rounded p-3 mb-3">
-            <div className="font-medium">{contractSigned ? "Đã ký thành công" : "SmartCA sẵn sàng"}</div>
-            <div className="text-sm">
-              Sử dụng: {selectedSmartCA.commonName} ({selectedSmartCA.uid})
+        <div className="text-center p-4">
+          <div className={`
+            ${contractSigned 
+              ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 text-green-700' 
+              : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 text-blue-700'
+            } 
+            border rounded-lg p-4 mb-4 shadow-sm
+          `}>
+            <div className="font-semibold text-base flex items-center justify-center mb-2">
+              <CheckCircleOutlined className="mr-2" />
+              {contractSigned ? "Đã ký thành công" : "SmartCA sẵn sàng"}
+            </div>
+            <div className="text-sm space-y-1">
+              <div><strong>Chứng thư:</strong> {selectedSmartCA.commonName}</div>
+              <div><strong>UID:</strong> {selectedSmartCA.uid}</div>
+              {selectedSmartCA.isDefault && (
+                <Tag color="gold" size="small" className="mt-1">
+                  <CrownOutlined className="mr-1" />
+                  Chứng thư mặc định
+                </Tag>
+              )}
             </div>
           </div>
-          <Space>
+          <Space size="middle">
             <Button 
               type="primary" 
               onClick={onSign} 
               loading={signingLoading} 
               disabled={contractSigned}
-              className={contractSigned ? "bg-green-500" : "bg-blue-500"}
+              size="large"
+              className={`
+                ${contractSigned 
+                  ? 'bg-green-500 hover:bg-green-600 border-green-500' 
+                  : 'bg-blue-500 hover:bg-blue-600 border-blue-500'
+                } 
+                shadow-md
+              `}
             >
-              {contractSigned ? "Đã Ký Thành Công" : "Ký Hợp Đồng"}
+              {contractSigned ? (
+                <>
+                  <CheckCircleOutlined className="mr-2" />
+                  Đã Ký Thành Công
+                </>
+              ) : (
+                <>
+                  <EditOutlined className="mr-2" />
+                  Ký Hợp Đồng
+                </>
+              )}
             </Button>
             {!contractSigned && (
-              <Button onClick={onSelectCertificate}>
+              <Button 
+                onClick={onSelectCertificate}
+                size="large"
+                className="shadow-md"
+              >
                 Đổi Chứng Thư
               </Button>
             )}
