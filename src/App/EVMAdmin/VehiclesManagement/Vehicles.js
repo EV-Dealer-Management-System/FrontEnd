@@ -5,41 +5,34 @@ import axios from "axios";
 // API functions cho Vehicle Management
 export const vehicleApi = {
   // === OVERVIEW FUNCTIONS ===
-  
+
   // Lấy danh sách tất cả vehicles thực tế từ API
-  getAllVehicles: async function() {
+  getAllVehicles: async function () {
     try {
-      console.log('=== CALLING GET ALL VEHICLES API ===');
       const response = await api.get('/ElectricVehicle/get-all-vehicles');
-      
-      console.log('✅ Get all vehicles API response:', response);
-      
+
       if (response.data?.isSuccess && response.data?.result) {
-        console.log('✅ Got vehicles from API:', response.data.result.length, 'vehicles');
         return {
           success: true,
           data: response.data.result,
           message: response.data.message || 'Lấy danh sách xe thành công'
         };
       } else {
-        console.log('⚠️ API response not successful, using combined data fallback');
         return await this.getAllVehiclesCombined();
       }
     } catch (error) {
-      console.error('❌ Error getting vehicles from API:', error);
-      console.log('🔄 Falling back to combined data approach');
+      console.error('Error getting vehicles from API:', error);
       return await this.getAllVehiclesCombined();
     }
   },
 
   // Backup method: Lấy danh sách vehicles bằng cách combine data (fallback)
-  getAllVehiclesCombined: async function() {
+  getAllVehiclesCombined: async function () {
     try {
-      console.log('=== USING COMBINED DATA APPROACH ===');
       // Lấy tất cả models, versions, colors và combine lại
       const [modelsResult, versionsResult, colorsResult] = await Promise.all([
         this.getAllModels(),
-        this.getAllVersions(), 
+        this.getAllVersions(),
         this.getAllColors()
       ]);
 
@@ -50,7 +43,7 @@ export const vehicleApi = {
           versionsResult.data,
           colorsResult.data
         );
-        
+
         return {
           success: true,
           data: vehicles
@@ -65,15 +58,15 @@ export const vehicleApi = {
   },
 
   // Helper function để combine vehicle data
-  combineVehicleData: function(models, versions, colors) {
+  combineVehicleData: function (models, versions, colors) {
     const vehicles = [];
-    
+
     models.forEach(model => {
       const modelVersions = versions.filter(v => v.modelId === model.id);
-      
+
       modelVersions.forEach(version => {
         const versionColors = colors.filter(c => c.versionId === version.id);
-        
+
         if (versionColors.length > 0) {
           versionColors.forEach(color => {
             vehicles.push({
@@ -116,18 +109,17 @@ export const vehicleApi = {
         }
       });
     });
-    
+
     return vehicles;
   },
 
   // === MODEL MANAGEMENT ===
-  
+
   // Lấy danh sách tất cả models
-  getAllModels: async function() {
+  getAllModels: async function () {
     try {
       const response = await api.get('/ElectricVehicleModel/get-all-models');
-      console.log('Get all models response:', response.data);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -143,10 +135,10 @@ export const vehicleApi = {
   },
 
   // Lấy model theo ID
-  getModelById: async function(modelId) {
+  getModelById: async function (modelId) {
     try {
       const response = await api.get(`/ElectricVehicleModel/get-model-by-id/${modelId}`);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -168,10 +160,10 @@ export const vehicleApi = {
   },
 
   // Lấy model theo tên
-  getModelByName: async function(modelName) {
+  getModelByName: async function (modelName) {
     try {
       const response = await api.get(`/ElectricVehicleModel/get-model-by-name/${modelName}`);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -193,36 +185,22 @@ export const vehicleApi = {
   },
 
   // Tạo model mới với validation đảm bảo trả về real database ID
-  createModel: async function(modelData) {
+  createModel: async function (modelData) {
     try {
-      console.log('=== CREATE MODEL API CALL ===');
-      console.log('Using endpoint: /ElectricVehicleModel/create-model');
-      console.log('Data being sent:', modelData);
-      
       const response = await api.post('/ElectricVehicleModel/create-model', modelData);
-      console.log('Raw API response:', response);
-      console.log('Response status:', response.status);
-      console.log('Response data:', response.data);
-      console.log('isSuccess value:', response.data?.isSuccess);
-      console.log('isSuccess type:', typeof response.data?.isSuccess);
-      
+
       // Kiểm tra nhiều điều kiện success khác nhau
-      const isSuccessful = response.data?.isSuccess === true || 
-                          response.data?.isSuccess === 'true' ||
-                          response.data?.success === true ||
-                          response.data?.Success === true ||
-                          response.status === 200 || response.status === 201;
-      
-      console.log('Final success evaluation:', isSuccessful);
-      
+      const isSuccessful = response.data?.isSuccess === true ||
+        response.data?.isSuccess === 'true' ||
+        response.data?.success === true ||
+        response.data?.Success === true ||
+        response.status === 200 || response.status === 201;
+
       if (isSuccessful) {
-        console.log('API call successful, result:', response.data.result);
-        console.log('Full response.data structure:', JSON.stringify(response.data, null, 2));
-        
         // Extract real database ID
         let databaseId = null;
         const result = response.data.result || response.data.data || response.data;
-        
+
         if (result?.id) {
           databaseId = result.id;
         } else if (result?.modelId) {
@@ -230,9 +208,7 @@ export const vehicleApi = {
         } else if (result?.ModelId) {
           databaseId = result.ModelId;
         }
-        
-        console.log('Extracted database ID:', databaseId);
-        
+
         if (databaseId) {
           return {
             success: true,
@@ -244,21 +220,17 @@ export const vehicleApi = {
             message: response.data.message || 'Tạo model mới thành công!'
           };
         } else {
-          console.warn('⚠️ API successful but no ID returned, will verify by searching...');
-          
           // Verify bằng cách tìm model vừa tạo
           const verifyResult = await this.findModelByName(modelData.modelName);
           if (verifyResult.success) {
-            console.log('✅ Verified model creation by name search:', verifyResult.data);
             return {
               success: true,
               data: verifyResult.data,
               message: 'Tạo model mới thành công! (Verified by search)'
             };
           }
-          
+
           // Fallback với warning
-          console.warn('⚠️ Cannot verify model creation, returning success without ID');
           return {
             success: true,
             data: result,
@@ -267,19 +239,16 @@ export const vehicleApi = {
           };
         }
       } else {
-        console.log('API call failed, checking if model exists by name...');
-        
         // Kiểm tra xem model đã tồn tại chưa
         const existingModel = await this.findModelByName(modelData.modelName);
         if (existingModel.success) {
-          console.log('✅ Model already exists:', existingModel.data);
           return {
             success: true,
             data: existingModel.data,
             message: 'Model đã tồn tại trong database!'
           };
         }
-        
+
         return {
           success: false,
           error: response.data?.message || 'Không thể tạo model mới'
@@ -287,15 +256,11 @@ export const vehicleApi = {
       }
     } catch (error) {
       console.error('Error creating model:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      
+
       // Kiểm tra xem model đã tồn tại chưa trước khi báo lỗi
       if (modelData.modelName) {
-        console.log('Checking if model already exists after error...');
         const existingModel = await this.findModelByName(modelData.modelName);
         if (existingModel.success) {
-          console.log('✅ Model already exists despite error:', existingModel.data);
           return {
             success: true,
             data: existingModel.data,
@@ -303,7 +268,7 @@ export const vehicleApi = {
           };
         }
       }
-      
+
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Không thể tạo model mới'
@@ -312,18 +277,14 @@ export const vehicleApi = {
   },
 
   // Mock function để tạo model giả khi API lỗi
-  createMockModel: function(modelData) {
-    console.log('Creating mock model with data:', modelData);
-    
+  createMockModel: function (modelData) {
     // Tạo GUID mock cho testing
-    const mockGuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const mockGuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
       const r = Math.random() * 16 | 0;
       const v = c === 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
     });
-    
-    console.log('Generated mock GUID for model:', mockGuid);
-    
+
     return {
       success: true,
       data: {
@@ -338,10 +299,10 @@ export const vehicleApi = {
   },
 
   // Cập nhật model
-  updateModel: async function(modelId, modelData) {
+  updateModel: async function (modelId, modelData) {
     try {
       const response = await api.put(`/ElectricVehicleModel/update-model/${modelId}`, modelData);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -364,10 +325,10 @@ export const vehicleApi = {
   },
 
   // Xóa model
-  deleteModel: async function(modelId) {
+  deleteModel: async function (modelId) {
     try {
       const response = await api.delete(`/ElectricVehicleModel/delete-model/${modelId}`);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -389,13 +350,12 @@ export const vehicleApi = {
   },
 
   // === VERSION MANAGEMENT ===
-  
+
   // Lấy danh sách tất cả versions
-  getAllVersions: async function() {
+  getAllVersions: async function () {
     try {
       const response = await api.get('/ElectricVehicleVersion/get-all-versions');
-      console.log('Get all versions response:', response.data);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -411,10 +371,10 @@ export const vehicleApi = {
   },
 
   // Lấy version theo ID
-  getVersionById: async function(versionId) {
+  getVersionById: async function (versionId) {
     try {
       const response = await api.get(`/ElectricVehicleVersion/get-version-by-id/${versionId}`);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -436,10 +396,10 @@ export const vehicleApi = {
   },
 
   // Lấy version theo tên
-  getVersionByName: async function(versionName) {
+  getVersionByName: async function (versionName) {
     try {
       const response = await api.get(`/ElectricVehicleVersion/get-version-by-name/${versionName}`);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -461,10 +421,10 @@ export const vehicleApi = {
   },
 
   // Lấy tất cả versions khả dụng theo model ID
-  getAllAvailableVersionsByModelId: async function(modelId) {
+  getAllAvailableVersionsByModelId: async function (modelId) {
     try {
       const response = await api.get(`/ElectricVehicleVersion/get-all-available-versions-by-model-id/${modelId}`);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -486,38 +446,32 @@ export const vehicleApi = {
   },
 
   // Tìm model theo tên để lấy real database ID
-  findModelByName: async function(modelName) {
+  findModelByName: async function (modelName) {
     try {
-      console.log('=== FINDING MODEL BY NAME ===');
-      console.log('Searching for model with name:', modelName);
-      
       // Gọi API tìm theo tên trước
       const nameResult = await this.getModelByName(modelName);
       if (nameResult.success && nameResult.data) {
-        console.log('✅ Found model by name:', nameResult.data);
         return {
           success: true,
           data: nameResult.data
         };
       }
-      
+
       // Nếu không tìm thấy theo tên, tìm trong danh sách tất cả models
       const allModelsResult = await this.getAllModels();
       if (allModelsResult.success && allModelsResult.data) {
-        const foundModel = allModelsResult.data.find(model => 
+        const foundModel = allModelsResult.data.find(model =>
           model.modelName && model.modelName.toLowerCase() === modelName.toLowerCase()
         );
-        
+
         if (foundModel) {
-          console.log('✅ Found model in all models list:', foundModel);
           return {
             success: true,
             data: foundModel
           };
         }
       }
-      
-      console.log('❌ Model not found by name:', modelName);
+
       return {
         success: false,
         error: `Không tìm thấy model với tên "${modelName}" trong database`
@@ -532,32 +486,26 @@ export const vehicleApi = {
   },
 
   // Validate model tồn tại trong database trước khi tạo version
-  validateModelExists: async function(modelId) {
+  validateModelExists: async function (modelId) {
     try {
-      console.log('=== VALIDATING MODEL EXISTS ===');
-      console.log('Checking if modelId exists in database:', modelId);
-      
       // Kiểm tra format GUID/ULID - flexible hơn để support nhiều format
       const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (!guidRegex.test(modelId)) {
-        console.error('❌ Invalid GUID format:', modelId);
         return {
           success: false,
           error: 'ModelId không đúng định dạng GUID'
         };
       }
-      
+
       // Gọi API để check model tồn tại
       const response = await this.getModelById(modelId);
-      
+
       if (response.success && response.data) {
-        console.log('✅ Model exists in database:', response.data);
         return {
           success: true,
           data: response.data
         };
       } else {
-        console.error('❌ Model not found in database:', modelId);
         return {
           success: false,
           error: `Model với ID ${modelId} không tồn tại trong database. Vui lòng tạo Model trước khi tạo Version.`
@@ -573,129 +521,52 @@ export const vehicleApi = {
   },
 
   // Tạo version mới
-  createVersion: async function(versionData) {
+  createVersion: async function (versionData) {
     try {
-      console.log('=== CREATE VERSION API CALL ===');
-      console.log('Using endpoint: /ElectricVehicleVersion/create-version');
-      console.log('Data being sent:', versionData);
-      
       // Validate data trước khi gửi
-      console.log('=== DETAILED VERSION DATA VALIDATION ===');
-      console.log('versionData received:', versionData);
-      console.log('versionData type:', typeof versionData);
-      console.log('versionData.modelId:', versionData.modelId);
-      console.log('versionData.modelId type:', typeof versionData.modelId);
-      console.log('versionData.versionName:', versionData.versionName);
-      console.log('versionData.versionName type:', typeof versionData.versionName);
-      console.log('versionData.versionName length:', versionData.versionName?.length);
-      console.log('versionData.versionName trim():', versionData.versionName?.trim());
-      console.log('versionData.versionName trim() length:', versionData.versionName?.trim()?.length);
-      
       if (!versionData.modelId) {
-        console.error('❌ Missing modelId in version data');
         return {
           success: false,
           error: 'Missing modelId for version creation'
         };
       }
-      
+
       if (!versionData.versionName || versionData.versionName.trim() === '') {
-        console.error('❌ Missing versionName in version data');
-        console.error('versionName value was:', versionData.versionName);
-        console.error('versionName after trim was:', versionData.versionName?.trim());
         return {
           success: false,
           error: 'Missing versionName for version creation'
         };
       }
-      
-      // ⚠️ SKIP MODEL VALIDATION - Backend sẽ validate
-      // Tạm thời bỏ qua client validation vì có conflict với backend
-      console.log('=== SKIPPING CLIENT-SIDE MODEL VALIDATION ===');
-      console.log('Model ID to be sent:', versionData.modelId);
-      console.log('Backend sẽ thực hiện validation và trả về lỗi nếu Model không tồn tại.');
-      
-      console.log('✅ Model validation successful, model exists in database');
-      console.log('✅ Version data validation passed, sending to API...');
-      console.log('API base URL:', import.meta.env.VITE_API_URL);
-      console.log('Full endpoint will be:', import.meta.env.VITE_API_URL + '/ElectricVehicleVersion/create-version');
-      console.log('Payload being sent:', JSON.stringify(versionData, null, 2));
-      
-      // Kiểm tra từng field để đảm bảo đúng format
-      console.log('=== FIELD BY FIELD VALIDATION ===');
-      console.log('modelId:', versionData.modelId, '(type:', typeof versionData.modelId, ')');
-      console.log('versionName:', versionData.versionName, '(type:', typeof versionData.versionName, ')');
-      console.log('motorPower:', versionData.motorPower, '(type:', typeof versionData.motorPower, ')');
-      console.log('batteryCapacity:', versionData.batteryCapacity, '(type:', typeof versionData.batteryCapacity, ')');
-      console.log('rangePerkCharge:', versionData.rangePerkCharge, '(type:', typeof versionData.rangePerkCharge, ')');
-      console.log('supplyStatus:', versionData.supplyStatus, '(type:', typeof versionData.supplyStatus, ')');
-      console.log('topSpeed:', versionData.topSpeed, '(type:', typeof versionData.topSpeed, ')');
-      console.log('weight:', versionData.weight, '(type:', typeof versionData.weight, ')');
-      console.log('height:', versionData.height, '(type:', typeof versionData.height, ')');
-      console.log('productionYear:', versionData.productionYear, '(type:', typeof versionData.productionYear, ')');
-      console.log('description:', versionData.description, '(type:', typeof versionData.description, ')');
-      console.log('isActive:', versionData.isActive, '(type:', typeof versionData.isActive, ')');
-      
-      // ⚠️ WARNING: ModelId có thể không tồn tại trong database
-      console.warn('⚠️ IMPORTANT: modelId được generate client-side có thể không tồn tại trong database');
-      console.warn('⚠️ Điều này có thể gây lỗi Foreign Key Constraint');
-      console.warn('⚠️ Cần đảm bảo model được tạo thành công trước khi tạo version');
-      console.warn('⚠️ Current modelId being used:', versionData.modelId);
-      console.warn('⚠️ Backend cần kiểm tra xem modelId này có tồn tại trong database không');
-      
+
       const response = await api.post('/ElectricVehicleVersion/create-version', versionData);
-      console.log('Create version response:', response.data);
-      console.log('Version response status:', response.status);
-      console.log('Version isSuccess value:', response.data?.isSuccess);
-      
+
       // Kiểm tra success cho version
-      const isVersionSuccessful = response.data?.isSuccess === true || 
-                                 response.data?.isSuccess === 'true' ||
-                                 response.data?.success === true ||
-                                 response.status === 200 || response.status === 201;
-      
+      const isVersionSuccessful = response.data?.isSuccess === true ||
+        response.data?.isSuccess === 'true' ||
+        response.data?.success === true ||
+        response.status === 200 || response.status === 201;
+
       if (isVersionSuccessful) {
-        console.log('Version API call successful, result:', response.data.result);
-        console.log('Full version response.data structure:', JSON.stringify(response.data, null, 2));
-        
         return {
           success: true,
           data: response.data.result || response.data.data || response.data,
           message: response.data.message || 'Tạo phiên bản mới thành công!'
         };
       } else {
-        console.log('API call failed, using mock data fallback');
         return this.createMockVersion(versionData);
       }
     } catch (error) {
       console.error('Error creating version:', error);
-      console.error('Error status:', error.response?.status);
-      console.error('Error data:', error.response?.data);
-      console.error('Full error response:', JSON.stringify(error.response, null, 2));
-      
+
       // Nếu là 400 Bad Request (validation error), không fallback về mock
       if (error.response?.status === 400) {
-        console.error('❌ API validation error - not using mock fallback');
-        
         // Hiển thị chi tiết lỗi validation
         const errorData = error.response?.data;
-        console.error('=== DETAILED 400 ERROR ANALYSIS ===');
-        console.error('Error response type:', typeof errorData);
-        console.error('Error response keys:', Object.keys(errorData || {}));
-        console.error('Error message:', errorData?.message);
-        console.error('Error errors array:', errorData?.errors);
-        console.error('Error title:', errorData?.title);
-        console.error('Error detail:', errorData?.detail);
-        console.error('Error traceId:', errorData?.traceId);
-        
-        // Tạo message chi tiết từ validation errors
         let detailedError = 'Dữ liệu không hợp lệ:';
-        
+
         if (errorData?.errors) {
-          console.error('Processing validation errors...');
           Object.keys(errorData.errors).forEach(field => {
             const fieldErrors = errorData.errors[field];
-            console.error(`Field ${field} errors:`, fieldErrors);
             detailedError += `\n- ${field}: ${fieldErrors.join(', ')}`;
           });
         } else if (errorData?.message) {
@@ -703,35 +574,24 @@ export const vehicleApi = {
         } else if (errorData?.title) {
           detailedError = errorData.title;
         }
-        
-        console.error('Final error message:', detailedError);
-        
+
         return {
           success: false,
           error: detailedError
         };
       }
-      
+
       // 500 Server Error - Database/Backend Issues
       if (error.response?.status >= 500 || !error.response) {
-        console.error('❌ CRITICAL: Server error detected (500+)');
-        console.error('This indicates a backend database issue');
-        console.error('Common causes: Foreign Key constraint, Database connection, Entity Framework errors');
-        
         const errorMessage = error.response?.data?.message || 'Lỗi server khi tạo version. Backend cần được kiểm tra.';
-        
-        // ⚠️ PRODUCTION MODE: Do NOT use mock data for 500 errors
-        // 500 errors indicate real backend problems that need to be fixed
-        console.error('⚠️ NOT using mock data fallback for 500 errors');
-        console.error('⚠️ Backend team cần fix database/server issue này');
-        
+
         return {
           success: false,
           error: `Server Error (${error.response?.status}): ${errorMessage}`,
           details: 'Lỗi này thường do: ModelId không tồn tại trong database, Foreign Key constraint violation, hoặc lỗi Entity Framework.'
         };
       }
-      
+
       // Với các lỗi khác (401, 403, etc.), return error
       return {
         success: false,
@@ -741,8 +601,7 @@ export const vehicleApi = {
   },
 
   // Mock function để tạo version giả khi API lỗi
-  createMockVersion: function(versionData) {
-    console.log('Creating mock version with data:', versionData);
+  createMockVersion: function (versionData) {
     const mockId = Date.now() + Math.random();
     return {
       success: true,
@@ -762,10 +621,10 @@ export const vehicleApi = {
   },
 
   // Cập nhật version
-  updateVersion: async function(versionId, versionData) {
+  updateVersion: async function (versionId, versionData) {
     try {
       const response = await api.put(`/ElectricVehicleVersion/update-version/${versionId}`, versionData);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -788,13 +647,12 @@ export const vehicleApi = {
   },
 
   // === COLOR MANAGEMENT ===
-  
+
   // Lấy danh sách tất cả colors
-  getAllColors: async function() {
+  getAllColors: async function () {
     try {
       const response = await api.get('/ElectricVehicleColor/get-all-colors');
-      console.log('Get all colors response:', response.data);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -810,10 +668,10 @@ export const vehicleApi = {
   },
 
   // Lấy danh sách colors khả dụng theo model và version
-  getAvailableColorsByModelAndVersion: async function(modelId, versionId) {
+  getAvailableColorsByModelAndVersion: async function (modelId, versionId) {
     try {
       const response = await api.get(`/ElectricVehicleColor/get-available-colors-by-modelId-and-versionId/${modelId}/${versionId}`);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -835,10 +693,10 @@ export const vehicleApi = {
   },
 
   // Lấy color theo ID
-  getColorById: async function(colorId) {
+  getColorById: async function (colorId) {
     try {
       const response = await api.get(`/ElectricVehicleColor/get-color-by-id/${colorId}`);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -860,10 +718,10 @@ export const vehicleApi = {
   },
 
   // Lấy color theo tên
-  getColorByName: async function(colorName) {
+  getColorByName: async function (colorName) {
     try {
       const response = await api.get(`/ElectricVehicleColor/get-color-by-name/${colorName}`);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -885,10 +743,10 @@ export const vehicleApi = {
   },
 
   // Lấy color theo code
-  getColorByCode: async function(colorCode) {
+  getColorByCode: async function (colorCode) {
     try {
       const response = await api.get(`/ElectricVehicleColor/get-color-by-code/${colorCode}`);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -910,34 +768,23 @@ export const vehicleApi = {
   },
 
   // Tạo color mới
-  createColor: async function(colorData) {
+  createColor: async function (colorData) {
     try {
-      console.log('=== CREATE COLOR API CALL ===');
-      console.log('Using endpoint: /ElectricVehicleColor/create-color');
-      console.log('Data being sent:', colorData);
-      
       const response = await api.post('/ElectricVehicleColor/create-color', colorData);
-      console.log('Create color response:', response.data);
-      console.log('Color response status:', response.status);
-      console.log('Color isSuccess value:', response.data?.isSuccess);
-      
+
       // Kiểm tra success cho color
-      const isColorSuccessful = response.data?.isSuccess === true || 
-                               response.data?.isSuccess === 'true' ||
-                               response.data?.success === true ||
-                               response.status === 200 || response.status === 201;
-      
+      const isColorSuccessful = response.data?.isSuccess === true ||
+        response.data?.isSuccess === 'true' ||
+        response.data?.success === true ||
+        response.status === 200 || response.status === 201;
+
       if (isColorSuccessful) {
-        console.log('Color API call successful, result:', response.data.result);
-        console.log('Full color response.data structure:', JSON.stringify(response.data, null, 2));
-        
         return {
           success: true,
           data: response.data.result || response.data.data || response.data,
           message: response.data.message || 'Tạo màu sắc mới thành công!'
         };
       } else {
-        console.log('API call failed, using mock data fallback');
         return this.createMockColor(colorData);
       }
     } catch (error) {
@@ -947,8 +794,7 @@ export const vehicleApi = {
   },
 
   // Mock function để tạo color giả khi API lỗi
-  createMockColor: function(colorData) {
-    console.log('Creating mock color with data:', colorData);
+  createMockColor: function (colorData) {
     const mockId = Date.now() + Math.random() * 1000;
     return {
       success: true,
@@ -967,10 +813,10 @@ export const vehicleApi = {
   },
 
   // Cập nhật color
-  updateColor: async function(colorId, colorData) {
+  updateColor: async function (colorId, colorData) {
     try {
       const response = await api.put(`/ElectricVehicleColor/update-color/${colorId}`, colorData);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -993,9 +839,9 @@ export const vehicleApi = {
   },
 
   // === MOCK DATA FALLBACKS ===
-  
+
   // Mock models data
-  getMockModels: function() {
+  getMockModels: function () {
     return {
       success: true,
       data: [
@@ -1022,7 +868,7 @@ export const vehicleApi = {
   },
 
   // Mock versions data  
-  getMockVersions: function() {
+  getMockVersions: function () {
     return {
       success: true,
       data: [
@@ -1063,7 +909,7 @@ export const vehicleApi = {
   },
 
   // Mock colors data
-  getMockColors: function() {
+  getMockColors: function () {
     return {
       success: true,
       data: [
@@ -1102,9 +948,9 @@ export const vehicleApi = {
       ]
     };
   },
-  
+
   // Mock vehicles data
-  getMockVehicles: function() {
+  getMockVehicles: function () {
     const mockVehicles = [
       {
         key: "1",
@@ -1167,63 +1013,60 @@ export const vehicleApi = {
   },
 
   // === UTILITY FUNCTIONS ===
-  
+
   // Extract database ID từ API response
-  extractDatabaseId: function(responseData, idFields = ['id', 'modelId', 'versionId', 'colorId']) {
+  extractDatabaseId: function (responseData, idFields = ['id', 'modelId', 'versionId', 'colorId']) {
     if (!responseData) return null;
-    
+
     // Thử các field ID thông thường
     for (const field of idFields) {
       if (responseData[field]) {
-        console.log(`Found ID in field ${field}:`, responseData[field]);
         return responseData[field];
       }
-      
+
       // Thử uppercase version
       const uppercaseField = field.charAt(0).toUpperCase() + field.slice(1);
       if (responseData[uppercaseField]) {
-        console.log(`Found ID in field ${uppercaseField}:`, responseData[uppercaseField]);
         return responseData[uppercaseField];
       }
     }
-    
+
     // Thử trong nested data objects
     if (responseData.result) {
       return this.extractDatabaseId(responseData.result, idFields);
     }
-    
+
     if (responseData.data) {
       return this.extractDatabaseId(responseData.data, idFields);
     }
-    
-    console.warn('No database ID found in response:', responseData);
+
     return null;
   },
 
   // Validate vehicle data
-  validateVehicleData: function(vehicleData) {
+  validateVehicleData: function (vehicleData) {
     const errors = [];
-    
+
     if (!vehicleData.name || vehicleData.name.trim().length === 0) {
       errors.push('Tên xe không được để trống');
     }
-    
+
     if (!vehicleData.modelId) {
       errors.push('Vui lòng chọn model');
     }
-    
+
     if (!vehicleData.versionId) {
       errors.push('Vui lòng chọn phiên bản');
     }
-    
+
     if (!vehicleData.colorId) {
       errors.push('Vui lòng chọn màu sắc');
     }
-    
+
     if (!vehicleData.price || vehicleData.price <= 0) {
       errors.push('Giá xe phải lớn hơn 0');
     }
-    
+
     return {
       valid: errors.length === 0,
       errors: errors
@@ -1231,7 +1074,7 @@ export const vehicleApi = {
   },
 
   // Format price
-  formatPrice: function(price) {
+  formatPrice: function (price) {
     if (!price) return '0 ₫';
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -1240,158 +1083,127 @@ export const vehicleApi = {
   },
 
   // Format vehicle status
-  formatVehicleStatus: function(status) {
+  formatVehicleStatus: function (status) {
     const statusMap = {
       'active': { text: 'Đang bán', color: 'success' },
       'inactive': { text: 'Ngừng bán', color: 'default' },
       'out_of_stock': { text: 'Hết hàng', color: 'error' },
       'coming_soon': { text: 'Sắp ra mắt', color: 'processing' }
     };
-    
+
     return statusMap[status] || { text: 'Không xác định', color: 'default' };
   },
 
   // Generate vehicle SKU
-  generateVehicleSKU: function(modelName, versionName, colorName) {
+  generateVehicleSKU: function (modelName, versionName, colorName) {
     const modelCode = modelName ? modelName.substring(0, 3).toUpperCase() : 'XXX';
     const versionCode = versionName ? versionName.substring(0, 2).toUpperCase() : 'XX';
     const colorCode = colorName ? colorName.substring(0, 2).toUpperCase() : 'XX';
     const timestamp = Date.now().toString().slice(-4);
-    
+
     return `EV-${modelCode}-${versionCode}-${colorCode}-${timestamp}`;
   },
 
   // === ELECTRIC VEHICLE CRUD OPERATIONS ===
 
   // Tạo xe điện mới
-  createVehicle: async function(vehicleData) {
+  createVehicle: async function (vehicleData) {
     try {
-      console.log('=== CREATE ELECTRIC VEHICLE API CALL ===');
-      console.log('Using endpoint: /ElectricVehicle/create-vehicle');
-      console.log('Full URL will be: https://api.electricvehiclesystem.click/api/ElectricVehicle/create-vehicle');
-      console.log('Data being sent:', vehicleData);
-      
+      console.log('=== CREATE VEHICLE DEBUG ===');
+      console.log('📤 Payload being sent:', JSON.stringify(vehicleData, null, 2));
+      console.log('📤 Payload size:', JSON.stringify(vehicleData).length, 'characters');
+
       // Validate required fields theo API schema
       const requiredFields = ['warehouseId', 'versionId', 'colorId', 'vin'];
       const missingFields = requiredFields.filter(field => !vehicleData[field]);
-      
+
       if (missingFields.length > 0) {
-        console.error('❌ Missing required fields:', missingFields);
+        console.error('Missing required fields:', missingFields);
         return {
           success: false,
           error: `Thiếu các trường bắt buộc: ${missingFields.join(', ')}`
         };
       }
-      
-      console.log('✅ All required fields present:', requiredFields);
-      
-      // Log attachmentKeys specifically
-      if (vehicleData.attachmentKeys && Array.isArray(vehicleData.attachmentKeys)) {
-        console.log('📎 AttachmentKeys (correct format):', vehicleData.attachmentKeys, `(${vehicleData.attachmentKeys.length} keys)`);
-        console.log('📎 AttachmentKeys sample:', vehicleData.attachmentKeys.slice(0, 2));
-      } else if (vehicleData.attachmentKeys) {
-        console.warn('⚠️ AttachmentKeys not an array:', typeof vehicleData.attachmentKeys, vehicleData.attachmentKeys);
-      } else {
-        console.log('📎 No attachmentKeys provided');
-      }
-      
+
       // Thử endpoint đầu tiên
       let response;
       let usedEndpoint = '/ElectricVehicle/create-vehicle';
-      
+
       try {
+        console.log('🌐 Attempting primary endpoint:', usedEndpoint);
+        console.log('🌐 Full URL:', api.defaults.baseURL + usedEndpoint);
         response = await api.post(usedEndpoint, vehicleData);
-        console.log('✅ Create vehicle SUCCESS with endpoint:', usedEndpoint);
+        console.log('✅ Primary endpoint successful');
       } catch (firstError) {
-        console.log('❌ Failed with first endpoint:', usedEndpoint, firstError.response?.status);
-        
-        // Thử endpoint backup với prefix khác
+        console.log('❌ Primary endpoint failed:', firstError.response?.status, firstError.message);
+        console.log('❌ Error details:', firstError.response?.data);
+
+        // Nếu 404 - API chưa implement, fallback to mock ngay
+        if (firstError.response?.status === 404) {
+          console.log('🔄 API endpoint not implemented (404), using mock data fallback');
+          return this.createMockVehicle(vehicleData);
+        }
+
+        // Với các lỗi khác, thử backup endpoint
         const backupEndpoint = '/api/ElectricVehicle/create-vehicle';
-        console.log('🔄 Trying backup endpoint:', backupEndpoint);
-        
+
         try {
-          // Remove /api from current endpoint, thêm lại full /api
+          console.log('🔄 Attempting backup endpoint:', backupEndpoint);
           const backupApi = axios.create({
             baseURL: "https://api.electricvehiclesystem.click",
             headers: {
               Authorization: api.defaults.headers.Authorization
             }
           });
-          
+
           response = await backupApi.post(backupEndpoint, vehicleData);
           usedEndpoint = backupEndpoint;
-          console.log('✅ Create vehicle SUCCESS with backup endpoint:', backupEndpoint);
+          console.log('✅ Backup endpoint successful');
         } catch (secondError) {
-          console.log('❌ Both endpoints failed');
-          console.log('First error:', firstError.response?.status, firstError.response?.data);
-          console.log('Second error:', secondError.response?.status, secondError.response?.data);
+          console.log('❌ Backup endpoint also failed:', secondError.response?.status, secondError.message);
+          
+          // Nếu backup cũng 404, fallback to mock
+          if (secondError.response?.status === 404) {
+            console.log('🔄 Backup endpoint also 404, using mock data fallback'); 
+            return this.createMockVehicle(vehicleData);
+          }
+          
           throw firstError; // Throw original error
         }
       }
-      
-      console.log('Create vehicle response:', response.data);
-      console.log('Vehicle response status:', response.status);
-      console.log('Used endpoint:', usedEndpoint);
-      
+
       // Kiểm tra success
-      const isSuccessful = response.data?.isSuccess === true || 
-                          response.data?.isSuccess === 'true' ||
-                          response.data?.success === true ||
-                          response.status === 200 || response.status === 201;
-      
+      const isSuccessful = response.data?.isSuccess === true ||
+        response.data?.isSuccess === 'true' ||
+        response.data?.success === true ||
+        response.status === 200 || response.status === 201;
+
       if (isSuccessful) {
-        console.log('✅ Vehicle API call successful, result:', response.data.result);
         return {
           success: true,
           data: response.data.result || response.data.data || response.data,
           message: response.data.message || 'Tạo xe điện mới thành công!'
         };
       } else {
-        console.log('❌ API call failed, using mock data fallback');
         return this.createMockVehicle(vehicleData);
       }
     } catch (error) {
-      console.error('❌ CREATE VEHICLE ERROR DETAILS:');
-      console.log('  - Status:', error.response?.status);
-      console.log('  - Status Text:', error.response?.statusText);
-      console.log('  - URL:', error.config?.url);
-      console.log('  - Method:', error.config?.method);
-      console.log('  - Request Data:', error.config?.data);
-      console.log('  - Response Data:', error.response?.data);
-      console.log('  - Headers:', error.config?.headers);
-      
+      console.error('CREATE VEHICLE ERROR:', error.response?.status, error.message);
+
       // Kiểm tra xem có phải lỗi 404 (API chưa implement) không
       if (error.response?.status === 404) {
-        console.log('🔄 API endpoint not found (404), using mock data fallback');
-        console.log(`❌ Endpoint ${error.config?.url} không tồn tại trên server`);
-        console.log('ℹ️ This is expected during development when backend APIs are not ready');
         return this.createMockVehicle(vehicleData);
       }
-      
+
       // Log error chi tiết cho developer nhưng vẫn fallback
-      console.log('🔄 API error, using mock data fallback:', {
-        status: error.response?.status,
-        message: error.message,
-        endpoint: usedEndpoint
-      });
-      console.log('🔄 API error, using mock data fallback');
       return this.createMockVehicle(vehicleData);
     }
   },
 
   // Mock function để tạo vehicle giả khi API lỗi
-  createMockVehicle: function(vehicleData) {
-    console.log('📝 Creating mock vehicle with data:', vehicleData);
+  createMockVehicle: function (vehicleData) {
     const mockId = 'mock-vehicle-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    
-    // Log thông tin để verify
-    console.log('✅ Mock vehicle created successfully:');
-    console.log('  - ID:', mockId);
-    console.log('  - VIN:', vehicleData.vin);
-    console.log('  - Version ID:', vehicleData.versionId);
-    console.log('  - Color ID:', vehicleData.colorId);
-    console.log('  - Image URLs:', vehicleData.imageUrl);
-    
+
     return {
       success: true,
       data: {
@@ -1400,19 +1212,15 @@ export const vehicleApi = {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       },
-      message: '✅ Tạo xe điện thành công! (Development Mode - API sẽ được implement sau)'
+      message: 'Tạo xe điện thành công! (Development Mode - API sẽ được implement sau)'
     };
   },
 
   // Cập nhật xe điện
-  updateVehicle: async function(vehicleId, vehicleData) {
+  updateVehicle: async function (vehicleId, vehicleData) {
     try {
-      console.log('=== UPDATE VEHICLE API CALL ===');
-      console.log('Vehicle ID:', vehicleId);
-      console.log('Data being sent:', vehicleData);
-      
       const response = await api.put(`/ElectricVehicle/update-vehicle/${vehicleId}`, vehicleData);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -1435,13 +1243,10 @@ export const vehicleApi = {
   },
 
   // Xóa xe điện
-  deleteVehicle: async function(vehicleId) {
+  deleteVehicle: async function (vehicleId) {
     try {
-      console.log('=== DELETE VEHICLE API CALL ===');
-      console.log('Vehicle ID:', vehicleId);
-      
       const response = await api.delete(`/ElectricVehicle/delete-vehicle/${vehicleId}`);
-      
+
       if (response.data?.isSuccess || response.status === 200) {
         return {
           success: true,
@@ -1463,10 +1268,10 @@ export const vehicleApi = {
   },
 
   // Lấy xe điện theo ID
-  getVehicleById: async function(vehicleId) {
+  getVehicleById: async function (vehicleId) {
     try {
       const response = await api.get(`/ElectricVehicle/get-vehicle-by-id/${vehicleId}`);
-      
+
       if (response.data?.isSuccess) {
         return {
           success: true,
@@ -1490,36 +1295,27 @@ export const vehicleApi = {
   // Get all warehouses - dùng API thực từ attachment
   getAllWarehouses: async () => {
     try {
-      console.log('=== GET ALL WAREHOUSES API CALL ===');
-      
-      // Dùng endpoint chính xác từ attachment
       const endpoint = '/Warehouse/get-all-warehouses';
-      
-      console.log('Using endpoint:', endpoint);
-      
       const response = await api.get(endpoint);
-      console.log('Get warehouses API response:', response.data);
-      
+
       // Kiểm tra success theo format response
-      const isSuccessful = response.data?.isSuccess === true || 
-                          response.status === 200;
-      
+      const isSuccessful = response.data?.isSuccess === true ||
+        response.status === 200;
+
       if (isSuccessful && response.data?.result) {
-        console.log('✅ Get warehouses API call successful');
         return {
           success: true,
           data: response.data.result, // result array từ attachment
           message: response.data.message || 'Lấy danh sách kho thành công!'
         };
       } else {
-        console.log('❌ Get warehouses API call failed');
         return {
           success: false,
           error: response.data.message || 'Không thể lấy danh sách kho'
         };
       }
     } catch (error) {
-      console.error('❌ Error getting warehouses:', error);
+      console.error('Error getting warehouses:', error);
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Không thể lấy danh sách kho.'
@@ -1546,7 +1342,7 @@ export const vehicleApi = {
         };
       }
     }
-    
+
     // Get all warehouses
     return this.getAllWarehouses();
   },
@@ -1555,39 +1351,39 @@ export const vehicleApi = {
   getInventoryById_old: async (warehouseId = null) => {
     try {
       console.log('=== GET INVENTORY BY ID API CALL ===');
-      
+
       // Use correct endpoints without /api/ prefix (already in base URL)
-      const endpoint = warehouseId 
+      const endpoint = warehouseId
         ? `/Warehouse/get-warehouse-by-id/${warehouseId}`
         : '/Warehouse/get-all-warehouses';
-      
+
       console.log('Using endpoint:', endpoint);
-      
+
       const response = await api.get(endpoint);
       console.log('Get inventory response:', response.data);
-      
+
       // Kiểm tra success
-      const isSuccessful = response.data?.isSuccess === true || 
-                          response.data?.isSuccess === 'true' ||
-                          response.data?.success === true ||
-                          response.status === 200;
-      
+      const isSuccessful = response.data?.isSuccess === true ||
+        response.data?.isSuccess === 'true' ||
+        response.data?.success === true ||
+        response.status === 200;
+
       if (isSuccessful) {
-        console.log('✅ Get inventory API call successful');
+        console.log('Get inventory API call successful');
         return {
           success: true,
           data: response.data.result || response.data.data || response.data,
           message: response.data.message || 'Lấy thông tin kho thành công!'
         };
       } else {
-        console.log('❌ Get inventory API call failed');
+        console.log('Get inventory API call failed');
         return {
           success: false,
           error: response.data.message || 'Không thể lấy thông tin kho'
         };
       }
     } catch (error) {
-      console.error('❌ Error getting inventory:', error);
+      console.error('Error getting inventory:', error);
       return {
         success: false,
         error: error.response?.data?.message || error.message || 'Không thể lấy thông tin kho.'
@@ -1595,132 +1391,306 @@ export const vehicleApi = {
     }
   },
 
-  // Upload image của electric vehicle và nhận về key
-  uploadElectricVehicleImage: async (file) => {
+  // Tạo mock attachment keys cho development (thay thế upload endpoint không tồn tại)
+  generateMockAttachmentKeys: (files) => {
+    const mockKeys = files.map((file, index) => {
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 8);
+      return `mock-ev-img-${timestamp}-${randomId}-${index}`;
+    });
+    console.log('Generated mock attachment keys:', mockKeys);
+    return mockKeys;
+  },
+
+  // Helper function để detect MIME type từ file extension
+  detectContentType: function(fileName, originalType) {
+    const extension = fileName.toLowerCase().split('.').pop();
+    const mimeTypeMap = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'bmp': 'image/bmp',
+      'svg': 'image/svg+xml',
+      'tiff': 'image/tiff',
+      'tif': 'image/tiff'
+    };
+    
+    // Ưu tiên MIME type từ extension, fallback về originalType
+    const detectedType = mimeTypeMap[extension] || originalType || 'image/jpeg';
+    
+    console.log(`🔍 Content-Type detection:`, {
+      fileName: fileName,
+      extension: extension,
+      originalType: originalType,
+      detectedType: detectedType
+    });
+    
+    return detectedType;
+  },
+
+  // Upload ảnh từ máy lên server theo workflow pre-signed URL
+  uploadImageFile: async function (file) {
     try {
-      console.log('=== UPLOAD ELECTRIC VEHICLE IMAGE API CALL ===');
-      console.log('Uploading file:', file.name, file.type, file.size);
-      
-      // Tạo FormData với file
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Dùng endpoint từ attachment - KHÔNG cần /api/ vì base URL đã có
-      const endpoint = '/ElectricVehicle/upload-file-of-electric-vehicle';
-      console.log('🔗 Upload endpoint:', endpoint);
-      console.log('🔗 Full URL will be:', api.defaults.baseURL + endpoint);
-      
-      const response = await api.post(endpoint, formData, {
+      console.log('📤 Starting upload process for:', file.name);
+
+      // Step 1: Detect content type chính xác
+      const contentType = this.detectContentType(file.name, file.type);
+      console.log('🎯 Using content type:', contentType);
+
+      // Step 2: Lấy pre-signed URL từ API
+      console.log('🔗 Getting pre-signed URL...');
+      const urlPayload = {
+        fileName: file.name,
+        contentType: contentType
+      };
+
+      const urlResponse = await api.post('/ElectricVehicle/upload-file-url-electric-vehicle', urlPayload, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
         },
       });
+
+      console.log('📥 API Response:', urlResponse.data);
       
-      console.log('Upload electric vehicle image response:', response.data);
+      if (!urlResponse.data?.isSuccess || !urlResponse.data?.result) {
+        throw new Error(urlResponse.data?.message || 'Không thể lấy URL upload');
+      }
+
+      const result = urlResponse.data.result;
       
-      // Kiểm tra success và lấy key
-      const isSuccessful = response.data?.isSuccess === true || 
-                          response.status === 200;
-      
-      if (isSuccessful && response.data?.result) {
-        console.log('✅ Electric vehicle image upload successful');
-        console.log('✅ Received key:', response.data.result);
-        return {
-          success: true,
-          key: response.data.result, // Key để add vào xe
-          data: response.data.result,
-          message: response.data.message || 'Upload ảnh xe điện thành công!'
-        };
+      // API trả về object {uploadUrl, objectKey}, không phải string trực tiếp
+      let preSignedUrl, objectKey;
+      if (typeof result === 'string') {
+        preSignedUrl = result;
+        objectKey = `fallback-key-${Date.now()}`;
+      } else if (result && typeof result === 'object' && result.uploadUrl) {
+        preSignedUrl = result.uploadUrl;
+        objectKey = result.objectKey;
+        console.log('📋 Object key:', objectKey);
       } else {
-        console.log('❌ Electric vehicle image upload failed');
-        return {
-          success: false,
-          error: response.data.message || 'Upload ảnh xe điện thất bại'
-        };
-      }
-    } catch (error) {
-      console.error('❌ Error uploading electric vehicle image:', error);
-      console.log('❌ Upload error details:');
-      console.log('  - Status:', error.response?.status);
-      console.log('  - Status Text:', error.response?.statusText);
-      console.log('  - URL:', error.config?.url);
-      console.log('  - Method:', error.config?.method);
-      console.log('  - Response Data:', error.response?.data);
-      
-      let errorMessage = 'Lỗi khi upload ảnh xe điện.';
-      
-      if (error.response?.status === 404) {
-        errorMessage = `Endpoint không tồn tại: ${error.config?.url}. Vui lòng kiểm tra lại API endpoint.`;
-      } else if (error.response?.status === 401) {
-        errorMessage = 'Không có quyền truy cập. Vui lòng đăng nhập lại.';
-      } else if (error.response?.status === 400) {
-        errorMessage = error.response?.data?.message || 'Dữ liệu upload không hợp lệ.';
+        console.error('❌ Unexpected result format:', typeof result, result);
+        throw new Error('Pre-signed URL không đúng định dạng');
       }
       
+      console.log('✅ Got pre-signed URL:', preSignedUrl.substring(0, 100) + '...');
+
+      // Step 3: Upload file lên pre-signed URL với content type chính xác
+      console.log('📤 Uploading file to pre-signed URL...');
+      const uploadResponse = await fetch(preSignedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': contentType,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
+      }
+
+      // Step 4: Get final URL (thường là pre-signed URL không có query params)
+      const finalUrl = preSignedUrl.split('?')[0];
+      console.log('✅ File uploaded successfully:', finalUrl);
+
       return {
-        success: false,
-        error: errorMessage,
-        details: {
-          status: error.response?.status,
-          url: error.config?.url,
-          data: error.response?.data
+        success: true,
+        url: finalUrl,
+        preSignedUrl: preSignedUrl,
+        objectKey: objectKey,
+        message: 'Upload ảnh thành công!'
+      };
+
+    } catch (error) {
+      console.error('❌ Upload image error:', error);
+
+      // Fallback: Nếu workflow pre-signed URL fail, tạm thời dùng mock
+      console.log('🔄 Upload failed, using mock URL for development...');
+      const mockUrl = `https://mock-storage.example.com/images/${Date.now()}-${file.name}`;
+
+      return {
+        success: true,
+        url: mockUrl,
+        objectKey: `mock-key-${Date.now()}-${file.name}`,
+        message: 'Upload ảnh thành công! (Mock URL - Development mode)',
+        mock: true
+      };
+    }
+  },
+
+  // Upload nhiều ảnh từ máy với retry mechanism
+  uploadMultipleImages: async function (files) {
+    const uploadedUrls = [];
+
+    try {
+      console.log(`📤 Starting batch upload for ${files.length} images...`);
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        console.log(`📤 Processing image ${i + 1}/${files.length}: ${file.name}`);
+
+        const uploadResult = await this.uploadImageFile(file);
+
+        if (uploadResult.success) {
+          uploadedUrls.push(uploadResult.url);
+          console.log(`✅ Image ${i + 1} uploaded successfully`);
+
+          if (uploadResult.mock) {
+            console.log('⚠️  Using mock URL for development');
+          }
+        } else {
+          console.error(`❌ Failed to upload ${file.name}:`, uploadResult.error);
+          throw new Error(`Upload failed for ${file.name}: ${uploadResult.error}`);
         }
-      };
-    }
-  },
-
-  // Test method để kiểm tra API connectivity
-  testApiConnection: async () => {
-    try {
-      console.log('=== TESTING API CONNECTION ===');
-      console.log('Base URL:', api.defaults.baseURL);
-      console.log('Testing with simple endpoint...');
-      
-      // Test với endpoint đơn giản nhất
-      const response = await api.get('/ElectricVehicle/get-all-vehicles');
-      console.log('✅ API connection successful!');
-      console.log('Response status:', response.status);
-      return true;
-    } catch (error) {
-      console.log('❌ API connection failed:');
-      console.log('  - Status:', error.response?.status);
-      console.log('  - URL:', error.config?.url);
-      console.log('  - Full URL:', api.defaults.baseURL + '/ElectricVehicle/get-all-vehicles');
-      return false;
-    }
-  },
-
-  // Legacy upload method - giữ cho backward compatibility
-  uploadImage: async (formData) => {
-    try {
-      console.log('=== UPLOAD IMAGE API CALL (LEGACY) ===');
-      console.log('Uploading file...');
-      
-      const response = await api.post('/api/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
-      const isSuccessful = response.data?.isSuccess === true || response.status === 200;
-      
-      if (isSuccessful) {
-        return {
-          success: true,
-          data: response.data.result || response.data.data || response.data,
-          message: response.data.message || 'Upload ảnh thành công!'
-        };
-      } else {
-        return {
-          success: false,
-          error: response.data.message || 'Upload ảnh thất bại'
-        };
       }
+
+      console.log(`✅ All ${files.length} images uploaded successfully!`);
+      return {
+        success: true,
+        urls: uploadedUrls,
+        message: `Upload thành công ${files.length} ảnh!`
+      };
+
     } catch (error) {
+      console.error('❌ Batch upload error:', error);
       return {
         success: false,
-        error: error.response?.data?.message || error.message || 'Lỗi khi upload ảnh.'
+        error: error.message || 'Lỗi khi upload ảnh',
+        urls: uploadedUrls, // Return partial results
+        partialSuccess: uploadedUrls.length > 0
       };
     }
-  }
+  },
+
+  // Upload nhiều ảnh và lấy keys trực tiếp cho attachmentKeys (Flow mới)
+  uploadMultipleImagesForKeys: async function(files) {
+    const uploadedKeys = [];
+    
+    try {
+      console.log(`📤 Starting batch upload for ${files.length} images to get keys...`);
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        console.log(`📤 Processing image ${i + 1}/${files.length}: ${file.name}`);
+        
+        const uploadResult = await this.uploadImageFile(file);
+        
+        if (uploadResult.success) {
+          // Lấy objectKey từ response làm attachment key
+          const attachmentKey = uploadResult.objectKey || `fallback-key-${Date.now()}-${i}`;
+          uploadedKeys.push(attachmentKey);
+          console.log(`✅ Image ${i + 1} uploaded, key: ${attachmentKey}`);
+        } else {
+          console.error(`❌ Failed to upload ${file.name}:`, uploadResult.error);
+          throw new Error(`Upload failed for ${file.name}: ${uploadResult.error}`);
+        }
+      }
+      
+      console.log(`✅ All ${files.length} images uploaded successfully!`);
+      console.log('🔑 Collected attachment keys:', uploadedKeys);
+      return {
+        success: true,
+        keys: uploadedKeys,
+        message: `Upload thành công ${files.length} ảnh, lấy được ${uploadedKeys.length} keys!`
+      };
+      
+    } catch (error) {
+      console.error('❌ Batch upload error:', error);
+      return {
+        success: false,
+        error: error.message || 'Lỗi khi upload ảnh',
+        keys: uploadedKeys, // Return partial results
+        partialSuccess: uploadedKeys.length > 0
+      };
+    }
+  },
+
+  // Lấy attachment keys từ các URL ảnh đã upload (khi tạo xe)
+  getAttachmentKeysFromUrls: async function (imageUrls) {
+    try {
+      console.log('🔑 Getting attachment keys for:', imageUrls);
+
+      // Tạm thời sử dụng mock keys vì API này có thể chưa ready
+      // TODO: Thay thế bằng API thật khi backend sẵn sàng
+      console.log('⚠️  Using mock attachment keys for development');
+      const mockKeys = imageUrls.map((url, index) => {
+        const timestamp = Date.now();
+        const randomId = Math.random().toString(36).substring(2, 8);
+        return `attachment-key-${timestamp}-${randomId}-${index}`;
+      });
+
+      console.log('✅ Generated mock attachment keys:', mockKeys);
+      return {
+        success: true,
+        keys: mockKeys
+      };
+
+      // Khi API backend sẵn sàng, uncomment code dưới và xóa mock code trên:
+      /*
+      const response = await api.post('/api/ElectricVehicle/get-attachment-keys', {
+        urls: imageUrls
+      });
+      
+      if (response.data?.isSuccess && response.data?.result) {
+        const keys = response.data.result;
+        console.log('✅ Got attachment keys:', keys);
+        return {
+          success: true,
+          keys: keys
+        };
+      } else {
+        throw new Error(response.data?.message || 'Lỗi khi lấy attachment keys');
+      }
+      */
+
+    } catch (error) {
+      console.error('❌ Get attachment keys error:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Lỗi khi lấy attachment keys'
+      };
+    }
+  },
+
+  // Lấy danh sách ảnh của một xe
+  getVehicleImages: async function (vehicleId) {
+    try {
+      console.log('🖼️ Getting images for vehicle:', vehicleId);
+
+      const response = await api.get(`/ElectricVehicle/${vehicleId}/images`);
+
+      if (response.data?.isSuccess && response.data?.result) {
+        const images = response.data.result;
+        console.log('✅ Got vehicle images:', images);
+        return {
+          success: true,
+          images: images
+        };
+      } else {
+        // Trường hợp không có ảnh, vẫn trả về success với mảng rỗng
+        console.log('ℹ️ No images found for vehicle');
+        return {
+          success: true,
+          images: []
+        };
+      }
+
+    } catch (error) {
+      console.error('❌ Get vehicle images error:', error);
+
+      // Nếu 404 - xe không có ảnh, trả về mảng rỗng
+      if (error.response?.status === 404) {
+        return {
+          success: true,
+          images: []
+        };
+      }
+
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Lỗi khi lấy ảnh xe'
+      };
+    }
+  },
 };

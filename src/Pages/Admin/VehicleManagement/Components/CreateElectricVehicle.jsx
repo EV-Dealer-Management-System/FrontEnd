@@ -72,8 +72,15 @@ function CreateElectricVehicle() {
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({}); // State để lưu form data giữa các steps
-  const [uploadedImages, setUploadedImages] = useState([]); // State cho uploaded images
-  const [imageKeys, setImageKeys] = useState([]); // State cho image keys from server
+  const [uploadedImages, setUploadedImages] = useState([]); // State cho uploaded images (for display)
+  const [attachmentKeys, setAttachmentKeys] = useState([]); // State cho attachment keys (flow mới)
+  const [isUploading, setIsUploading] = useState(false); // State cho trạng thái upload
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState("");
+  const [previewTitle, setPreviewTitle] = useState("");
+  const [vehicleImagesVisible, setVehicleImagesVisible] = useState(false);
+  const [selectedVehicleImages, setSelectedVehicleImages] = useState([]);
+  const [loadingImages, setLoadingImages] = useState(false);
 
   // Load data khi component mount
   useEffect(() => {
@@ -276,6 +283,36 @@ function CreateElectricVehicle() {
     setIsViewModalVisible(true);
   };
 
+  // Xem ảnh của xe
+  const handleViewImages = async (vehicle) => {
+    setLoadingImages(true);
+    setVehicleImagesVisible(true);
+    setSelectedVehicleImages([]);
+
+    try {
+      console.log("📷 Loading images for vehicle:", vehicle.vin);
+
+      // Gọi API để lấy ảnh của xe
+      const response = await vehicleApi.getVehicleImages(vehicle.id);
+
+      if (response.success && response.images) {
+        setSelectedVehicleImages(response.images);
+        console.log("✅ Loaded vehicle images:", response.images);
+      } else {
+        // Nếu không có ảnh hoặc API lỗi, hiển thị thông báo
+        console.log("⚠️ No images found for vehicle");
+        message.info(`Xe ${vehicle.vin} chưa có ảnh nào.`);
+        setSelectedVehicleImages([]);
+      }
+    } catch (error) {
+      console.error("❌ Error loading vehicle images:", error);
+      message.error("Không thể tải ảnh của xe. Vui lòng thử lại.");
+      setSelectedVehicleImages([]);
+    } finally {
+      setLoadingImages(false);
+    }
+  };
+
   // Xóa xe
   const handleDeleteVehicle = async (vehicleId) => {
     setLoading(true);
@@ -346,84 +383,44 @@ function CreateElectricVehicle() {
             )
           : finalFormData.warrantyExpiryDate,
         costPrice: Number(finalFormData.costPrice) || 0, // Đảm bảo là number
-        imageUrl: "", // Sẽ được cập nhật sau khi upload images
       };
 
-      // Step 1: Upload images và thu thập keys
-      let imageKeys = [];
-      if (uploadedImages.length > 0) {
-        console.log("📤 Uploading images to get keys for vehicle creation...");
-        console.log(`📱 Number of images to process: ${uploadedImages.length}`);
-        console.log(
-          "📁 Image files:",
-          uploadedImages.map((f) => ({
-            name: f.name,
-            size: f.size,
-            type: f.type,
-          }))
+      // Step 1: TEMP - Skip image validation for testing
+      console.log("🧪 TESTING MODE: Skipping image validation");
+      console.log("  - uploadedImages length:", uploadedImages.length);
+      console.log("  - attachmentKeys length:", attachmentKeys.length);
+
+      // TEMP: Comment out image validation
+      /*
+      if (uploadedImages.length > 0 && attachmentKeys.length === 0) {
+        message.warning(
+          "⚠️ Bạn đã chọn ảnh nhưng chưa upload! Vui lòng click 'Upload ảnh' trước khi tạo xe."
         );
+        setLoading(false);
+        return;
+      }
+      */
 
-        try {
-          // Upload từng ảnh và thu thập keys
-          for (let i = 0; i < uploadedImages.length; i++) {
-            const file = uploadedImages[i];
-            console.log(
-              `📤 Uploading image ${i + 1}/${uploadedImages.length}: ${
-                file.name
-              }`
-            );
+      // Step 2: Sử dụng attachment keys đã lưu trong state (Flow mới - đơn giản!)
+      console.log("🔑 Using attachment keys from state:", attachmentKeys);
 
-            // Tạo FormData cho từng file
-            const formData = new FormData();
-            formData.append("File", file);
-
-            // Gọi API upload để lấy key
-            const uploadResult = await vehicleApi.uploadElectricVehicleImage(
-              formData
-            );
-
-            if (uploadResult.success && uploadResult.key) {
-              console.log(
-                `✅ Image ${i + 1} uploaded successfully. Key: ${
-                  uploadResult.key
-                }`
-              );
-              imageKeys.push(uploadResult.key);
-            } else {
-              console.error(
-                `❌ Failed to upload image ${i + 1}:`,
-                uploadResult.error
-              );
-              message.error(
-                `Lỗi upload ảnh ${file.name}: ${uploadResult.error}`
-              );
-              setLoading(false);
-              return;
-            }
-          }
-
-          console.log(
-            `✅ All ${uploadedImages.length} images uploaded successfully!`
-          );
-          console.log("🔑 Collected image keys:", imageKeys);
-
-          // Lưu keys vào state để sử dụng sau này
-          setImageKeys(imageKeys);
-        } catch (error) {
-          console.error("❌ Error during image upload process:", error);
-          message.error("Lỗi trong quá trình upload ảnh!");
-          setLoading(false);
-          return;
-        }
+      if (attachmentKeys.length > 0) {
+        console.log(
+          `📸 Found ${attachmentKeys.length} attachment keys from uploaded images`
+        );
       } else {
-        console.log("📷 No images uploaded");
+        console.log("📷 No images uploaded (attachmentKeys empty)");
       }
 
-      // Update vehicleData với attachment keys theo API format
-      vehicleData.attachmentKeys = imageKeys; // Array of keys theo format API expect
-      vehicleData.imageUrl = ""; // Giữ field này để tương thích với API legacy
+      // TEMP: Set attachmentKeys to empty array for testing (ignore images)
+      console.log("🧪 TESTING MODE: Setting attachmentKeys to empty array");
+      vehicleData.attachmentKeys = []; // Force empty for testing
 
       console.log("🔍 Final Vehicle Data to be sent:", vehicleData);
+      console.log(
+        "🔍 AttachmentKeys to send (TEMP EMPTY):",
+        vehicleData.attachmentKeys
+      );
 
       // Validate data format trước khi gửi
       console.log("🔍 Data Validation:");
@@ -463,19 +460,19 @@ function CreateElectricVehicle() {
       console.log("  - importDate:", vehicleData.importDate);
       console.log("  - warrantyExpiryDate:", vehicleData.warrantyExpiryDate);
 
-      // So sánh với Backend Schema từ attachment
-      console.log("📋 BACKEND SCHEMA COMPARISON:");
-      console.log("Expected backend format:", {
-        warehouseId: "GUID string",
-        versionId: "GUID string",
-        colorId: "GUID string",
+      // So sánh với Backend Schema từ Swagger API
+      console.log("📋 SWAGGER API SCHEMA COMPARISON:");
+      console.log("Expected backend format (from Swagger):", {
+        warehouseId: "3fa85f64-5717-4562-b3fc-2c963f66afa6 (GUID)",
+        versionId: "3fa85f64-5717-4562-b3fc-2c963f66afa6 (GUID)",
+        colorId: "3fa85f64-5717-4562-b3fc-2c963f66afa6 (GUID)",
         vin: "string",
-        status: "number (1)",
-        manufactureDate: "2025-10-14T02:14:47.853Z",
-        importDate: "2025-10-14T02:14:47.853Z",
-        warrantyExpiryDate: "2025-10-14T02:14:47.853Z",
-        costPrice: "number",
-        imageUrl: "string",
+        status: "1 (number)",
+        manufactureDate: "2025-10-16T17:00:44.815Z (ISO with milliseconds)",
+        importDate: "2025-10-16T17:00:44.815Z (ISO with milliseconds)",
+        warrantyExpiryDate: "2025-10-16T17:00:44.815Z (ISO with milliseconds)",
+        costPrice: "0 (number)",
+        attachmentKeys: ["string array"],
       });
       console.log(
         "Actual frontend data matches:",
@@ -618,7 +615,14 @@ function CreateElectricVehicle() {
         form.resetFields();
         setFormData({});
         setUploadedImages([]);
-        setImageKeys([]); // Reset image keys sau khi tạo thành công
+        setAttachmentKeys([]); // Reset attachment keys sau khi tạo thành công
+        setIsUploading(false); // Reset upload status
+        setPreviewVisible(false); // Reset preview modal
+        setPreviewImage("");
+        setPreviewTitle("");
+        setVehicleImagesVisible(false); // Reset vehicle images modal
+        setSelectedVehicleImages([]);
+        setLoadingImages(false);
         await loadVehicles();
       } else {
         console.error("❌ Submit failed:", result.error);
@@ -660,82 +664,122 @@ function CreateElectricVehicle() {
     }
   };
 
-  // Xử lý upload ảnh
+  // Batch upload nhiều ảnh và lấy keys (Flow mới)
+  const handleBatchImageUpload = async (files) => {
+    // Validate files
+    const validFiles = [];
+    for (const file of files) {
+      // Validate file type
+      const isImage = file.type.startsWith("image/");
+      if (!isImage) {
+        message.error(`${file.name} không phải file hình ảnh!`);
+        continue;
+      }
+
+      // Validate file size (10MB max)
+      const isLt10M = file.size / 1024 / 1024 < 10;
+      if (!isLt10M) {
+        message.error(`${file.name} quá lớn (>10MB)!`);
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    if (validFiles.length === 0) {
+      message.error("Không có file hợp lệ để upload!");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      console.log(
+        `📤 Starting batch upload for ${validFiles.length} images...`
+      );
+
+      // Gọi API batch upload để lấy keys
+      const uploadResult = await vehicleApi.uploadMultipleImagesForKeys(
+        validFiles
+      );
+
+      if (uploadResult.success) {
+        // Lưu attachment keys vào state
+        setAttachmentKeys(uploadResult.keys);
+        console.log("✅ Batch upload successful, keys:", uploadResult.keys);
+
+        message.success(
+          `🎉 Upload thành công ${validFiles.length} ảnh! Keys đã được lưu.`
+        );
+      } else {
+        throw new Error(uploadResult.error);
+      }
+    } catch (error) {
+      console.error("❌ Batch upload error:", error);
+      message.error(`Lỗi batch upload: ${error.message}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Xử lý thay đổi danh sách file (Upload ngay khi chọn)
   const handleImageUpload = ({ fileList }) => {
-    // Lọc ra những file hợp lệ (có originFileObj)
-    const validFiles = fileList.map((file) => {
-      if (file.originFileObj) {
-        return file.originFileObj;
-      }
-      return file;
-    });
-    setUploadedImages(validFiles);
-    console.log("Updated uploaded images:", validFiles);
+    console.log("📝 File list changed:", fileList.length);
+
+    // Cập nhật file list để hiển thị
+    setUploadedImages(fileList);
+
+    // Lấy các file mới từ fileList
+    const newFiles = fileList
+      .filter((file) => file.originFileObj && file.status !== "done")
+      .map((file) => file.originFileObj);
+
+    // Nếu có file mới, thực hiện batch upload
+    if (newFiles.length > 0) {
+      handleBatchImageUpload(newFiles);
+    }
   };
 
-  // Upload images lên server và nhận về URLs
-  const uploadImagesToServer = async (images) => {
-    console.log("🔄 Starting image upload process...");
-    const uploadedUrls = [];
-
-    for (let i = 0; i < images.length; i++) {
-      const file = images[i];
-      console.log(`📤 Uploading image ${i + 1}/${images.length}:`, file.name);
-
-      try {
-        // Tạo FormData để upload file
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("type", "vehicle-image");
-
-        // Gọi API upload - thay endpoint này bằng API thực của bạn
-        const response = await vehicleApi.uploadImage(formData);
-
-        if (response.success && response.data) {
-          const imageUrl =
-            response.data.url || response.data.imageUrl || response.data;
-          uploadedUrls.push(imageUrl);
-          console.log(`✅ Image ${i + 1} uploaded:`, imageUrl);
-        } else {
-          throw new Error(response.error || "Upload failed");
-        }
-      } catch (error) {
-        console.error(`❌ Failed to upload image ${i + 1}:`, error);
-        // Fallback: tạo mock URL cho development
-        const mockUrl = `https://mock-cdn.com/vehicles/${Date.now()}-${
-          file.name
-        }`;
-        uploadedUrls.push(mockUrl);
-        console.log(`🔄 Using mock URL for image ${i + 1}:`, mockUrl);
-      }
-    }
-
-    console.log("✅ All images processed, URLs:", uploadedUrls);
-    return uploadedUrls;
-  };
-
-  // Custom upload function (cho preview trước khi submit)
-  const customUpload = ({ file, onSuccess, onError }) => {
-    // Validate file type
-    const isImage = file.type.startsWith("image/");
-    if (!isImage) {
-      message.error("Chỉ có thể upload file hình ảnh!");
-      onError("Invalid file type");
-      return;
-    }
-
-    // Validate file size (10MB max)
-    const isLt10M = file.size / 1024 / 1024 < 10;
-    if (!isLt10M) {
-      message.error("Kích thước ảnh phải nhỏ hơn 10MB!");
-      onError("File too large");
-      return;
-    }
-
-    // Mock upload success - chỉ để preview, upload thật sẽ làm khi submit
+  // Custom upload function - Không upload thật, chỉ để UI hoạt động
+  const customUpload = ({ file, onSuccess }) => {
+    // Mock upload success để UI hoạt động bình thường
     setTimeout(() => {
       onSuccess("ok");
     }, 100);
+  }; // Xử lý preview ảnh
+  const handlePreview = async (file) => {
+    if (!file.url && !file.preview) {
+      file.preview = await getBase64(file.originFileObj || file);
+    }
+    setPreviewImage(file.url || file.preview);
+    setPreviewVisible(true);
+    setPreviewTitle(
+      file.name || file.url.substring(file.url.lastIndexOf("/") + 1)
+    );
+  };
+
+  // Convert file to base64 cho preview
+  const getBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  // Xử lý xóa ảnh
+  const handleRemove = (file) => {
+    // Tìm index của ảnh trong danh sách để xóa attachment key tương ứng
+    const fileIndex = uploadedImages.findIndex((img) => img.uid === file.uid);
+    if (fileIndex !== -1 && attachmentKeys[fileIndex]) {
+      // Xóa attachment key tương ứng
+      const newKeys = [...attachmentKeys];
+      const removedKey = newKeys.splice(fileIndex, 1)[0];
+      setAttachmentKeys(newKeys);
+      console.log("🗑️ Removed attachment key:", removedKey);
+    }
+    return true; // Cho phép xóa
   };
 
   // Reset form và data khi mở modal
@@ -743,7 +787,14 @@ function CreateElectricVehicle() {
     setCurrentStep(0);
     setFormData({});
     setUploadedImages([]);
-    setImageKeys([]); // Reset image keys
+    setAttachmentKeys([]); // Reset attachment keys
+    setIsUploading(false); // Reset upload status
+    setPreviewVisible(false); // Reset preview modal
+    setPreviewImage("");
+    setPreviewTitle("");
+    setVehicleImagesVisible(false); // Reset vehicle images modal
+    setSelectedVehicleImages([]);
+    setLoadingImages(false);
     form.resetFields();
     form.setFieldsValue({
       status: 1, // Mặc định trạng thái hoạt động
@@ -891,6 +942,22 @@ function CreateElectricVehicle() {
       render: (date) => (date ? dayjs(date).format("DD/MM/YYYY") : "N/A"),
     },
     {
+      title: "Hình ảnh",
+      key: "images",
+      width: 100,
+      render: (_, record) => (
+        <Button
+          type="primary"
+          ghost
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => handleViewImages(record)}
+        >
+          Xem ảnh
+        </Button>
+      ),
+    },
+    {
       title: "Thao tác",
       key: "actions",
       width: 150,
@@ -967,19 +1034,25 @@ function CreateElectricVehicle() {
                 type="dashed"
                 size="small"
                 onClick={async () => {
-                  console.log("🧪 Testing API connection...");
+                  console.log("Testing API connection...");
                   message.info("Đang kiểm tra kết nối API...");
-                  const isConnected = await vehicleApi.testApiConnection();
-                  if (isConnected) {
-                    message.success("✅ API kết nối thành công!");
-                  } else {
+                  try {
+                    const result = await vehicleApi.getAllVehicles();
+                    if (result.success) {
+                      message.success("API kết nối thành công!");
+                    } else {
+                      message.error(
+                        "API kết nối thất bại. Kiểm tra console để xem chi tiết."
+                      );
+                    }
+                  } catch (error) {
                     message.error(
-                      "❌ API kết nối thất bại. Kiểm tra console để xem chi tiết."
+                      "API kết nối thất bại. Kiểm tra console để xem chi tiết."
                     );
                   }
                 }}
               >
-                🧪 Test API Connection
+                Test API Connection
               </Button>
             </Space>
           </Col>
@@ -1114,6 +1187,8 @@ function CreateElectricVehicle() {
                       listType="picture-card"
                       fileList={uploadedImages}
                       onChange={handleImageUpload}
+                      onPreview={handlePreview}
+                      onRemove={handleRemove}
                       customRequest={customUpload}
                       accept="image/*"
                       beforeUpload={(file) => {
@@ -1423,15 +1498,15 @@ function CreateElectricVehicle() {
                         </Col>
                       </Row>
 
-                      {/* Hiển thị uploaded images và keys */}
+                      {/* Hiển thị uploaded images và attachment keys */}
                       {uploadedImages.length > 0 && (
                         <div style={{ marginTop: 16 }}>
                           <strong>
                             Hình ảnh đã tải lên ({uploadedImages.length}):
                           </strong>
 
-                          {/* Hiển thị image keys nếu có */}
-                          {imageKeys.length > 0 && (
+                          {/* Hiển thị attachment keys nếu có */}
+                          {attachmentKeys.length > 0 && (
                             <div
                               style={{
                                 marginTop: 8,
@@ -1448,8 +1523,8 @@ function CreateElectricVehicle() {
                                   fontSize: "14px",
                                 }}
                               >
-                                ✅ Đã upload thành công {imageKeys.length} ảnh
-                                và nhận được keys từ server
+                                ✅ Đã upload thành công {attachmentKeys.length}{" "}
+                                ảnh và nhận được keys từ server
                               </p>
                               <details style={{ marginTop: 4 }}>
                                 <summary
@@ -1467,7 +1542,7 @@ function CreateElectricVehicle() {
                                     fontFamily: "monospace",
                                   }}
                                 >
-                                  {imageKeys.map((key, index) => (
+                                  {attachmentKeys.map((key, index) => (
                                     <div key={index}>
                                       Ảnh {index + 1}: {key}
                                     </div>
@@ -1520,7 +1595,7 @@ function CreateElectricVehicle() {
                                     }}
                                   />
                                   {/* Hiển thị key tương ứng với ảnh */}
-                                  {imageKeys[index] && (
+                                  {attachmentKeys[index] && (
                                     <div
                                       style={{
                                         position: "absolute",
@@ -1537,9 +1612,16 @@ function CreateElectricVehicle() {
                                         textOverflow: "ellipsis",
                                         whiteSpace: "nowrap",
                                       }}
-                                      title={imageKeys[index]}
+                                      title={attachmentKeys[index] || "No key"}
                                     >
-                                      Key: {imageKeys[index].substring(0, 8)}...
+                                      Key:{" "}
+                                      {attachmentKeys[index] &&
+                                      typeof attachmentKeys[index] === "string"
+                                        ? attachmentKeys[index].substring(
+                                            0,
+                                            8
+                                          ) + "..."
+                                        : "No key"}
                                     </div>
                                   )}
                                 </div>
@@ -1695,6 +1777,95 @@ function CreateElectricVehicle() {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* Modal xem ảnh của xe */}
+      <Modal
+        title={`Hình ảnh xe - ${
+          selectedVehicleImages.length > 0
+            ? `${selectedVehicleImages.length} ảnh`
+            : "Chưa có ảnh"
+        }`}
+        open={vehicleImagesVisible}
+        onCancel={() => setVehicleImagesVisible(false)}
+        footer={null}
+        width={1000}
+        style={{ top: 20 }}
+      >
+        {loadingImages ? (
+          <div style={{ textAlign: "center", padding: "50px" }}>
+            <div>Đang tải ảnh...</div>
+          </div>
+        ) : selectedVehicleImages.length > 0 ? (
+          <Row gutter={[16, 16]}>
+            {selectedVehicleImages.map((image, index) => (
+              <Col key={index} xs={24} sm={12} md={8} lg={6}>
+                <Card
+                  hoverable
+                  cover={
+                    <img
+                      alt={`Vehicle image ${index + 1}`}
+                      src={image.url || image}
+                      style={{
+                        width: "100%",
+                        height: 200,
+                        objectFit: "cover",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => {
+                        setPreviewImage(image.url || image);
+                        setPreviewTitle(`Ảnh xe ${index + 1}`);
+                        setPreviewVisible(true);
+                      }}
+                    />
+                  }
+                  bodyStyle={{ padding: "8px" }}
+                >
+                  <Card.Meta
+                    title={`Ảnh ${index + 1}`}
+                    description={
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={() => {
+                          setPreviewImage(image.url || image);
+                          setPreviewTitle(`Ảnh xe ${index + 1}`);
+                          setPreviewVisible(true);
+                        }}
+                      >
+                        Xem lớn
+                      </Button>
+                    }
+                  />
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        ) : (
+          <div style={{ textAlign: "center", padding: "50px" }}>
+            <EyeOutlined
+              style={{ fontSize: "48px", color: "#ccc", marginBottom: "16px" }}
+            />
+            <div style={{ fontSize: "16px", color: "#666" }}>
+              Xe này chưa có ảnh nào
+            </div>
+            <div style={{ fontSize: "14px", color: "#999", marginTop: "8px" }}>
+              Hình ảnh sẽ được hiển thị khi xe có ảnh được upload
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal preview ảnh */}
+      <Modal
+        open={previewVisible}
+        title={previewTitle}
+        footer={null}
+        onCancel={() => setPreviewVisible(false)}
+        width={800}
+      >
+        <img alt="preview" style={{ width: "100%" }} src={previewImage} />
       </Modal>
     </PageContainer>
   );
