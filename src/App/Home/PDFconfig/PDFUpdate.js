@@ -1,5 +1,8 @@
 import api from '../../../api/api';
 
+const READY_CONTRACT_ENDPOINT = '/EContract/ready-dealer-contracts';
+const READY_CONTRACT_PRODUCTION_URL = `https://api.electricvehiclesystem.click/api${READY_CONTRACT_ENDPOINT}`;
+
 // Service cho PDF Template Update
 export function PDFUpdateService() {
   
@@ -121,14 +124,43 @@ export function PDFUpdateService() {
       
       console.log('Final Request Payload:', JSON.stringify(requestPayload, null, 2));
       console.log('API Base URL:', api.defaults.baseURL);
-      console.log('Sending POST request to /EContract/ready-dealer-contracts...');
-      
-      console.log('⏳ Making API call...');
-      const response = await api.post('/EContract/ready-dealer-contracts', requestPayload, {
+      console.log(`Sending POST request to ${READY_CONTRACT_ENDPOINT}...`);
+
+      const requestConfig = {
         headers: {
           'Content-Type': 'application/json'
         }
-      });
+      };
+
+      const attemptRequest = (url) => api.post(url, requestPayload, requestConfig);
+
+      let response;
+
+      console.log('⏳ Making API call...');
+      try {
+        response = await attemptRequest(READY_CONTRACT_ENDPOINT);
+      } catch (primaryError) {
+        const isNetworkError =
+          !primaryError.response &&
+          (primaryError.code === 'ERR_NETWORK' || /network/i.test(primaryError.message || ''));
+        const configuredBaseUrl = api.defaults?.baseURL || '';
+        const isUsingProductionBase = configuredBaseUrl.includes('electricvehiclesystem.click');
+
+        if (isNetworkError && !isUsingProductionBase) {
+          console.warn('⚠️ Network error when calling ready contract endpoint. Retrying with production API host...');
+          console.warn('Original error message:', primaryError.message);
+          console.warn('Configured baseURL:', configuredBaseUrl);
+          try {
+            response = await attemptRequest(READY_CONTRACT_PRODUCTION_URL);
+            console.log('✅ Fallback request to production API succeeded.');
+          } catch (fallbackError) {
+            console.error('❌ Fallback request to production host also failed.');
+            throw fallbackError;
+          }
+        } else {
+          throw primaryError;
+        }
+      }
 
       console.log('=== PDFUpdateService.readyDealerContract RESPONSE ===');
       console.log('✅ Response received!');
@@ -186,6 +218,15 @@ export function PDFUpdateService() {
         console.error('  Error Details:', error);
       }
       
+      if (
+        !error.response &&
+        (error.code === 'ERR_NETWORK' || /network/i.test(error.message || ''))
+      ) {
+        throw new Error(
+          'Không thể kết nối tới máy chủ hợp đồng điện tử. Vui lòng kiểm tra kết nối mạng hoặc cấu hình API.'
+        );
+      }
+
       throw new Error(error.response?.data?.message || error.message || 'Không thể hoàn tất hợp đồng');
     }
   };
