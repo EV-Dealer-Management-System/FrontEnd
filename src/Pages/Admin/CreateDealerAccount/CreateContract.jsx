@@ -30,7 +30,7 @@ import {
   EditOutlined,
   CheckCircleOutlined 
 } from '@ant-design/icons';
-import { locationApi } from '../../../api/api';
+import { locationApi } from '../../../App/APIComponent/Address';
 import api from '../../../api/api';
 import ContractViewer from '../SignContract/Components/ContractViewer';
 import PDFEdit from '../SignContract/Components/PDF/PDFEdit';
@@ -412,47 +412,12 @@ const CreateContract = () => {
     }
 
     console.log('🔄 About to show Modal.confirm...');
-    
-    // 🚨 EMERGENCY BYPASS - Test API call directly without Modal
-    console.log('🚨 EMERGENCY MODE - BYPASSING MODAL FOR DIRECT TEST');
-    try {
-      setUpdatingContract(true);
-      
-      // ✅ Ensure correct data types for API
-      const apiPayload = {
-        eContractId: String(contractId), // Ensure string
-        positionA: String(finalPositionA), // Ensure string  
-        positionB: String(finalPositionB), // Ensure string
-        pageSign: finalPageSign ? Number(finalPageSign) : 0 // Ensure number, default 0
-      };
-      
-      console.log('🔥🔥🔥 EMERGENCY - DIRECT API CALL 🔥🔥🔥');
-      console.log('API Payload:', JSON.stringify(apiPayload, null, 2));
-      
-      const result = await pdfUpdateService.readyDealerContract(
-        apiPayload.eContractId,
-        apiPayload.positionA,
-        apiPayload.positionB,
-        apiPayload.pageSign
-      );
-      
-      console.log('🎉🎉🎉 EMERGENCY - API SUCCESS 🎉🎉🎉');
-      console.log('Result:', JSON.stringify(result, null, 2));
-      
-      message.success('🚨 EMERGENCY MODE - API Call succeeded!');
-      
-    } catch (error) {
-      console.error('🚨 EMERGENCY - API FAILED:', error);
-      message.error('🚨 Emergency API test failed: ' + error.message);
-    } finally {
-      setUpdatingContract(false);
-    }
-    
-    // Original Modal code (commented out for emergency test)
-    /*
+
+    // ✅ Confirm với người dùng trước khi gửi yêu cầu lên server
     Modal.confirm({
       title: 'Xác nhận hợp đồng',
-      content: 'Bạn có chắc chắn muốn xác nhận hợp đồng này? Sau khi xác nhận, hợp đồng sẽ được gửi đi xét duyệt.',
+      content:
+        'Bạn có chắc chắn muốn xác nhận hợp đồng này? Sau khi xác nhận, hợp đồng sẽ được gửi đi xét duyệt.',
       okText: 'Xác nhận',
       cancelText: 'Hủy',
       onOk: async () => {
@@ -460,26 +425,26 @@ const CreateContract = () => {
         try {
           console.log('🚀 === INSIDE MODAL OK - ABOUT TO CALL API ===');
           setUpdatingContract(true);
-          
+
           // ✅ Ensure correct data types for API
           const apiPayload = {
             eContractId: String(contractId), // Ensure string
-            positionA: String(finalPositionA), // Ensure string  
+            positionA: String(finalPositionA), // Ensure string
             positionB: String(finalPositionB), // Ensure string
             pageSign: finalPageSign ? Number(finalPageSign) : 0 // Ensure number, default 0
           };
-          
+
           console.log('=== API PAYLOAD PREPARED ===');
           console.log('Original contractId:', contractId, typeof contractId);
           console.log('Original finalPositionA:', finalPositionA, typeof finalPositionA);
-          console.log('Original finalPositionB:', finalPositionB, typeof finalPositionB); 
+          console.log('Original finalPositionB:', finalPositionB, typeof finalPositionB);
           console.log('Original finalPageSign:', finalPageSign, typeof finalPageSign);
           console.log('API Payload:', JSON.stringify(apiPayload, null, 2));
-          
+
           console.log('🔥🔥🔥 ABOUT TO CALL pdfUpdateService.readyDealerContract 🔥🔥🔥');
           console.log('Service object:', pdfUpdateService);
           console.log('Service method exists:', typeof pdfUpdateService.readyDealerContract);
-          
+
           // Ready contract với positions hiện tại
           const result = await pdfUpdateService.readyDealerContract(
             apiPayload.eContractId,
@@ -487,49 +452,56 @@ const CreateContract = () => {
             apiPayload.positionB,
             apiPayload.pageSign
           );
-          
+
           console.log('🎉🎉🎉 API CALL COMPLETED - GOT RESULT 🎉🎉🎉');
           console.log('Result type:', typeof result);
           console.log('Result:', JSON.stringify(result, null, 2));
-          
-          // ✅ Cập nhật trạng thái và thông tin mới từ API
-          setContractConfirmed(true);
-          setShowConfirmButton(false);
-          
-          // Cập nhật downloadUrl mới nếu có
-          if (result.downloadUrl) {
-            setContractLink(result.downloadUrl);
-            console.log('Updated contract download URL:', result.downloadUrl);
+
+          if (result?.success) {
+            // ✅ Cập nhật trạng thái và thông tin mới từ API
+            setContractConfirmed(true);
+            setShowConfirmButton(false);
+
+            // Cập nhật downloadUrl mới nếu có
+            if (result.downloadUrl) {
+              setContractLink(result.downloadUrl);
+              console.log('Updated contract download URL:', result.downloadUrl);
+            }
+
+            // ✅ Hiển thị thông báo thành công rõ ràng với delay để tránh bị che bởi Modal confirm
+            setTimeout(() => {
+              message.success({
+                content: `🎉 Xác nhận hợp đồng thành công! Hợp đồng ${
+                  result.contractNo || contractNo
+                } đã sẵn sàng ký số.`,
+                duration: 10,
+                style: {
+                  marginTop: '60px', // Tránh bị che bởi modal
+                  zIndex: 9999
+                }
+              });
+
+              // ✅ Thêm notification bổ sung để đảm bảo user thấy được
+              notification.success({
+                message: '🎉 Xác nhận thành công',
+                description: `Hợp đồng ${
+                  result.contractNo || contractNo
+                } đã được xác nhận và sẵn sàng cho việc ký số. Các bên liên quan sẽ nhận được thông báo.`,
+                duration: 12,
+                placement: 'topRight',
+                style: { marginTop: '50px' }
+              });
+            }, 300);
+          } else {
+            message.warning(result?.message || 'Không nhận được phản hồi thành công từ hệ thống.');
           }
-          
-          // ✅ Hiển thị thông báo thành công rõ ràng với delay để tránh bị che bởi Modal confirm
-          setTimeout(() => {
-            message.success({
-              content: `🎉 Xác nhận hợp đồng thành công! Hợp đồng ${result.contractNo || contractNo} đã sẵn sàng ký số.`,
-              duration: 10,
-              style: { 
-                marginTop: '60px', // Tránh bị che bởi modal
-                zIndex: 9999 
-              }
-            });
-            
-            // ✅ Thêm notification bổ sung để đảm bảo user thấy được
-            notification.success({
-              message: '🎉 Xác nhận thành công',
-              description: `Hợp đồng ${result.contractNo || contractNo} đã được xác nhận và sẵn sàng cho việc ký số. Các bên liên quan sẽ nhận được thông báo.`,
-              duration: 12,
-              placement: 'topRight',
-              style: { marginTop: '50px' }
-            });
-          }, 300);
-          
         } catch (error) {
           console.error('=== CONFIRM CONTRACT ERROR ===');
           console.error('Error Type:', error.constructor.name);
           console.error('Error Message:', error.message);
           console.error('Error Stack:', error.stack);
           console.error('Full Error Object:', error);
-          
+
           // ✅ Enhanced error logging
           if (error.response) {
             console.error('HTTP Response Error:');
@@ -537,20 +509,20 @@ const CreateContract = () => {
             console.error('  Status Text:', error.response.statusText);
             console.error('  Data:', JSON.stringify(error.response.data, null, 2));
           }
-          
+
           if (error.request) {
             console.error('HTTP Request Error:');
             console.error('  Request:', error.request);
             console.error('  Config:', error.config);
           }
-          
+
           let errorMessage = 'Lỗi không xác định';
           if (error.response?.data?.message) {
             errorMessage = error.response.data.message;
           } else if (error.message) {
             errorMessage = error.message;
           }
-          
+
           message.error({
             content: `❌ Xác nhận hợp đồng thất bại: ${errorMessage}`,
             duration: 10
@@ -561,7 +533,7 @@ const CreateContract = () => {
         }
       }
     });
-    */
+
   };
 
 
