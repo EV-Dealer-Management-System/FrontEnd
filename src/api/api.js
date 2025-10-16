@@ -1,8 +1,5 @@
 import axios from "axios";
 
-const PRODUCTION_BASE_URL = "https://api.electricvehiclesystem.click/api";
-const DEVELOPMENT_BASE_URL = "http://localhost:5000/api";
-
 const sanitizeBaseUrl = (url) =>
   typeof url === "string" ? url.trim().replace(/\/+$/, "") : undefined;
 
@@ -12,19 +9,9 @@ const resolveBaseUrl = () => {
     return envUrl;
   }
 
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-
-    if (host === "localhost" || host === "127.0.0.1") {
-      return DEVELOPMENT_BASE_URL;
-    }
-
-    if (host.endsWith("electricvehiclesystem.click")) {
-      return PRODUCTION_BASE_URL;
-    }
-  }
-
-  return import.meta.env.DEV ? DEVELOPMENT_BASE_URL : PRODUCTION_BASE_URL;
+  // Fallback mặc định nếu không có environment variable
+  console.warn('VITE_API_URL không được cấu hình. Sử dụng fallback URL.');
+  return 'https://api.electricvehiclesystem.click/api';
 };
 
 const api = axios.create({

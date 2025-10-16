@@ -30,24 +30,19 @@ import { PDFUpdateService } from '../../../../../App/Home/PDFconfig/PDFUpdate';
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-// Cấu hình ReactQuill modules
+// ✅ Cấu hình ReactQuill modules - Giới hạn để tránh phá layout A4
 const quillModules = {
   toolbar: [
-    [{ 'header': [1, 2, 3, false] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ 'color': [] }, { 'background': [] }],
-    [{ 'align': [] }],
+    ['bold', 'italic', 'underline'],
+    [{ 'color': [] }],
     [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-    ['blockquote'],
     ['link'],
     ['clean']
   ],
 };
 
 const quillFormats = [
-  'header', 'bold', 'italic', 'underline', 'strike',
-  'color', 'background', 'align', 
-  'list', 'blockquote', 'link'
+  'bold', 'italic', 'underline', 'color', 'list', 'link'
 ];
 
 // PDF Template Editor với react-quilljs (React 19 compatible)
@@ -70,6 +65,11 @@ function PDFEdit({
   const [htmlContent, setHtmlContent] = useState('');
   const [originalContent, setOriginalContent] = useState('');
   const [contractSubject, setContractSubject] = useState('');
+  
+  // ✅ Lưu trữ cấu trúc HTML gốc từ BE
+  const [allStyles, setAllStyles] = useState(''); // Lưu TẤT CẢ style blocks
+  const [htmlHead, setHtmlHead] = useState('');
+  const [htmlAttributes, setHtmlAttributes] = useState('');
   const [activeTab, setActiveTab] = useState('editor');
 
   // Workflow states - ✅ Bỏ isConfirmed và confirmLoading
@@ -101,6 +101,74 @@ function PDFEdit({
   });
 
 
+
+  // ✅ Function để tách HTML structure từ BE - BẢO TOÀN TẤT CẢ STYLE
+  const parseHtmlFromBE = (rawHtml) => {
+    console.log('=== PARSING HTML FROM BE (BẢO TOÀN TẤT CẢ STYLE) ===');
+    console.log('Raw HTML length:', rawHtml?.length || 0);
+    
+    if (!rawHtml) return { bodyContent: '', allStyles: '', htmlHead: '', htmlAttributes: '' };
+    
+    // ✅ Tách TẤT CẢ <style> tags (cả trong <head> và <body>)
+    const allStyleMatches = rawHtml.match(/<style[\s\S]*?<\/style>/gi);
+    const allStyles = allStyleMatches ? allStyleMatches.join('\n') : '';
+    
+    // ✅ Tách <head> content (KHÔNG bao gồm <style> đã tách)
+    let headMatch = rawHtml.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+    let htmlHead = '';
+    if (headMatch) {
+      htmlHead = headMatch[1]
+        .replace(/<style[\s\S]*?<\/style>/gi, '') // Xóa style đã tách
+        .replace(/<title[\s\S]*?<\/title>/gi, '') // Xóa title để tránh trùng
+        .trim();
+    }
+    
+    // ✅ Tách html attributes
+    const htmlMatch = rawHtml.match(/<html([^>]*)>/i);
+    const htmlAttributes = htmlMatch ? htmlMatch[1] : ' lang="vi"';
+    
+    // ✅ Tách body content và LOẠI BỎ tất cả <style> rải rác
+    let bodyMatch = rawHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    let bodyContent = bodyMatch ? bodyMatch[1] : rawHtml;
+    
+    // Loại bỏ tất cả <style> rải rác trong body content
+    bodyContent = bodyContent.replace(/<style[\s\S]*?<\/style>/gi, '');
+    
+    console.log('Parsed results:');
+    console.log('- All styles length:', allStyles.length);
+    console.log('- Style blocks found:', allStyleMatches?.length || 0);
+    console.log('- Head content length:', htmlHead.length);
+    console.log('- HTML attributes:', htmlAttributes);
+    console.log('- Body content length (after removing styles):', bodyContent.length);
+    
+    return { bodyContent, allStyles, htmlHead, htmlAttributes };
+  };
+
+  // ✅ Function để rebuild HTML đầy đủ khi gửi về BE - BAO GỒM TẤT CẢ STYLE
+  const rebuildCompleteHtml = (bodyContent) => {
+    console.log('=== REBUILDING COMPLETE HTML (BẢO TOÀN TẤT CẢ STYLE) ===');
+    console.log('Body content length:', bodyContent?.length || 0);
+    console.log('All styles length:', allStyles?.length || 0);
+    console.log('HTML head length:', htmlHead?.length || 0);
+    
+    const finalHtml = `<!doctype html>
+<html${htmlAttributes}>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${contractSubject || 'Hợp đồng điện tử'}</title>
+${htmlHead}
+${allStyles}
+</head>
+<body>
+${bodyContent}
+</body>
+</html>`;
+
+    console.log('Final HTML length:', finalHtml.length);
+    console.log('Styles included in rebuild:', !!allStyles);
+    return finalHtml;
+  };
 
   // Function để highlight các placeholder như {{ company.name }}
   const preprocessHtmlForQuill = (html) => {
@@ -369,18 +437,26 @@ function PDFEdit({
         const template = result.data;
         setTemplateData(template);
         
-        // Lưu RAW HTML vào state (KHÔNG preprocess)
-        const raw = template.contentHtml || '';
-        setHtmlContent(raw);           // ❗ raw
-        setOriginalContent(raw);       // ❗ raw
+        // ✅ Parse HTML từ BE - tách TẤT CẢ style và structure
+        const rawHtml = template.contentHtml || '';
+        const { bodyContent, allStyles, htmlHead, htmlAttributes } = parseHtmlFromBE(rawHtml);
+        
+        // Lưu structure vào state
+        setAllStyles(allStyles);
+        setHtmlHead(htmlHead);
+        setHtmlAttributes(htmlAttributes);
+        
+        // Chỉ hiển thị body content trong Quill (đã loại bỏ style rải rác)
+        setHtmlContent(bodyContent);
+        setOriginalContent(bodyContent);
         setContractSubject(template.name || 'Hợp đồng đại lý');
         
-        // ✅ Không cần force paste - useEffect([quill, quillReady, htmlContent]) sẽ tự động sync
-        console.log('✅ Template loaded, htmlContent updated, Quill will auto-sync');
+        console.log('✅ Template loaded và parsed successfully');
+        console.log('- Body content length:', bodyContent.length);
+        console.log('- All styles length:', allStyles.length);
+        console.log('- Styles preserved:', !!allStyles);
         
-        // ✅ Đánh dấu đã load template thành công
         setTemplateLoaded(true);
-        
         message.success('Đã tải template thành công');
       }
     } catch (error) {
@@ -406,18 +482,23 @@ function PDFEdit({
     });
     
     try {
-      // Gửi RAW HTML (đã là RAW)
-      const raw = htmlContent;
+      // ✅ Lấy current content từ Quill và rebuild HTML đầy đủ
+      const currentBodyContent = quill ? postprocessHtmlFromQuill(quill.root.innerHTML) : htmlContent;
+      const completeHtml = rebuildCompleteHtml(currentBodyContent);
       const subject = contractSubject || `Hợp đồng Đại lý ${contractNo}`;
       
       console.log('=== SAVE TEMPLATE CHANGES ===');
       console.log('Contract ID:', contractId);
       console.log('Subject:', subject);
-      console.log('RAW HTML Content Length:', raw.length);
+      console.log('Body content length:', currentBodyContent.length);
+      console.log('Complete HTML length:', completeHtml.length);
+      console.log('Has all styles:', !!allStyles);
+      console.log('All styles length:', allStyles?.length || 0);
+      console.log('Has html head:', !!htmlHead);
       
-      // Chỉ gọi update-econtract API với RAW + timeout safety
+      // Gửi complete HTML với đầy đủ structure về BE
       const result = await Promise.race([
-        pdfUpdateService.updateEContract(contractId, raw, subject),
+        pdfUpdateService.updateEContract(contractId, completeHtml, subject),
         saveTimeout
       ]);
 
@@ -429,7 +510,7 @@ function PDFEdit({
         
         // ✅ Callback với thông tin mới từ API response
         const updateInfo = {
-          htmlContent: raw,
+          htmlContent: currentBodyContent, // Trả về body content cho parent
           downloadUrl: result.downloadUrl,
           positionA: result.positionA,
           positionB: result.positionB,
@@ -476,6 +557,11 @@ function PDFEdit({
       setContractSubject('');
       setTemplateData(null);
       setTemplateLoaded(false); // ✅ Reset flag để cho phép load lại template
+      
+      // ✅ Reset HTML structure states
+      setAllStyles('');
+      setHtmlHead('');
+      setHtmlAttributes('');
       
       // Clear Quill content
       if (quill) {
@@ -728,8 +814,13 @@ function PDFEdit({
                         fontSize: '12pt',
                         lineHeight: '1.4'
                       }}
-                      dangerouslySetInnerHTML={{ __html: htmlContent }} // render RAW
-                    />
+                    >
+                      {/* ✅ Preview với styles được inject */}
+                      {allStyles && (
+                        <style dangerouslySetInnerHTML={{ __html: allStyles.replace(/<\/?style[^>]*>/g, '') }} />
+                      )}
+                      <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+                    </div>
                   )
                 },
                 {
@@ -761,6 +852,61 @@ function PDFEdit({
                           color: 'inherit'
                         }}
                       />
+                    </div>
+                  )
+                },
+                {
+                  key: 'debug',
+                  label: (
+                    <span>
+                      <FileTextOutlined />
+                      Debug Styles
+                    </span>
+                  ),
+                  children: (
+                    <div className="h-full overflow-auto p-4 bg-gray-50">
+                      <div className="grid grid-cols-1 gap-4">
+                        <Card size="small" title="📊 Style Preservation Status">
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span>All Styles Length:</span>
+                              <span className="font-mono">{allStyles?.length || 0} chars</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Style Blocks Count:</span>
+                              <span className="font-mono">{(allStyles?.match(/<style/g) || []).length}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>HTML Head Length:</span>
+                              <span className="font-mono">{htmlHead?.length || 0} chars</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>HTML Attributes:</span>
+                              <span className="font-mono">{htmlAttributes || 'none'}</span>
+                            </div>
+                          </div>
+                        </Card>
+                        
+                        <Card size="small" title="🎨 Preserved Styles">
+                          <TextArea
+                            value={allStyles}
+                            readOnly
+                            rows={10}
+                            placeholder="Không có styles được lưu trữ"
+                            className="font-mono text-xs"
+                          />
+                        </Card>
+                        
+                        <Card size="small" title="📄 Body Content (for Quill)">
+                          <TextArea
+                            value={htmlContent}
+                            readOnly
+                            rows={8}
+                            placeholder="Không có nội dung body"
+                            className="font-mono text-xs"
+                          />
+                        </Card>
+                      </div>
                     </div>
                   )
                 }

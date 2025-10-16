@@ -259,30 +259,40 @@ const CreateContract = () => {
         return;
       }
 
-      console.log('Dữ liệu gửi đi:', dealerData);
+      console.log('=== PAYLOAD GỬI ĐI (TạO HỢP ĐỒNG) ===');
+      console.log('dealerName:', dealerData.dealerName);
+      console.log('dealerAddress:', dealerData.dealerAddress);
+      console.log('taxNo:', dealerData.taxNo);
+      console.log('dealerLevel:', dealerData.dealerLevel);
+      console.log('fullNameManager:', dealerData.fullNameManager);
+      console.log('emailManager:', dealerData.emailManager);
+      console.log('phoneNumberManager:', dealerData.phoneNumberManager);
+      console.log('additionalTerm:', dealerData.additionalTerm);
+      console.log('regionDealer:', dealerData.regionDealer);
+      console.log('province:', dealerData.province);
+      console.log('ward:', dealerData.ward);
+      console.log('Toàn bộ data object:');
+      console.log(JSON.stringify(dealerData, null, 2));
 
-      // ✅ Sử dụng endpoint mới /EContract/draft-dealer-contracts
       const response = await api.post('/EContract/draft-dealer-contracts', dealerData);
       
-      // Log full response để debug
-      console.log('=== DRAFT DEALER CONTRACT API RESPONSE ===');
-      console.log('Full response:', JSON.stringify(response.data, null, 2));
+      console.log('=== SERVER RESPONSE (TẠO HỢP ĐỒNG) ===');
       console.log('Status:', response.status);
-      console.log('Headers:', response.headers);
+      console.log('isSuccess:', response.data?.isSuccess);
+      console.log('Message:', response.data?.message);
+      console.log('Toàn bộ response:');
+      console.log(JSON.stringify(response.data, null, 2));
 
       if (response.data?.isSuccess) {
         const contractData = response.data.result?.data;
         
-        // Log contract data chi tiết
-        console.log('=== CONTRACT DATA ===');
+        console.log('=== CONTRACT DATA NHẬN ĐƯỢC ===');
         console.log('Contract ID:', contractData?.id);
         console.log('Contract No:', contractData?.no);
         console.log('Download URL:', contractData?.downloadUrl);
-        console.log('Positions:', {
-          positionA: contractData?.positionA,
-          positionB: contractData?.positionB,
-          pageSign: contractData?.pageSign
-        });
+        console.log('Position A:', contractData?.positionA);
+        console.log('Position B:', contractData?.positionB);
+        console.log('Page Sign:', contractData?.pageSign);
         
         if (contractData) {
           setContractId(contractData.id);
@@ -379,39 +389,30 @@ const CreateContract = () => {
   };
 
   const handleConfirmContract = async () => {
-    console.log('🚀🚀🚀 HANDLE CONFIRM CONTRACT - FUNCTION START 🚀🚀🚀');
-    console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('=== HANDLE CONFIRM CONTRACT START ===');
+    console.log('Timestamp:', new Date().toISOString());
     
-    // ✅ Validation trước khi gửi
     if (!contractId) {
-      console.error('❌ Missing contractId:', contractId);
+      console.error('Missing contractId:', contractId);
       message.error('Không tìm thấy ID hợp đồng');
-      console.log('🛑 EARLY RETURN - No contractId');
       return;
     }
-    
-    console.log('✅ ContractId validation passed:', contractId);
 
     const finalPositionA = positionA || originalPositionA || "default_position_a";
     const finalPositionB = positionB || originalPositionB || "default_position_b";
     const finalPageSign = pageSign || originalPageSign || 0;
 
-    console.log('=== CONFIRM CONTRACT VALIDATION ===');
+    console.log('=== CONTRACT DATA VALIDATION ===');
     console.log('Contract ID:', contractId);
-    console.log('positionA:', positionA, '→ finalPositionA:', finalPositionA);
-    console.log('positionB:', positionB, '→ finalPositionB:', finalPositionB);
-    console.log('pageSign:', pageSign, '→ finalPageSign:', finalPageSign);
-    console.log('originalPositionA:', originalPositionA);
-    console.log('originalPositionB:', originalPositionB);
-    console.log('originalPageSign:', originalPageSign);
-
-    // ✅ Always proceed, even with default positions  
-    if (!finalPositionA || !finalPositionB) {
-      console.warn('⚠️ Missing positions, using defaults:', { finalPositionA, finalPositionB });
-      // Don't return - proceed with defaults
-    }
-
-    console.log('🔄 About to show Modal.confirm...');
+    console.log('Position A (current):', positionA);
+    console.log('Position A (original):', originalPositionA);
+    console.log('Position A (final):', finalPositionA);
+    console.log('Position B (current):', positionB);
+    console.log('Position B (original):', originalPositionB);
+    console.log('Position B (final):', finalPositionB);
+    console.log('Page Sign (current):', pageSign);
+    console.log('Page Sign (original):', originalPageSign);
+    console.log('Page Sign (final):', finalPageSign);
 
     // ✅ Confirm với người dùng trước khi gửi yêu cầu lên server
     Modal.confirm({
@@ -421,31 +422,27 @@ const CreateContract = () => {
       okText: 'Xác nhận',
       cancelText: 'Hủy',
       onOk: async () => {
-        console.log('🎯 Modal.confirm OK clicked - User confirmed!');
+        console.log('User confirmed contract submission');
         try {
-          console.log('🚀 === INSIDE MODAL OK - ABOUT TO CALL API ===');
           setUpdatingContract(true);
 
-          // ✅ Ensure correct data types for API
+          // Chuẩn bị payload
           const apiPayload = {
-            eContractId: String(contractId), // Ensure string
-            positionA: String(finalPositionA), // Ensure string
-            positionB: String(finalPositionB), // Ensure string
-            pageSign: finalPageSign ? Number(finalPageSign) : 0 // Ensure number, default 0
+            eContractId: String(contractId),
+            positionA: String(finalPositionA),
+            positionB: String(finalPositionB),
+            pageSign: finalPageSign ? Number(finalPageSign) : 0
           };
 
-          console.log('=== API PAYLOAD PREPARED ===');
-          console.log('Original contractId:', contractId, typeof contractId);
-          console.log('Original finalPositionA:', finalPositionA, typeof finalPositionA);
-          console.log('Original finalPositionB:', finalPositionB, typeof finalPositionB);
-          console.log('Original finalPageSign:', finalPageSign, typeof finalPageSign);
-          console.log('API Payload:', JSON.stringify(apiPayload, null, 2));
+          console.log('=== PAYLOAD GỬI ĐI ===');
+          console.log('eContractId:', apiPayload.eContractId, '(type:', typeof apiPayload.eContractId, ')');
+          console.log('positionA:', apiPayload.positionA, '(type:', typeof apiPayload.positionA, ')');
+          console.log('positionB:', apiPayload.positionB, '(type:', typeof apiPayload.positionB, ')');
+          console.log('pageSign:', apiPayload.pageSign, '(type:', typeof apiPayload.pageSign, ')');
+          console.log('Toàn bộ payload object:');
+          console.log(JSON.stringify(apiPayload, null, 2));
 
-          console.log('🔥🔥🔥 ABOUT TO CALL pdfUpdateService.readyDealerContract 🔥🔥🔥');
-          console.log('Service object:', pdfUpdateService);
-          console.log('Service method exists:', typeof pdfUpdateService.readyDealerContract);
-
-          // Ready contract với positions hiện tại
+          // Gọi API
           const result = await pdfUpdateService.readyDealerContract(
             apiPayload.eContractId,
             apiPayload.positionA,
@@ -453,12 +450,17 @@ const CreateContract = () => {
             apiPayload.pageSign
           );
 
-          console.log('🎉🎉🎉 API CALL COMPLETED - GOT RESULT 🎉🎉🎉');
-          console.log('Result type:', typeof result);
-          console.log('Result:', JSON.stringify(result, null, 2));
+          console.log('=== SERVER RESPONSE ===');
+          console.log('success:', result?.success);
+          console.log('message:', result?.message);
+          console.log('contractData:', result?.contractData);
+          console.log('downloadUrl:', result?.downloadUrl);
+          console.log('contractNo:', result?.contractNo);
+          console.log('status:', result?.status);
+          console.log('Toàn bộ server response:');
+          console.log(JSON.stringify(result, null, 2));
 
           if (result?.success) {
-            // ✅ Cập nhật trạng thái và thông tin mới từ API
             setContractConfirmed(true);
             setShowConfirmButton(false);
 
@@ -681,20 +683,9 @@ const CreateContract = () => {
                         Chỉnh sửa nội dung
                       </Button>
                       
-                      {/* 🐛 DEBUG: Log chi tiết về trạng thái nút xác nhận */}
-                      {console.log('=== BUTTON VISIBILITY DEBUG ===', {
-                        showConfirmButton,
-                        contractConfirmed,
-                        contractId,
-                        positionA,
-                        positionB,
-                        pageSign,
-                        originalPositionA,
-                        originalPositionB,
-                        originalPageSign
-                      })}
+
                       
-                      {showConfirmButton ? (
+                      {showConfirmButton && (
                         <Button 
                           type="primary"
                           size="large"
@@ -705,10 +696,6 @@ const CreateContract = () => {
                         >
                           Xác nhận hợp đồng
                         </Button>
-                      ) : (
-                        <div className="text-red-600 text-sm p-2 border border-red-300 rounded bg-red-50">
-                          ⚠️ Nút xác nhận chưa hiển thị. showConfirmButton = {String(showConfirmButton)}
-                        </div>
                       )}
                     </Space>
                   </div>
