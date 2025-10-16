@@ -30,7 +30,7 @@ import {
   EditOutlined,
   CheckCircleOutlined 
 } from '@ant-design/icons';
-import { locationApi } from '../../../api/api';
+import { locationApi } from '../../../App/APIComponent/Address';
 import api from '../../../api/api';
 import ContractViewer from '../SignContract/Components/ContractViewer';
 import PDFEdit from '../SignContract/Components/PDF/PDFEdit';
