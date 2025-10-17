@@ -9,7 +9,6 @@ import api from '../../api/api';
 
 // Reuse components từ CreateAccount
 import SignatureModal from '../Admin/SignContract/Components/SignatureModal';
-import AppVerifyModal from '../Admin/SignContract/Components/AppVerifyModal';
 import PDFModal from '../Admin/SignContract/Components/PDF/PDFModal';
 import SmartCAModal from '../Admin/SignContract/Components/SmartCAModal';
 import SmartCASelector from '../Admin/SignContract/Components/SmartCASelector';
@@ -40,8 +39,6 @@ function ContractPage() {
   // Flow ký
   const [signingLoading, setSigningLoading] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
-  const [showAppVerifyModal, setShowAppVerifyModal] = useState(false);
-  const [signatureCompleted, setSignatureCompleted] = useState(false);
   const [contractSigned, setContractSigned] = useState(false);
 
   // Modal Thêm SmartCA
@@ -282,16 +279,40 @@ function ContractPage() {
         signatureImage: signatureDataURL,
         signatureDisplayMode: displayMode,
         accessToken: contractInfo.accessToken,
-        selectedCertificate: selectedSmartCA
+        contractInfo: contractInfo  // Truyền contractInfo để lấy position và pageSign
       });
       
       setShowSmartCAModal(false);
       
       if (result.success) {
-        message.success('Ký điện tử thành công! Vui lòng xác thực.');
+        setCurrentStep(4);
+        setContractSigned(true);
         await refreshPdfCache('afterSign');
-        setSignatureCompleted(true);
-        setShowAppVerifyModal(true);
+        
+        Modal.success({
+          title: (
+            <span className="text-green-600 font-semibold flex items-center">
+              <CheckCircleOutlined className="mr-2" />
+              Ký Hợp Đồng Thành Công!
+            </span>
+          ),
+          content: (
+            <div className="py-4">
+              <div className="text-base mb-3">🎉 Hợp đồng đã được ký thành công!</div>
+              <div className="text-sm text-gray-600">
+                Process ID: <strong>{contractInfo.processId?.substring(0, 8)}...</strong>
+              </div>
+              <div className="text-sm text-gray-600">
+                Trạng thái: <strong className="text-green-600">Đã ký thành công ✅</strong>
+              </div>
+            </div>
+          ),
+          okText: 'Đóng',
+          centered: true,
+          width: 450,
+          okButtonProps: { className: 'bg-green-500 border-green-500 hover:bg-green-600' }
+        });
+        message.success('Ký hợp đồng thành công!');
       } else {
         message.error(result.error || 'Ký thất bại.');
       }
@@ -303,56 +324,7 @@ function ContractPage() {
     }
   }
 
-  // Xác thực ứng dụng
-  async function handleAppVerification() {
-    if (!signatureCompleted) {
-      message.error('Vui lòng hoàn thành ký điện tử trước!');
-      return;
-    }
-    setSigningLoading(true);
-    try {
-      const result = await contractService.handleAppVerification({
-        processId: contractInfo.processId
-      });
-      if (result.success) {
-        setShowAppVerifyModal(false);
-        setCurrentStep(4);
-        setContractSigned(true);
-        await refreshPdfCache('afterVerify');
 
-        Modal.success({
-          title: (
-            <span className="text-green-600 font-semibold flex items-center">
-              <CheckCircleOutlined className="mr-2" />
-              Ký Hợp Đồng Hoàn Tất!
-            </span>
-          ),
-          content: (
-            <div className="py-4">
-              <div className="text-base mb-3">🎉 Hợp đồng đã được ký và xác thực thành công!</div>
-              <div className="text-sm text-gray-600">
-                Process ID: <strong>{contractInfo.processId?.substring(0, 8)}...</strong>
-              </div>
-              <div className="text-sm text-gray-600">
-                Trạng thái: <strong className="text-green-600">Đã ký và xác thực ✅</strong>
-              </div>
-            </div>
-          ),
-          okText: 'Đóng',
-          centered: true,
-          width: 450,
-          okButtonProps: { className: 'bg-green-500 border-green-500 hover:bg-green-600' }
-        });
-        message.success('Xác thực thành công! Hợp đồng đã hoàn tất.');
-      } else {
-        message.error(result.error || 'Xác thực thất bại.');
-      }
-    } catch (e) {
-      message.error('Có lỗi khi xác thực từ ứng dụng');
-    } finally {
-      setSigningLoading(false);
-    }
-  }
 
   // Submit form
   async function onFinish(values) {
@@ -368,10 +340,8 @@ function ContractPage() {
     revokePdfPreviewUrl();
     setPdfLoading(false);
     setPdfModalVisible(false);
-    setSignatureCompleted(false);
     setContractSigned(false);
     setShowSignatureModal(false);
-    setShowAppVerifyModal(false);
     setShowSmartCAModal(false);
     setSigningLoading(false);
     setShowSmartCASelector(false);
@@ -640,14 +610,7 @@ function ContractPage() {
           loading={signingLoading}
         />
 
-        {/* App Verify Modal */}
-        <AppVerifyModal
-          visible={showAppVerifyModal}
-          onCancel={() => setShowAppVerifyModal(false)}
-          onVerify={handleAppVerification}
-          loading={signingLoading}
-          signatureCompleted={signatureCompleted}
-        />
+
 
         {/* Modal Thêm SmartCA - sử dụng component nghiệp vụ */}
         <AddSmartCA
