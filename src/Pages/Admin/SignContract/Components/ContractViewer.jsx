@@ -133,10 +133,14 @@ const ContractViewer = ({
             
             <Button 
               type="primary"
-              onClick={onNewContract}
+              onClick={() => {
+                if (onNewContract) {
+                  onNewContract();
+                }
+              }}
               className="bg-blue-500 border-blue-500 hover:bg-blue-600"
             >
-              Tạo hợp đồng mới
+              🆕 Tạo hợp đồng mới
             </Button>
           </div>
         </div>

@@ -375,7 +375,7 @@ const CreateContract = () => {
             
             // Sau 3 giây tự động chuyển về tạo hợp đồng mới
             setTimeout(() => {
-              resetForm();
+              resetFormDirect();
             }, 3000);
           } else {
             message.error(response.data?.message || 'Xác nhận hợp đồng thất bại');
@@ -417,7 +417,38 @@ const CreateContract = () => {
     }
   };
 
-  // Reset form and related state
+  // Reset form trực tiếp (không confirm)  
+  const resetFormDirect = () => {
+    form.resetFields();
+    setContractLink(null);
+    setContractNo(null);
+    setContractId(null);
+    setWaitingProcessData(null);
+    setWards([]);
+    
+    // Reset PDF states
+    setPdfBlob(null);
+    setPdfBlobUrl(null);
+    setLoadingPdf(false);
+    
+    // Reset workflow states
+    setUpdatingContract(false);
+    setShowTemplateEdit(false);
+    setConfirming(false);
+    setContractConfirmed(false);
+    
+    // Reset signing position states
+    setPositionA(null);
+    setPositionB(null);
+    setPageSign(null);
+    setOriginalPositionA(null);
+    setOriginalPositionB(null);
+    setOriginalPageSign(null);
+    
+    message.success('Đã tạo hợp đồng mới');
+  };
+
+  // Reset form with confirmation
   const resetForm = () => {
     modal.confirm({
       title: 'Làm mới biểu mẫu?',
@@ -425,35 +456,7 @@ const CreateContract = () => {
       okText: 'Xác nhận',
       cancelText: 'Hủy',
       centered: true,
-      onOk: () => {
-        form.resetFields();
-        setContractLink(null);
-        setContractNo(null);
-        setContractId(null);
-        setWaitingProcessData(null);
-        setWards([]);
-        
-        // Reset PDF states
-        setPdfBlob(null);
-        setPdfBlobUrl(null);
-        setLoadingPdf(false);
-        
-        // Reset workflow states
-        setUpdatingContract(false);
-        setShowTemplateEdit(false);
-        setConfirming(false);
-        setContractConfirmed(false);
-        
-        // Reset signing position states
-        setPositionA(null);
-        setPositionB(null);
-        setPageSign(null);
-        setOriginalPositionA(null);
-        setOriginalPositionB(null);
-        setOriginalPageSign(null);
-        
-        message.success('Đã làm mới biểu mẫu');
-      }
+      onOk: resetFormDirect
     });
   };
 
@@ -499,7 +502,7 @@ const CreateContract = () => {
                   contractSigned={false}
                   onSign={null}
                   onDownload={handleDownload}
-                  onNewContract={resetForm}
+                  onNewContract={resetFormDirect}
                   viewerLink={getPdfDisplayUrl()}
                   loading={loadingPdf}
                 />
@@ -566,7 +569,7 @@ const CreateContract = () => {
                     <Button 
                       type="primary"
                       size="large" 
-                      onClick={resetForm}
+                      onClick={resetFormDirect}
                       className="px-8 py-3 h-auto font-semibold rounded-lg bg-blue-500 hover:bg-blue-600 border-blue-500"
                     >
                       Tạo hợp đồng mới ngay
