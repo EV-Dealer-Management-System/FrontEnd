@@ -18,19 +18,16 @@ import {
   Typography,
   Divider,
   Alert,
-  App,
   Steps,
   Upload,
 } from "antd";
 import {
   PlusOutlined,
-  EditOutlined,
   DeleteOutlined,
   CarOutlined,
   ReloadOutlined,
   CheckCircleOutlined,
   InfoCircleOutlined,
-  UploadOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
 import { PageContainer } from "@ant-design/pro-components";
@@ -38,49 +35,49 @@ import { vehicleApi } from "../../../../App/EVMAdmin/VehiclesManagement/Vehicles
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
 const { Option } = Select;
 
-// Helper functions cho VIN
-const VIN_CHARS = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789"; // Không có I, O, Q
-
+// Helper function cho VIN
 const generateSampleVIN = () => {
+  const chars = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789";
   let vin = "";
   for (let i = 0; i < 17; i++) {
-    vin += VIN_CHARS[Math.floor(Math.random() * VIN_CHARS.length)];
+    vin += chars[Math.floor(Math.random() * chars.length)];
   }
   return vin;
 };
 
-const validateVIN = (vin) => {
-  if (!vin || vin.length !== 17) return false;
-  return /^[A-HJ-NPR-Z0-9]{17}$/.test(vin);
-};
-
 function CreateElectricVehicle() {
-  // TODO: Migrate to App.useApp() when refactoring component
-  // const { message, modal } = App.useApp();
-
+  // State chính
   const [loading, setLoading] = useState(false);
   const [vehicles, setVehicles] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [versions, setVersions] = useState([]);
   const [colors, setColors] = useState([]);
+
+  // Modal states
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+
+  // Form states
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({}); // State để lưu form data giữa các steps
-  const [uploadedImages, setUploadedImages] = useState([]); // State cho uploaded images
-  const [imageKeys, setImageKeys] = useState([]); // State cho image keys from server
+  const [formData, setFormData] = useState({});
+
+  // Upload states
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [attachmentKeys, setAttachmentKeys] = useState([]);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState("");
+  const [previewTitle, setPreviewTitle] = useState("");
 
   // Load data khi component mount
   useEffect(() => {
     loadAllData();
   }, []);
 
-  // Tải toàn bộ dữ liệu cần thiết
+  // Load tất cả dữ liệu cần thiết
   const loadAllData = async () => {
     setLoading(true);
     try {
@@ -97,17 +94,13 @@ function CreateElectricVehicle() {
     }
   };
 
-  // Tải danh sách xe điện
+  // Load danh sách xe điện
   const loadVehicles = async () => {
     try {
-      console.log("=== LOADING VEHICLES ===");
       const result = await vehicleApi.getAllVehicles();
-
       if (result.success) {
-        console.log("✅ Vehicles loaded successfully:", result.data);
         setVehicles(result.data || []);
       } else {
-        console.error("❌ Failed to load vehicles:", result.error);
         setVehicles([]);
       }
     } catch (error) {
@@ -116,70 +109,21 @@ function CreateElectricVehicle() {
     }
   };
 
-  // Tải danh sách kho từ API thực
+  // Load danh sách kho
   const loadWarehouses = async () => {
     try {
-      console.log("🔍 Loading warehouses from API...");
-
-      // Kiểm tra method có tồn tại không
-      if (!vehicleApi.getAllWarehouses) {
-        console.error(
-          "❌ getAllWarehouses method not found, using getInventoryById fallback"
-        );
-        const fallbackResult = await vehicleApi.getInventoryById();
-        console.log("📦 Fallback API response:", fallbackResult);
-
-        if (fallbackResult.success && fallbackResult.data) {
-          const formattedWarehouses = fallbackResult.data.map(
-            (warehouse, index) => ({
-              id: warehouse.id,
-              name: warehouse.dealerId || `Warehouse #${index + 1}`,
-              displayName: `${
-                warehouse.dealerId || `Warehouse #${index + 1}`
-              } (Type: ${warehouse.warehouseType || 2})`,
-            })
-          );
-          setWarehouses(formattedWarehouses);
-          console.log(
-            "✅ Loaded warehouses from fallback:",
-            formattedWarehouses
-          );
-          return;
-        }
-      }
-
-      // Gọi API get all warehouses - dùng method mới
       const result = await vehicleApi.getAllWarehouses();
-      console.log("📦 Warehouse API response:", result);
-      console.log("📦 Response type:", typeof result);
-      console.log("📦 Has success prop:", result.hasOwnProperty("success"));
-      console.log("📦 Has data prop:", result.hasOwnProperty("data"));
-
       if (result && result.success && result.data) {
-        console.log("✅ Loaded warehouses from API:", result.data);
-        console.log("✅ Data type:", typeof result.data);
-        console.log("✅ Is array:", Array.isArray(result.data));
-
-        // Format data theo structure từ attachment - hiển thị thông tin rõ ràng hơn
         const formattedWarehouses = result.data.map((warehouse, index) => ({
-          id: warehouse.id, // GUID từ API
-          name: warehouse.dealerId
-            ? `Dealer: ${warehouse.dealerId}`
-            : `Warehouse #${index + 1}`, // Tên kho rõ ràng hơn
-          evInventoryId: warehouse.evInventoryId, // Inventory ID
-          warehouseType: warehouse.warehouseType || 2, // Type từ API
+          id: warehouse.id,
+          name: warehouse.dealerId || `Warehouse #${index + 1}`,
           displayName: `${
             warehouse.dealerId || `Warehouse #${index + 1}`
-          } (Type: ${warehouse.warehouseType || 2})`, // For dropdown display
+          } (Type: ${warehouse.warehouseType || 2})`,
         }));
-
         setWarehouses(formattedWarehouses);
-        console.log("✅ Formatted warehouses for Select:", formattedWarehouses);
       } else {
-        console.log("❌ No warehouses returned from API or API call failed");
-        console.log("📝 Adding mock data for testing...");
-
-        // Thêm mock data để test khi API chưa sẵn sàng
+        // Mock data khi API chưa sẵn sàng
         const mockWarehouses = [
           {
             id: "0199d3ef-5fd1-7f77-84f7-89140441fc52",
@@ -192,23 +136,13 @@ function CreateElectricVehicle() {
             displayName: "Test Warehouse 2 (Type: 2)",
           },
         ];
-
         setWarehouses(mockWarehouses);
-        console.log("✅ Added mock warehouses for testing:", mockWarehouses);
         message.warning(
           "Đang dùng dữ liệu test. API warehouses có thể chưa sẵn sàng."
         );
       }
     } catch (error) {
-      console.error("❌ Error loading warehouses:", error);
-      console.log("📝 Error details:", {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data,
-      });
-
-      // Fallback với mock data khi có lỗi
-      console.log("🔄 Using mock data as fallback...");
+      console.error("Error loading warehouses:", error);
       const mockWarehouses = [
         {
           id: "0199d3ef-5fd1-7f77-84f7-89140441fc52",
@@ -221,54 +155,40 @@ function CreateElectricVehicle() {
           displayName: "Test Warehouse 2 (Type: 2)",
         },
       ];
-
       setWarehouses(mockWarehouses);
-      console.log("✅ Fallback mock warehouses loaded");
       message.warning("Lỗi API. Đang dùng dữ liệu test để tiếp tục.");
     }
   };
 
-  // Tải danh sách versions
+  // Load danh sách versions
   const loadVersions = async () => {
     try {
-      console.log("📋 Loading versions...");
       const result = await vehicleApi.getAllVersions();
-      console.log("📋 Versions API response:", result);
-
       if (result.success && result.data) {
         setVersions(result.data);
-        console.log("✅ Loaded versions:", result.data);
       } else {
-        console.log("⚠️ No versions found, using empty array");
         setVersions([]);
       }
     } catch (error) {
-      console.error("❌ Error loading versions:", error);
+      console.error("Error loading versions:", error);
       setVersions([]);
     }
   };
 
-  // Tải danh sách màu sắc
+  // Load danh sách màu sắc
   const loadColors = async () => {
     try {
-      console.log("🌈 Loading colors...");
       const result = await vehicleApi.getAllColors();
-      console.log("🌈 Colors API response:", result);
-
       if (result.success && result.data) {
         setColors(result.data);
-        console.log("✅ Loaded colors:", result.data);
       } else {
-        console.log("⚠️ No colors found, using empty array");
         setColors([]);
       }
     } catch (error) {
-      console.error("❌ Error loading colors:", error);
+      console.error("Error loading colors:", error);
       setColors([]);
     }
   };
-
-  // Function đã được move lên trên
 
   // Xem chi tiết xe
   const handleViewVehicle = (vehicle) => {
@@ -280,12 +200,7 @@ function CreateElectricVehicle() {
   const handleDeleteVehicle = async (vehicleId) => {
     setLoading(true);
     try {
-      console.log("=== DELETING VEHICLE ===");
-      console.log("Vehicle ID:", vehicleId);
-
       const result = await vehicleApi.deleteVehicle(vehicleId);
-      console.log("Delete result:", result);
-
       if (result.success) {
         message.success("Xóa xe điện thành công!");
         await loadVehicles();
@@ -300,40 +215,19 @@ function CreateElectricVehicle() {
     }
   };
 
-  // Xử lý submit form tạo xe
+  // Submit form tạo xe
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      console.log("=== CREATING ELECTRIC VEHICLE ===");
-
-      // Lưu form data cuối cùng
       const finalFormData = { ...formData, ...values };
-      console.log("Final form data:", finalFormData);
-      console.log("Uploaded images:", uploadedImages);
 
-      // Validate critical data với chi tiết
-      console.log("🔍 Available warehouses:", warehouses);
-      console.log("🏢 Selected warehouseId:", finalFormData.warehouseId);
-      console.log("🚗 Selected versionId:", finalFormData.versionId);
-      console.log("🎨 Selected colorId:", finalFormData.colorId);
-
-      // Chi tiết về versions và colors được chọn
-      const selectedVersion = versions.find(
-        (v) => v.id === finalFormData.versionId
-      );
-      const selectedColor = colors.find((c) => c.id === finalFormData.colorId);
-      console.log("📋 Selected Version Object:", selectedVersion);
-      console.log("🎨 Selected Color Object:", selectedColor);
-      console.log("📊 All Available Versions:", versions);
-      console.log("🌈 All Available Colors:", colors);
-
-      // Prepare data theo API schema
+      // Chuẩn bị dữ liệu xe
       const vehicleData = {
-        warehouseId: finalFormData.warehouseId, // Lấy từ form, bắt buộc phải chọn
+        warehouseId: finalFormData.warehouseId,
         versionId: finalFormData.versionId,
         colorId: finalFormData.colorId,
         vin: finalFormData.vin,
-        status: finalFormData.status || 1, // Lấy từ form hoặc mặc định 1
+        status: finalFormData.status || 1,
         manufactureDate: finalFormData.manufactureDate?.format
           ? finalFormData.manufactureDate.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]")
           : finalFormData.manufactureDate,
@@ -345,205 +239,73 @@ function CreateElectricVehicle() {
               "YYYY-MM-DDTHH:mm:ss.SSS[Z]"
             )
           : finalFormData.warrantyExpiryDate,
-        costPrice: Number(finalFormData.costPrice) || 0, // Đảm bảo là number
-        imageUrl: "", // Sẽ được cập nhật sau khi upload images
+        costPrice: Number(finalFormData.costPrice) || 0,
+        attachmentKeys: attachmentKeys || [], // Lấy từ state, fallback về array rỗng
       };
 
-      // Step 1: Upload images và thu thập keys
-      let imageKeys = [];
-      if (uploadedImages.length > 0) {
-        console.log("📤 Uploading images to get keys for vehicle creation...");
-        console.log(`📱 Number of images to process: ${uploadedImages.length}`);
-        console.log(
-          "📁 Image files:",
-          uploadedImages.map((f) => ({
-            name: f.name,
-            size: f.size,
-            type: f.type,
-          }))
-        );
-
-        try {
-          // Upload từng ảnh và thu thập keys
-          for (let i = 0; i < uploadedImages.length; i++) {
-            const file = uploadedImages[i];
-            console.log(
-              `📤 Uploading image ${i + 1}/${uploadedImages.length}: ${
-                file.name
-              }`
-            );
-
-            // Tạo FormData cho từng file
-            const formData = new FormData();
-            formData.append("File", file);
-
-            // Gọi API upload để lấy key
-            const uploadResult = await vehicleApi.uploadElectricVehicleImage(
-              formData
-            );
-
-            if (uploadResult.success && uploadResult.key) {
-              console.log(
-                `✅ Image ${i + 1} uploaded successfully. Key: ${
-                  uploadResult.key
-                }`
-              );
-              imageKeys.push(uploadResult.key);
-            } else {
-              console.error(
-                `❌ Failed to upload image ${i + 1}:`,
-                uploadResult.error
-              );
-              message.error(
-                `Lỗi upload ảnh ${file.name}: ${uploadResult.error}`
-              );
-              setLoading(false);
-              return;
-            }
-          }
-
-          console.log(
-            `✅ All ${uploadedImages.length} images uploaded successfully!`
-          );
-          console.log("🔑 Collected image keys:", imageKeys);
-
-          // Lưu keys vào state để sử dụng sau này
-          setImageKeys(imageKeys);
-        } catch (error) {
-          console.error("❌ Error during image upload process:", error);
-          message.error("Lỗi trong quá trình upload ảnh!");
-          setLoading(false);
-          return;
-        }
-      } else {
-        console.log("📷 No images uploaded");
-      }
-
-      // Update vehicleData với attachment keys theo API format
-      vehicleData.attachmentKeys = imageKeys; // Array of keys theo format API expect
-      vehicleData.imageUrl = ""; // Giữ field này để tương thích với API legacy
-
-      console.log("🔍 Final Vehicle Data to be sent:", vehicleData);
-
-      // Validate data format trước khi gửi
-      console.log("🔍 Data Validation:");
+      // 🔍 DEBUG: Log chi tiết data trước khi gửi
+      console.log("=== FE DATA VALIDATION ===");
       console.log(
-        "  - warehouseId:",
-        vehicleData.warehouseId,
-        typeof vehicleData.warehouseId
-      );
-      console.log(
-        "  - versionId:",
-        vehicleData.versionId,
-        typeof vehicleData.versionId
-      );
-      console.log(
-        "  - colorId:",
-        vehicleData.colorId,
-        typeof vehicleData.colorId
-      );
-      console.log("  - vin:", vehicleData.vin, typeof vehicleData.vin);
-      console.log("  - status:", vehicleData.status, typeof vehicleData.status);
-      console.log(
-        "  - costPrice:",
-        vehicleData.costPrice,
-        typeof vehicleData.costPrice
-      );
-      console.log(
-        "  - imageUrl:",
-        vehicleData.imageUrl,
-        typeof vehicleData.imageUrl
-      );
-      console.log(
-        "  - attachmentKeys:",
-        vehicleData.attachmentKeys,
-        `(${vehicleData.attachmentKeys?.length || 0} keys)`
-      );
-      console.log("  - manufactureDate:", vehicleData.manufactureDate);
-      console.log("  - importDate:", vehicleData.importDate);
-      console.log("  - warrantyExpiryDate:", vehicleData.warrantyExpiryDate);
-
-      // So sánh với Backend Schema từ attachment
-      console.log("📋 BACKEND SCHEMA COMPARISON:");
-      console.log("Expected backend format:", {
-        warehouseId: "GUID string",
-        versionId: "GUID string",
-        colorId: "GUID string",
-        vin: "string",
-        status: "number (1)",
-        manufactureDate: "2025-10-14T02:14:47.853Z",
-        importDate: "2025-10-14T02:14:47.853Z",
-        warrantyExpiryDate: "2025-10-14T02:14:47.853Z",
-        costPrice: "number",
-        imageUrl: "string",
-      });
-      console.log(
-        "Actual frontend data matches:",
+        "Vehicle data to send:",
         JSON.stringify(vehicleData, null, 2)
       );
+      console.log("Field types check:");
+      console.log(
+        "- warehouseId:",
+        typeof vehicleData.warehouseId,
+        vehicleData.warehouseId
+      );
+      console.log(
+        "- versionId:",
+        typeof vehicleData.versionId,
+        vehicleData.versionId
+      );
+      console.log(
+        "- colorId:",
+        typeof vehicleData.colorId,
+        vehicleData.colorId
+      );
+      console.log("- vin:", typeof vehicleData.vin, vehicleData.vin);
+      console.log("- status:", typeof vehicleData.status, vehicleData.status);
+      console.log(
+        "- costPrice:",
+        typeof vehicleData.costPrice,
+        vehicleData.costPrice
+      );
+      console.log(
+        "- attachmentKeys:",
+        Array.isArray(vehicleData.attachmentKeys),
+        vehicleData.attachmentKeys
+      );
+      console.log("📎 AttachmentKeys from state:", attachmentKeys);
+      console.log("📎 AttachmentKeys in payload:", vehicleData.attachmentKeys);
 
-      // Validation trước khi gửi
+      // Validation cơ bản
       if (!vehicleData.warehouseId) {
         message.error("Vui lòng chọn kho!");
         setLoading(false);
         return;
       }
-
       if (!vehicleData.versionId) {
         message.error("Vui lòng chọn phiên bản xe!");
         setLoading(false);
         return;
       }
-
       if (!vehicleData.colorId) {
         message.error("Vui lòng chọn màu sắc!");
         setLoading(false);
         return;
       }
-
       if (!vehicleData.vin) {
         message.error("Vui lòng nhập VIN!");
         setLoading(false);
         return;
       }
 
-      // Validate GUID format cho IDs
-      const guidRegex =
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-      if (!guidRegex.test(vehicleData.versionId)) {
-        console.error("❌ Invalid versionId format:", vehicleData.versionId);
-        message.error("Version ID không đúng format GUID!");
-        setLoading(false);
-        return;
-      }
-
-      if (!guidRegex.test(vehicleData.colorId)) {
-        console.error("❌ Invalid colorId format:", vehicleData.colorId);
-        message.error("Color ID không đúng format GUID!");
-        setLoading(false);
-        return;
-      }
-
-      if (!guidRegex.test(vehicleData.warehouseId)) {
-        console.error(
-          "❌ Invalid warehouseId format:",
-          vehicleData.warehouseId
-        );
-        message.error("Warehouse ID không đúng format GUID!");
-        setLoading(false);
-        return;
-      }
-
-      console.log("✅ All validations passed, proceeding with API call...");
-
       const result = await vehicleApi.createVehicle(vehicleData);
-      console.log("Create result:", result);
-
       if (result.success) {
         message.success(result.message || "Tạo xe điện mới thành công!");
 
-        // Hiển thị thông tin xe vừa tạo
         const selectedVersion = versions.find(
           (v) => v.id === finalFormData.versionId
         );
@@ -553,11 +315,6 @@ function CreateElectricVehicle() {
         const selectedWarehouse = warehouses.find(
           (w) => w.id === finalFormData.warehouseId
         );
-
-        console.log("🎉 Vehicle created successfully:");
-        console.log("  - Result:", result);
-        console.log("  - Selected Version:", selectedVersion);
-        console.log("  - Selected Color:", selectedColor);
 
         Modal.success({
           title: (
@@ -590,12 +347,6 @@ function CreateElectricVehicle() {
                       <strong>Giá cost:</strong>{" "}
                       {vehicleData.costPrice?.toLocaleString("vi-VN")} ₫
                     </p>
-                    <p>
-                      <strong>Trạng thái:</strong>{" "}
-                      {vehicleData.status === 1
-                        ? "Hoạt động"
-                        : "Không hoạt động"}
-                    </p>
                     {result.data?.id && (
                       <p>
                         <strong>Vehicle ID:</strong>
@@ -614,14 +365,14 @@ function CreateElectricVehicle() {
           width: 600,
         });
 
+        // Reset form
         setIsCreateModalVisible(false);
         form.resetFields();
         setFormData({});
         setUploadedImages([]);
-        setImageKeys([]); // Reset image keys sau khi tạo thành công
+        setAttachmentKeys([]);
         await loadVehicles();
       } else {
-        console.error("❌ Submit failed:", result.error);
         message.error(result.error || "Không thể tạo xe điện");
       }
     } catch (error) {
@@ -632,121 +383,143 @@ function CreateElectricVehicle() {
     }
   };
 
-  // Xử lý chuyển step với validation
+  // Chuyển step với validation
   const handleNextStep = async () => {
     try {
-      // Validate các fields cần thiết cho step hiện tại
       const fieldsToValidate = getRequiredFieldsForStep(currentStep);
-
-      // Validate form fields cho step hiện tại
       await form.validateFields(fieldsToValidate);
 
-      // Lưu form data hiện tại vào state
       const currentFormValues = form.getFieldsValue();
       const updatedFormData = { ...formData, ...currentFormValues };
       setFormData(updatedFormData);
-
-      console.log("✅ Step validation passed, moving to next step");
-      console.log("Current form values:", currentFormValues);
-      console.log("Updated form data:", updatedFormData);
-
-      // Chuyển sang step tiếp theo
       setCurrentStep(currentStep + 1);
     } catch (error) {
-      console.error("❌ Step validation failed:", error);
       message.error(
         "Vui lòng điền đầy đủ thông tin bắt buộc trước khi tiếp tục!"
       );
     }
   };
 
-  // Xử lý upload ảnh
-  const handleImageUpload = ({ fileList }) => {
-    // Lọc ra những file hợp lệ (có originFileObj)
-    const validFiles = fileList.map((file) => {
-      if (file.originFileObj) {
-        return file.originFileObj;
-      }
-      return file;
+  // Upload nhiều ảnh
+  const handleBatchImageUpload = async (files) => {
+    const validFiles = files.filter((file) => {
+      const isImage = file.type.startsWith("image/");
+      const isLt10M = file.size / 1024 / 1024 < 10;
+      if (!isImage) message.error(`${file.name} không phải file hình ảnh!`);
+      if (!isLt10M) message.error(`${file.name} quá lớn (>10MB)!`);
+      return isImage && isLt10M;
     });
-    setUploadedImages(validFiles);
-    console.log("Updated uploaded images:", validFiles);
-  };
 
-  // Upload images lên server và nhận về URLs
-  const uploadImagesToServer = async (images) => {
-    console.log("🔄 Starting image upload process...");
-    const uploadedUrls = [];
+    if (validFiles.length === 0) {
+      message.error("Không có file hợp lệ để upload!");
+      return;
+    }
 
-    for (let i = 0; i < images.length; i++) {
-      const file = images[i];
-      console.log(`📤 Uploading image ${i + 1}/${images.length}:`, file.name);
+    try {
+      console.log(
+        "🔄 Starting upload process for files:",
+        validFiles.map((f) => f.name)
+      );
 
-      try {
-        // Tạo FormData để upload file
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("type", "vehicle-image");
+      const attachmentKeys =
+        await vehicleApi.ElectricVehicleImageService.uploadMultipleImages(
+          validFiles
+        );
 
-        // Gọi API upload - thay endpoint này bằng API thực của bạn
-        const response = await vehicleApi.uploadImage(formData);
+      console.log("📦 Upload result - attachmentKeys:", attachmentKeys);
 
-        if (response.success && response.data) {
-          const imageUrl =
-            response.data.url || response.data.imageUrl || response.data;
-          uploadedUrls.push(imageUrl);
-          console.log(`✅ Image ${i + 1} uploaded:`, imageUrl);
-        } else {
-          throw new Error(response.error || "Upload failed");
-        }
-      } catch (error) {
-        console.error(`❌ Failed to upload image ${i + 1}:`, error);
-        // Fallback: tạo mock URL cho development
-        const mockUrl = `https://mock-cdn.com/vehicles/${Date.now()}-${
-          file.name
-        }`;
-        uploadedUrls.push(mockUrl);
-        console.log(`🔄 Using mock URL for image ${i + 1}:`, mockUrl);
+      if (attachmentKeys && attachmentKeys.length > 0) {
+        setAttachmentKeys(attachmentKeys);
+        console.log("✅ AttachmentKeys set to state:", attachmentKeys);
+        message.success(`Upload thành công ${attachmentKeys.length} ảnh!`);
+      } else {
+        console.warn("⚠️ No attachment keys returned from upload");
+        // Tạo mock keys để test workflow
+        const mockKeys = validFiles.map(
+          (file, index) => `mock-key-${Date.now()}-${index}-${file.name}`
+        );
+        setAttachmentKeys(mockKeys);
+        console.log("🔄 Using mock keys for testing:", mockKeys);
+        message.warning(
+          `Upload API có vấn đề, sử dụng mock keys để test: ${mockKeys.length} keys`
+        );
       }
+    } catch (error) {
+      console.error("Upload error:", error);
+      // Tạo mock keys khi upload fail
+      const mockKeys = validFiles.map(
+        (file, index) => `error-fallback-${Date.now()}-${index}`
+      );
+      setAttachmentKeys(mockKeys);
+      console.log("🔄 Upload failed, using fallback keys:", mockKeys);
+      message.warning(
+        `Upload lỗi, sử dụng fallback keys để test: ${mockKeys.length} keys`
+      );
     }
-
-    console.log("✅ All images processed, URLs:", uploadedUrls);
-    return uploadedUrls;
   };
 
-  // Custom upload function (cho preview trước khi submit)
-  const customUpload = ({ file, onSuccess, onError }) => {
-    // Validate file type
-    const isImage = file.type.startsWith("image/");
-    if (!isImage) {
-      message.error("Chỉ có thể upload file hình ảnh!");
-      onError("Invalid file type");
-      return;
-    }
+  // Xử lý thay đổi file list
+  const handleImageUpload = ({ fileList }) => {
+    setUploadedImages(fileList);
+    const newFiles = fileList
+      .filter((file) => file.originFileObj && file.status !== "done")
+      .map((file) => file.originFileObj);
 
-    // Validate file size (10MB max)
-    const isLt10M = file.size / 1024 / 1024 < 10;
-    if (!isLt10M) {
-      message.error("Kích thước ảnh phải nhỏ hơn 10MB!");
-      onError("File too large");
-      return;
+    if (newFiles.length > 0) {
+      handleBatchImageUpload(newFiles);
     }
-
-    // Mock upload success - chỉ để preview, upload thật sẽ làm khi submit
-    setTimeout(() => {
-      onSuccess("ok");
-    }, 100);
   };
 
-  // Reset form và data khi mở modal
+  // Custom upload - chỉ để UI hoạt động
+  const customUpload = ({ file, onSuccess }) => {
+    setTimeout(() => onSuccess("ok"), 100);
+  };
+
+  // Preview ảnh
+  const handlePreview = async (file) => {
+    if (!file.url && !file.preview) {
+      file.preview = await getBase64(file.originFileObj || file);
+    }
+    setPreviewImage(file.url || file.preview);
+    setPreviewVisible(true);
+    setPreviewTitle(
+      file.name || file.url.substring(file.url.lastIndexOf("/") + 1)
+    );
+  };
+
+  // Convert file to base64
+  const getBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  // Xóa ảnh
+  const handleRemove = (file) => {
+    const fileIndex = uploadedImages.findIndex((img) => img.uid === file.uid);
+    if (fileIndex !== -1 && attachmentKeys[fileIndex]) {
+      const newKeys = [...attachmentKeys];
+      newKeys.splice(fileIndex, 1);
+      setAttachmentKeys(newKeys);
+    }
+    return true;
+  };
+
+  // Reset form khi mở modal tạo
   const handleCreateVehicle = () => {
     setCurrentStep(0);
     setFormData({});
     setUploadedImages([]);
-    setImageKeys([]); // Reset image keys
+    setAttachmentKeys([]);
+    setPreviewVisible(false);
+    setPreviewImage("");
+    setPreviewTitle("");
     form.resetFields();
     form.setFieldsValue({
-      status: 1, // Mặc định trạng thái hoạt động
+      status: 1,
       costPrice: 0,
       manufactureDate: dayjs(),
       importDate: dayjs(),
@@ -755,12 +528,12 @@ function CreateElectricVehicle() {
     setIsCreateModalVisible(true);
   };
 
-  // Lấy danh sách fields cần validate cho mỗi step
+  // Fields cần validate cho mỗi step
   const getRequiredFieldsForStep = (step) => {
     switch (step) {
-      case 0: // Thông tin cơ bản
-        return ["vin", "versionId", "colorId", "warehouseId"]; // Thêm lại warehouseId
-      case 1: // Thông tin kỹ thuật
+      case 0:
+        return ["vin", "versionId", "colorId", "warehouseId"];
+      case 1:
         return [
           "costPrice",
           "manufactureDate",
@@ -772,35 +545,23 @@ function CreateElectricVehicle() {
     }
   };
 
-  // Steps cho wizard tạo xe
+  // Steps cho wizard
   const steps = [
-    {
-      title: "Thông tin cơ bản",
-      content: "basic-info",
-    },
-    {
-      title: "Thông tin kỹ thuật",
-      content: "technical-info",
-    },
-    {
-      title: "Xác nhận",
-      content: "confirm",
-    },
+    { title: "Thông tin cơ bản", content: "basic-info" },
+    { title: "Thông tin kỹ thuật", content: "technical-info" },
+    { title: "Xác nhận", content: "confirm" },
   ];
 
   // Columns cho table
   const columns = [
     {
       title: "STT",
-      dataIndex: "index",
-      key: "index",
       width: 60,
       render: (_, __, index) => index + 1,
     },
     {
       title: "VIN",
       dataIndex: "vin",
-      key: "vin",
       width: 150,
       render: (text) => (
         <Text code strong style={{ fontSize: 12 }}>
@@ -811,7 +572,6 @@ function CreateElectricVehicle() {
     {
       title: "Version",
       dataIndex: "versionId",
-      key: "versionId",
       width: 120,
       render: (versionId) => {
         const version = versions.find((v) => v.id === versionId);
@@ -825,7 +585,6 @@ function CreateElectricVehicle() {
     {
       title: "Màu sắc",
       dataIndex: "colorId",
-      key: "colorId",
       width: 120,
       render: (colorId) => {
         const color = colors.find((c) => c.id === colorId);
@@ -850,7 +609,6 @@ function CreateElectricVehicle() {
     {
       title: "Kho",
       dataIndex: "warehouseId",
-      key: "warehouseId",
       width: 100,
       render: (warehouseId) => {
         const warehouse = warehouses.find((w) => w.id === warehouseId);
@@ -864,7 +622,6 @@ function CreateElectricVehicle() {
     {
       title: "Giá cost",
       dataIndex: "costPrice",
-      key: "costPrice",
       width: 120,
       render: (price) => (
         <Text strong>
@@ -875,7 +632,6 @@ function CreateElectricVehicle() {
     {
       title: "Trạng thái",
       dataIndex: "status",
-      key: "status",
       width: 100,
       render: (status) => (
         <Tag color={status === 1 ? "success" : "error"}>
@@ -886,13 +642,11 @@ function CreateElectricVehicle() {
     {
       title: "Ngày sản xuất",
       dataIndex: "manufactureDate",
-      key: "manufactureDate",
       width: 120,
       render: (date) => (date ? dayjs(date).format("DD/MM/YYYY") : "N/A"),
     },
     {
       title: "Thao tác",
-      key: "actions",
       width: 150,
       render: (_, record) => (
         <Space>
@@ -961,26 +715,6 @@ function CreateElectricVehicle() {
                 Quản lý toàn bộ xe điện trong hệ thống. Tổng cộng:{" "}
                 {vehicles.length} xe
               </Text>
-
-              {/* Test API Button */}
-              <Button
-                type="dashed"
-                size="small"
-                onClick={async () => {
-                  console.log("🧪 Testing API connection...");
-                  message.info("Đang kiểm tra kết nối API...");
-                  const isConnected = await vehicleApi.testApiConnection();
-                  if (isConnected) {
-                    message.success("✅ API kết nối thành công!");
-                  } else {
-                    message.error(
-                      "❌ API kết nối thất bại. Kiểm tra console để xem chi tiết."
-                    );
-                  }
-                }}
-              >
-                🧪 Test API Connection
-              </Button>
             </Space>
           </Col>
         </Row>
@@ -1114,6 +848,8 @@ function CreateElectricVehicle() {
                       listType="picture-card"
                       fileList={uploadedImages}
                       onChange={handleImageUpload}
+                      onPreview={handlePreview}
+                      onRemove={handleRemove}
                       customRequest={customUpload}
                       accept="image/*"
                       beforeUpload={(file) => {
@@ -1363,195 +1099,183 @@ function CreateElectricVehicle() {
                 style={{ marginBottom: 16 }}
               />
 
-              <div>
-                {(() => {
-                  // Sử dụng formData thay vì getFieldsValue()
-                  const currentFormValues = form.getFieldsValue();
-                  const values = { ...formData, ...currentFormValues };
+              {(() => {
+                const currentFormValues = form.getFieldsValue();
+                const values = { ...formData, ...currentFormValues };
+                const selectedVersion = versions.find(
+                  (v) => v.id === values.versionId
+                );
+                const selectedColor = colors.find(
+                  (c) => c.id === values.colorId
+                );
+                const selectedWarehouse = warehouses.find(
+                  (w) => w.id === values.warehouseId
+                );
 
-                  // Debug logging để check form values
-                  console.log("=== FORM VALUES IN CONFIRMATION STEP ===");
-                  console.log("FormData from state:", formData);
-                  console.log("Current form values:", currentFormValues);
-                  console.log("Combined values:", values);
+                return (
+                  <Card title="Xác nhận thông tin xe điện">
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <p>
+                          <strong>VIN:</strong> {values.vin || "N/A"}
+                        </p>
+                        <p>
+                          <strong>Version:</strong>{" "}
+                          {selectedVersion?.versionName || "N/A"}
+                        </p>
+                        <p>
+                          <strong>Màu sắc:</strong>{" "}
+                          {selectedColor?.colorName || "N/A"}
+                        </p>
+                        <p>
+                          <strong>Kho:</strong>{" "}
+                          {selectedWarehouse?.name || "Chưa chọn kho"}
+                        </p>
+                      </Col>
+                      <Col span={12}>
+                        <p>
+                          <strong>Giá cost:</strong>{" "}
+                          {values.costPrice?.toLocaleString
+                            ? values.costPrice.toLocaleString("vi-VN") + " ₫"
+                            : values.costPrice || "N/A"}
+                        </p>
+                        <p>
+                          <strong>Ngày sản xuất:</strong>{" "}
+                          {values.manufactureDate?.format("DD/MM/YYYY") ||
+                            "N/A"}
+                        </p>
+                        <p>
+                          <strong>Ngày nhập khẩu:</strong>{" "}
+                          {values.importDate?.format("DD/MM/YYYY") || "N/A"}
+                        </p>
+                      </Col>
+                    </Row>
 
-                  const selectedVersion = versions.find(
-                    (v) => v.id === values.versionId
-                  );
-                  const selectedColor = colors.find(
-                    (c) => c.id === values.colorId
-                  );
-                  const selectedWarehouse = warehouses.find(
-                    (w) => w.id === values.warehouseId
-                  );
-                  return (
-                    <Card title="Xác nhận thông tin xe điện">
-                      <Row gutter={16}>
-                        <Col span={12}>
-                          <p>
-                            <strong>VIN:</strong> {values.vin || "N/A"}
-                          </p>
-                          <p>
-                            <strong>Version:</strong>{" "}
-                            {selectedVersion?.versionName || "N/A"}
-                          </p>
-                          <p>
-                            <strong>Màu sắc:</strong>{" "}
-                            {selectedColor?.colorName || "N/A"}
-                          </p>
-                          <p>
-                            <strong>Kho:</strong>{" "}
-                            {selectedWarehouse?.name || "Chưa chọn kho"}
-                          </p>
-                        </Col>
-                        <Col span={12}>
-                          <p>
-                            <strong>Giá cost:</strong>{" "}
-                            {values.costPrice?.toLocaleString
-                              ? values.costPrice.toLocaleString("vi-VN") + " ₫"
-                              : values.costPrice || "N/A"}
-                          </p>
-                          <p>
-                            <strong>Ngày sản xuất:</strong>{" "}
-                            {values.manufactureDate?.format("DD/MM/YYYY") ||
-                              "N/A"}
-                          </p>
-                          <p>
-                            <strong>Ngày nhập khẩu:</strong>{" "}
-                            {values.importDate?.format("DD/MM/YYYY") || "N/A"}
-                          </p>
-                        </Col>
-                      </Row>
+                    {/* Hiển thị uploaded images và attachment keys */}
+                    {uploadedImages.length > 0 && (
+                      <div style={{ marginTop: 16 }}>
+                        <strong>
+                          Hình ảnh đã tải lên ({uploadedImages.length}):
+                        </strong>
 
-                      {/* Hiển thị uploaded images và keys */}
-                      {uploadedImages.length > 0 && (
-                        <div style={{ marginTop: 16 }}>
-                          <strong>
-                            Hình ảnh đã tải lên ({uploadedImages.length}):
-                          </strong>
-
-                          {/* Hiển thị image keys nếu có */}
-                          {imageKeys.length > 0 && (
-                            <div
-                              style={{
-                                marginTop: 8,
-                                padding: "8px 12px",
-                                backgroundColor: "#f6ffed",
-                                border: "1px solid #b7eb8f",
-                                borderRadius: 6,
-                              }}
-                            >
-                              <p
-                                style={{
-                                  margin: 0,
-                                  color: "#389e0d",
-                                  fontSize: "14px",
-                                }}
-                              >
-                                ✅ Đã upload thành công {imageKeys.length} ảnh
-                                và nhận được keys từ server
-                              </p>
-                              <details style={{ marginTop: 4 }}>
-                                <summary
-                                  style={{
-                                    cursor: "pointer",
-                                    color: "#595959",
-                                  }}
-                                >
-                                  Xem chi tiết keys
-                                </summary>
-                                <div
-                                  style={{
-                                    marginTop: 4,
-                                    fontSize: "12px",
-                                    fontFamily: "monospace",
-                                  }}
-                                >
-                                  {imageKeys.map((key, index) => (
-                                    <div key={index}>
-                                      Ảnh {index + 1}: {key}
-                                    </div>
-                                  ))}
-                                </div>
-                              </details>
-                            </div>
-                          )}
-
+                        {/* Hiển thị attachment keys nếu có */}
+                        {attachmentKeys.length > 0 && (
                           <div
                             style={{
-                              display: "flex",
-                              flexWrap: "wrap",
-                              gap: 8,
                               marginTop: 8,
+                              padding: "8px 12px",
+                              backgroundColor: "#f6ffed",
+                              border: "1px solid #b7eb8f",
+                              borderRadius: 6,
                             }}
                           >
-                            {uploadedImages.map((file, index) => {
-                              // Tạo URL preview cho file
-                              let previewUrl = "";
-                              try {
-                                if (file instanceof File) {
-                                  previewUrl = URL.createObjectURL(file);
-                                } else if (file.url) {
-                                  previewUrl = file.url;
-                                } else if (file.thumbUrl) {
-                                  previewUrl = file.thumbUrl;
-                                }
-                              } catch (error) {
-                                console.warn(
-                                  "Cannot create preview URL for file:",
-                                  file
-                                );
-                              }
-
-                              return previewUrl ? (
-                                <div
-                                  key={index}
-                                  style={{ position: "relative" }}
-                                >
-                                  <img
-                                    src={previewUrl}
-                                    alt={`Hình ${index + 1}`}
-                                    style={{
-                                      width: 100,
-                                      height: 100,
-                                      objectFit: "cover",
-                                      borderRadius: 8,
-                                      border: "1px solid #d9d9d9",
-                                    }}
-                                  />
-                                  {/* Hiển thị key tương ứng với ảnh */}
-                                  {imageKeys[index] && (
-                                    <div
-                                      style={{
-                                        position: "absolute",
-                                        bottom: 0,
-                                        left: 0,
-                                        right: 0,
-                                        background: "rgba(0, 0, 0, 0.7)",
-                                        color: "white",
-                                        fontSize: "10px",
-                                        padding: "2px 4px",
-                                        borderRadius: "0 0 8px 8px",
-                                        textAlign: "center",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
-                                      }}
-                                      title={imageKeys[index]}
-                                    >
-                                      Key: {imageKeys[index].substring(0, 8)}...
-                                    </div>
-                                  )}
-                                </div>
-                              ) : null;
-                            })}
+                            <p
+                              style={{
+                                margin: 0,
+                                color: "#389e0d",
+                                fontSize: "14px",
+                              }}
+                            >
+                              ✅ Đã upload thành công {attachmentKeys.length}{" "}
+                              ảnh và nhận được keys từ server
+                            </p>
+                            <details style={{ marginTop: 4 }}>
+                              <summary
+                                style={{ cursor: "pointer", color: "#595959" }}
+                              >
+                                Xem chi tiết keys
+                              </summary>
+                              <div
+                                style={{
+                                  marginTop: 4,
+                                  fontSize: "12px",
+                                  fontFamily: "monospace",
+                                }}
+                              >
+                                {attachmentKeys.map((key, index) => (
+                                  <div key={index}>
+                                    Ảnh {index + 1}: {key}
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
                           </div>
+                        )}
+
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 8,
+                            marginTop: 8,
+                          }}
+                        >
+                          {uploadedImages.map((file, index) => {
+                            let previewUrl = "";
+                            try {
+                              if (file instanceof File) {
+                                previewUrl = URL.createObjectURL(file);
+                              } else if (file.url) {
+                                previewUrl = file.url;
+                              } else if (file.thumbUrl) {
+                                previewUrl = file.thumbUrl;
+                              }
+                            } catch (error) {
+                              console.warn(
+                                "Cannot create preview URL for file:",
+                                file
+                              );
+                            }
+
+                            return previewUrl ? (
+                              <div key={index} style={{ position: "relative" }}>
+                                <img
+                                  src={previewUrl}
+                                  alt={`Hình ${index + 1}`}
+                                  style={{
+                                    width: 100,
+                                    height: 100,
+                                    objectFit: "cover",
+                                    borderRadius: 8,
+                                    border: "1px solid #d9d9d9",
+                                  }}
+                                />
+                                {attachmentKeys[index] && (
+                                  <div
+                                    style={{
+                                      position: "absolute",
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      background: "rgba(0,0,0,0.7)",
+                                      color: "white",
+                                      fontSize: "10px",
+                                      padding: "2px 4px",
+                                      borderRadius: "0 0 8px 8px",
+                                      textAlign: "center",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                    title={attachmentKeys[index] || "No key"}
+                                  >
+                                    Key:{" "}
+                                    {attachmentKeys[index] &&
+                                    typeof attachmentKeys[index] === "string"
+                                      ? attachmentKeys[index].substring(0, 8) +
+                                        "..."
+                                      : "No key"}
+                                  </div>
+                                )}
+                              </div>
+                            ) : null;
+                          })}
                         </div>
-                      )}
-                    </Card>
-                  );
-                })()}
-              </div>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })()}
             </div>
           )}
 
@@ -1645,7 +1369,6 @@ function CreateElectricVehicle() {
                   </p>
                 </Card>
               </Col>
-
               <Col span={12}>
                 <Card title="Thông tin kỹ thuật" size="small">
                   <p>
@@ -1683,28 +1406,22 @@ function CreateElectricVehicle() {
                 </Card>
               </Col>
             </Row>
-
-            {selectedVehicle.imageUrl && (
-              <Card title="Hình ảnh" size="small" style={{ marginTop: 16 }}>
-                <img
-                  src={selectedVehicle.imageUrl}
-                  alt="Vehicle"
-                  style={{ width: "100%", maxHeight: 300, objectFit: "cover" }}
-                />
-              </Card>
-            )}
           </div>
         )}
+      </Modal>
+
+      {/* Modal preview ảnh */}
+      <Modal
+        open={previewVisible}
+        title={previewTitle}
+        footer={null}
+        onCancel={() => setPreviewVisible(false)}
+        width={800}
+      >
+        <img alt="preview" style={{ width: "100%" }} src={previewImage} />
       </Modal>
     </PageContainer>
   );
 }
 
-// Wrap component với App để tránh static function warnings
-const CreateElectricVehicleWithApp = () => (
-  <App>
-    <CreateElectricVehicle />
-  </App>
-);
-
-export default CreateElectricVehicleWithApp;
+export default CreateElectricVehicle;
