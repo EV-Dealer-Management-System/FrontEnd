@@ -25,6 +25,7 @@ import EVMStaff from "./Pages/EVMStaff/EVMStaff";
 import ChangePassword from "./Pages/Admin/ChangePassword/ChangePassword";
 import ChangePasswordEVMStaff from "./Pages/EVMStaff/ChangePassword/ChangePassword";
 import ChangePasswordDealerManager from "./Pages/DealerManager/ChangePassword/ChangePassword";
+import ChangePasswordDealerStaff from "./Pages/DealerStaff/ChangePassword/ChangePassword";
 import GetAllEVMStaff from "./Pages/Admin/GetAllEVMStaff/GetAllEVMStaff";
 import CreateEVMStaffAccount from "./Pages/Admin/CreateEVMStaffAccount/CreateEVMStaffAccount";
 import EVMGetAllEVBooking from "./Pages/EVMStaff/EVMGetAllEVBooking/EVMGetAllEVBooking";
@@ -146,6 +147,7 @@ function App() {
             <DealerStaffRoute>
               <Routes>
                 <Route path="" element={<DealerStaff />} />
+                <Route path="settings/change-password" element={<ChangePasswordDealerStaff />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ Dealer Staff */}
                 <Route
                   path="*"

@@ -207,7 +207,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
                             <ShopOutlined className="text-2xl text-green-500" />
                             {!collapsed && (
                                 <Text strong className="text-lg text-gray-800">
-                                    Nhân Viên Đại Lý
+                                    EV Dealer Staff Portal
                                 </Text>
                             )}
                         </div>
