@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Button, Badge, Space, Typography, Tooltip, message } from "antd";
 import { ProLayout, ProConfigProvider } from "@ant-design/pro-components";
 import {
+    UserAddOutlined,
     FileTextOutlined,
     DashboardOutlined,
     SettingOutlined,
@@ -9,15 +10,22 @@ import {
     ShopOutlined,
     CarOutlined,
     BarChartOutlined,
+    BellOutlined,
     LogoutOutlined,
-    FileAddOutlined,
-    FileSyncOutlined,
-    FileProtectOutlined,
-    BankOutlined,
-    AuditOutlined,
-    ContainerOutlined,
+    MenuFoldOutlined,
+    MenuUnfoldOutlined,
+    DatabaseOutlined,
+    DeploymentUnitOutlined,
+    SolutionOutlined,
+    LineChartOutlined,
+    GlobalOutlined,
+    QuestionCircleOutlined,
+    ShoppingCartOutlined,
+    DollarOutlined,
+    PlusOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
+
 const { Text } = Typography;
 
 function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
@@ -42,82 +50,120 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         navigate("/");
     };
 
-    // Menu items cho EVM Staff với Pro Layout structure
+    // Menu items cho Dealer Staff với Pro Layout structure
     const route = {
-        path: "/evm-staff",
+        path: "/dealer-staff",
         routes: [
             {
-                path: "/evm-staff/dashboard",
+                path: "/dealer-staff",
                 name: "Tổng quan",
                 icon: <DashboardOutlined />,
                 component: "./Dashboard",
             },
             {
-                path: "/evm-staff/contracts",
-                name: "Quản lý hợp đồng",
-                icon: <FileTextOutlined />,
+                path: "/dealer-staff/sales",
+                name: "Bán hàng",
+                icon: <ShoppingCartOutlined />,
                 routes: [
                     {
-                        path: "/evm-staff/contracts/create-contract",
-                        name: "Tạo hợp đồng mới",
-                        icon: <FileAddOutlined />,
-                        component: "",
+                        path: "/dealer-staff/sales/create-quote",
+                        name: "Tạo báo giá",
+                        icon: <FileTextOutlined />,
+                        component: "./CreateQuote",
                     },
                     {
-                        path: "/evm-staff/contracts/edit",
-                        name: "Chỉnh sửa hợp đồng",
-                        icon: <FileSyncOutlined />,
-                        component: "./EditContract",
+                        path: "/dealer-staff/sales/create-order",
+                        name: "Tạo đơn hàng",
+                        icon: <PlusOutlined />,
+                        component: "./CreateOrder",
                     },
                     {
-                        path: "/evm-staff/contracts/verify",
-                        name: "Xác nhận hợp đồng",
-                        icon: <FileProtectOutlined />,
-                        component: "./VerifyContract",
-                    },
-                    {
-                        path: "/evm-staff/contracts/all",
-                        name: "Danh sách hợp đồng",
-                        icon: <ContainerOutlined />,
-                        component: "./ContractsList",
+                        path: "/dealer-staff/sales/my-orders",
+                        name: "Đơn hàng của tôi",
+                        icon: <ShoppingCartOutlined />,
+                        component: "./MyOrders",
                     },
                 ],
             },
             {
-                path: "/evm-staff/dealers",
-                name: "Quản lý đại lý",
-                icon: <ShopOutlined />,
+                path: "/dealer-staff/customers",
+                name: "Khách hàng",
+                icon: <TeamOutlined />,
                 routes: [
                     {
-                        path: "/evm-staff/ev/get-all-ev-booking",
-                        name: "Danh sách Booking",
-                        icon: <BankOutlined />,
-                        component: "./DealersList",
+                        path: "/dealer-staff/customers/list",
+                        name: "Danh sách khách hàng",
+                        icon: <TeamOutlined />,
+                        component: "./CustomerList",
                     },
                     {
-                        path: "/evm-staff/dealers/performance",
-                        name: "Hiệu suất đại lý",
-                        icon: <BarChartOutlined />,
-                        component: "./DealerPerformance",
+                        path: "/dealer-staff/customers/add",
+                        name: "Thêm khách hàng",
+                        icon: <UserAddOutlined />,
+                        component: "./AddCustomer",
                     },
-                    // {
-                    //     path: "/evm-staff/dealers/audit",
-                    //     name: "Kiểm tra tuân thủ",
-                    //     icon: <AuditOutlined />,
-                    //     component: "./DealerAudit",
-                    // },
+                    {
+                        path: "/dealer-staff/customers/test-drive",
+                        name: "Lịch lái thử",
+                        icon: <CarOutlined />,
+                        component: "./TestDrive",
+                    },
                 ],
             },
             {
-                path: "/evm-staff/settings",
+                path: "/dealer-staff/vehicles",
+                name: "Xe điện",
+                icon: <CarOutlined />,
+                routes: [
+                    {
+                        path: "/dealer-staff/vehicles/catalog",
+                        name: "Danh mục xe",
+                        icon: <DatabaseOutlined />,
+                        component: "./VehicleCatalog",
+                    },
+                    {
+                        path: "/dealer-staff/vehicles/compare",
+                        name: "So sánh xe",
+                        icon: <GlobalOutlined />,
+                        component: "./CompareVehicles",
+                    },
+                ],
+            },
+            {
+                path: "/dealer-staff/reports",
+                name: "Báo cáo",
+                icon: <BarChartOutlined />,
+                routes: [
+                    {
+                        path: "/dealer-staff/reports/my-sales",
+                        name: "Doanh số của tôi",
+                        icon: <LineChartOutlined />,
+                        component: "./MySalesReport",
+                    },
+                    {
+                        path: "/dealer-staff/reports/commission",
+                        name: "Hoa hồng",
+                        icon: <DollarOutlined />,
+                        component: "./CommissionReport",
+                    },
+                ],
+            },
+            {
+                path: "/dealer-staff/settings",
                 name: "Cài đặt",
                 icon: <SettingOutlined />,
                 component: "./Settings",
                 routes: [
                     {
-                        path: "/evm-staff/settings/change-password",
+                        path: "/dealer-staff/settings/profile",
+                        name: "Thông tin cá nhân",
+                        icon: <SolutionOutlined />,
+                        component: "./Profile",
+                    },
+                    {
+                        path: "/dealer-staff/settings/change-password",
                         name: "Đổi mật khẩu",
-                        icon: <CarOutlined />,
+                        icon: <SolutionOutlined />,
                         component: "./ChangePassword",
                     },
                 ],
@@ -149,10 +195,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
                 <ProLayout
                     route={route}
                     location={{
-                        pathname:
-                            location.pathname === "/evm-staff"
-                                ? "/evm-staff/dashboard"
-                                : location.pathname,
+                        pathname: location.pathname,
                     }}
                     collapsed={collapsed}
                     onCollapse={setCollapsed}
@@ -161,15 +204,15 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
                     collapsedWidth={64}
                     logo={
                         <div className="flex items-center gap-2">
-                            <CarOutlined className="text-2xl text-blue-500" />
+                            <ShopOutlined className="text-2xl text-green-500" />
                             {!collapsed && (
                                 <Text strong className="text-lg text-gray-800">
-                                    EVM Staff Portal
+                                    EV Dealer Staff Portal
                                 </Text>
                             )}
                         </div>
                     }
-                    title="EVM Staff"
+                    title="Dealer Staff"
                     layout="side"
                     navTheme="light"
                     headerTheme="light"
@@ -187,8 +230,6 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
                                     if (item.path === "/") {
                                         // Xử lý logout
                                         handleLogout();
-                                    } else if (item.path === "/evm-staff/dashboard") {
-                                        navigate("/evm-staff");
                                     } else {
                                         navigate(item.path);
                                     }
@@ -205,12 +246,8 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
                         render: (props, dom) => dom,
                     }}
                     menuProps={{
-                        selectedKeys: [
-                            location.pathname === "/evm-staff"
-                                ? "/evm-staff/dashboard"
-                                : location.pathname,
-                        ],
-                        defaultOpenKeys: ["/evm-staff/contracts"],
+                        selectedKeys: [location.pathname],
+                        defaultOpenKeys: ["/dealer-staff/sales"],
                     }}
                     style={{
                         backgroundColor: "#fff",

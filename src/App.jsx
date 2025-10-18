@@ -24,9 +24,14 @@ import ContractViewer from "./Pages/PublicPage/ContractView";
 import EVMStaff from "./Pages/EVMStaff/EVMStaff";
 import ChangePassword from "./Pages/Admin/ChangePassword/ChangePassword";
 import ChangePasswordEVMStaff from "./Pages/EVMStaff/ChangePassword/ChangePassword";
+import ChangePasswordDealerManager from "./Pages/DealerManager/ChangePassword/ChangePassword";
+import ChangePasswordDealerStaff from "./Pages/DealerStaff/ChangePassword/ChangePassword";
 import GetAllEVMStaff from "./Pages/Admin/GetAllEVMStaff/GetAllEVMStaff";
 import CreateEVMStaffAccount from "./Pages/Admin/CreateEVMStaffAccount/CreateEVMStaffAccount";
 import DealerStaffList from "./Pages/DealerManager/DealerStaffAccount/DealerStaffList";
+import EVMGetAllEVBooking from "./Pages/EVMStaff/EVMGetAllEVBooking/EVMGetAllEVBooking";
+import CreateDealerAccount from "./Pages/DealerManager/CreateDealerAccount/CreateDealerAccount";
+import DealerStaff from "./Pages/DealerStaff/Main/DealerStaff";
 function App() {
   return (
     <BrowserRouter>
@@ -106,6 +111,8 @@ function App() {
                 <Route path="ev/ev-booking" element={<EVBooking />} />
                 <Route path="ev/all-ev-booking" element={<GetAllEVBooking />} />
                 <Route path="staff-list" element={<DealerStaffList/>} />
+                <Route path="settings/change-password" element={<ChangePasswordDealerManager />} />
+                <Route path="staff/create-dealer-staff-account" element={<CreateDealerAccount />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}
                 <Route
                   path="*"
@@ -124,6 +131,7 @@ function App() {
               <Routes>
                 <Route path="" element={<EVMStaff />} />
                 <Route path="settings/change-password" element={<ChangePasswordEVMStaff />} />
+                <Route path="ev/get-all-ev-booking" element={<EVMGetAllEVBooking />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ EVM Staff */}
                 <Route
                   path="*"
@@ -131,6 +139,24 @@ function App() {
                 />
               </Routes>
             </EVMStaffRoute>
+          }
+        />
+
+        {/* Dealer Staff Routes - với catch-all route */}
+        <Route
+          path="/dealer-staff/*"
+          element={
+            <DealerStaffRoute>
+              <Routes>
+                <Route path="" element={<DealerStaff />} />
+                <Route path="settings/change-password" element={<ChangePasswordDealerStaff />} />
+                {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ Dealer Staff */}
+                <Route
+                  path="*"
+                  element={<Navigate to="/dealer-staff" replace />}
+                />
+              </Routes>
+            </DealerStaffRoute>
           }
         />
         {/* Global catch-all route */}
