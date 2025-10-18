@@ -121,8 +121,8 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: "./StaffList",
           },
           {
-            path: "/dealer/staff/performance",
-            name: "Hiệu suất bán hàng",
+            path: "/dealer-manager/staff/create-dealer-staff-account",
+            name: "Tạo tài khoản nhân viên",
             icon: <LineChartOutlined />,
             component: "./StaffPerformance",
           },

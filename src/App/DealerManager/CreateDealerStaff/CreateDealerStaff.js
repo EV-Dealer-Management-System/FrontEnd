@@ -1,5 +1,5 @@
 import api from "../../../api/api";
-export const EVMStaffAccountService = {
+export const CreateDealerStaff = {
     createStaffAccount: async function (formData) {
         try {
             const apiData = {
@@ -7,7 +7,7 @@ export const EVMStaffAccountService = {
                 fullName: formData.fullName || '',
                 phoneNumber: formData.PhoneNumber || '',
             };
-            const response = await api.post("/EVC/create-evm-staff", apiData);
+            const response = await api.post("/Dealer/create-dealer-staff", apiData);
             return response.data;
         } catch (error) {
             console.error("Error creating staff account:", error);
