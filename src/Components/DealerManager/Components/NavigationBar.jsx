@@ -115,7 +115,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         icon: <TeamOutlined />,
         routes: [
           {
-            path: "/dealer-manager/staff/list",
+            path: "/dealer-manager/staff-list",
             name: "Danh sách nhân viên",
             icon: <TeamOutlined />,
             component: "./StaffList",
