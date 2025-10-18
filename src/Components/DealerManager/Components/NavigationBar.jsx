@@ -158,6 +158,14 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         name: "Cài đặt",
         icon: <SettingOutlined />,
         component: "./Settings",
+        routes: [
+          {
+            path: "/dealer-manager/settings/change-password",
+            name: "Đổi mật khẩu",
+            icon: <SolutionOutlined />,
+            component: "./ChangePassword",
+          },
+        ],
       },
       {
         path: "/",

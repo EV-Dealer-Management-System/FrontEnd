@@ -24,8 +24,10 @@ import ContractViewer from "./Pages/PublicPage/ContractView";
 import EVMStaff from "./Pages/EVMStaff/EVMStaff";
 import ChangePassword from "./Pages/Admin/ChangePassword/ChangePassword";
 import ChangePasswordEVMStaff from "./Pages/EVMStaff/ChangePassword/ChangePassword";
+import ChangePasswordDealerManager from "./Pages/DealerManager/ChangePassword/ChangePassword";
 import GetAllEVMStaff from "./Pages/Admin/GetAllEVMStaff/GetAllEVMStaff";
 import CreateEVMStaffAccount from "./Pages/Admin/CreateEVMStaffAccount/CreateEVMStaffAccount";
+
 function App() {
   return (
     <BrowserRouter>
@@ -104,6 +106,7 @@ function App() {
                 <Route path="" element={<DealerManager />} />
                 <Route path="ev/ev-booking" element={<EVBooking />} />
                 <Route path="ev/all-ev-booking" element={<GetAllEVBooking />} />
+                <Route path="settings/change-password" element={<ChangePasswordDealerManager />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}
                 <Route
                   path="*"
