@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import * as signalR from "@microsoft/signalr";
 import {
   PageContainer,
   ProForm,
@@ -25,6 +26,40 @@ function EVBooking() {
   const [colorsCache, setColorsCache] = useState({});
   const [bookingDetails, setBookingDetails] = useState([]);
   const [availableQuantities, setAvailableQuantities] = useState({}); // Lưu số lượng có sẵn theo key: modelId_versionId_colorId
+
+  useEffect(() => {
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(`${import.meta.env.VITE_API_URL}/notificationHub`, {
+        accessTokenFactory: () => localStorage.getItem("jwt_token"),
+      })
+      .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.Information)
+      .build();
+
+    connection.on(
+      "ReceiveElectricVehicleQuantityUpdate",
+      (versionId, colorId, quantity) => {
+        setAvailableQuantities((prev) => {
+          const updated = { ...prev };
+          Object.keys(updated).forEach((key) => {
+            if (key.includes(versionId) && key.includes(colorId)) {
+              updated[key] = quantity;
+            }
+          });
+          return updated;
+        });
+      }
+    );
+
+    connection
+      .start()
+      .then(() => console.log("✅ Connected to SignalR hub"))
+      .catch((err) => console.error("❌ Lỗi kết nối SignalR:", err));
+
+    return () => {
+      connection.stop();
+    };
+  }, []);
 
   // Lấy danh sách mẫu xe và phiên bản
   useEffect(() => {
@@ -140,7 +175,11 @@ function EVBooking() {
 
       // Chỉ fetch nếu chưa có trong cache
       if (!availableQuantities[quantityKey]) {
-        const quantityData = await getEVAvailableQuantity(modelId, versionId, colorId);
+        const quantityData = await getEVAvailableQuantity(
+          modelId,
+          versionId,
+          colorId
+        );
 
         if (quantityData && quantityData.result !== undefined) {
           // Lưu vào cache
