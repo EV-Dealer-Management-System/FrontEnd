@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useQuill } from 'react-quilljs';
-import Quill from 'quill';
+// ✅ Bỏ static import Quill - sẽ dùng dynamic import
 import 'quill/dist/quill.snow.css';
 import { 
   Modal, 
   Button, 
   Card, 
   Space, 
-  message, 
   Spin, 
   Typography,
   Row,
   Col,
   Input,
-  Tabs
+  Tabs,
+  App
 } from 'antd';
 import { 
   EditOutlined, 
@@ -59,6 +58,8 @@ function PDFEdit({
   pageSign,
   onPositionsUpdate
 }) {
+  const { message } = App.useApp();
+  
   // States cơ bản
   const [loading, setLoading] = useState(false);
   const [templateData, setTemplateData] = useState(null);
@@ -77,7 +78,9 @@ function PDFEdit({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // ✅ Flag để đảm bảo Quill đã sẵn sàng trước khi paste nội dung
-  const [quillReady, setQuillReady] = useState(false);
+  const [quill, setQuill] = useState(null);
+  const quillRef = useRef(null);
+  const [isPasted, setIsPasted] = useState(false);
   
   // ✅ Flag để tránh load template trùng lặp
   const [templateLoaded, setTemplateLoaded] = useState(false);
@@ -92,13 +95,85 @@ function PDFEdit({
   // Service
   const pdfUpdateService = PDFUpdateService();
 
-  // Khởi tạo Quill editor với useQuill hook
-  const { quill, quillRef } = useQuill({
-    modules: quillModules,
-    formats: quillFormats,
-    theme: 'snow',
-    placeholder: 'Nhập nội dung hợp đồng...'
-  });
+  // ✅ Dynamic import Quill với async polling fix cho React 19 + Ant Design Modal
+  useEffect(() => {
+    if (!visible || quill) return;
+
+    let cancelled = false;
+    let globalRetry = 0; // ✅ Biến ngoài useEffect để tránh React 19 double invoke reset
+    const MAX_RETRY = 15; // Tăng lên 15 lần (2.25 giây)
+
+    const initQuill = async () => {
+      try {
+        console.log('📦 Dynamic importing Quill...');
+        
+        // ✅ Dynamic import Quill
+        const { default: Quill } = await import('quill');
+        
+        if (cancelled) return;
+        
+        // ✅ Async polling DOM mount - không dùng requestAnimationFrame
+        console.log('🔍 Starting DOM polling...');
+        
+        while (!quillRef.current || !document.contains(quillRef.current)) {
+          if (cancelled) return;
+          
+          globalRetry++;
+          console.log(`⏳ DOM polling ${globalRetry}/${MAX_RETRY} - Ref: ${!!quillRef.current}, InDoc: ${quillRef.current ? document.contains(quillRef.current) : false}`);
+          
+          if (globalRetry > MAX_RETRY) {
+            console.error('❌ DOM mount timeout sau', MAX_RETRY, 'lần polling');
+            message.error('Không thể khởi tạo editor - DOM chưa sẵn sàng');
+            return;
+          }
+          
+          // ✅ Async polling với setTimeout
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
+        
+        if (cancelled) return;
+        
+        console.log('✅ DOM ready → Creating Quill instance');
+        const q = new Quill(quillRef.current, {
+          theme: 'snow',
+          modules: quillModules,
+          formats: quillFormats,
+          placeholder: 'Nhập nội dung hợp đồng...'
+        });
+        
+        setQuill(q);
+        setIsPasted(false);
+        globalRetry = 0; // ✅ Reset sau khi thành công
+        console.log('✅ Quill initialized successfully with async polling');
+        
+      } catch (error) {
+        console.error('❌ Error initializing Quill:', error);
+        message.error('Lỗi khởi tạo editor. Vui lòng thử lại.');
+      }
+    };
+
+    initQuill();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visible]); // Chỉ phụ thuộc vào visible
+
+  // ✅ Paste HTML khi Quill sẵn sàng và có nội dung
+  useEffect(() => {
+    if (quill && htmlContent && !isPasted) {
+      console.log('✅ Pasting HTML to Quill, content length:', htmlContent.length);
+      const bodyOnly = htmlContent.replace(/^[\s\S]*<body[^>]*>|<\/body>[\s\S]*$/g, '');
+      const processed = preprocessHtmlForQuill(bodyOnly);
+      
+      try {
+        quill.clipboard.dangerouslyPasteHTML(processed);
+        setIsPasted(true);
+      } catch (error) {
+        console.warn('Failed to paste HTML:', error);
+      }
+    }
+  }, [quill, htmlContent]);
 
 
 
@@ -326,9 +401,6 @@ ${bodyContent}
   useEffect(() => {
     if (quill) {
       console.log('✅ Quill editor initialized and ready');
-      setQuillReady(true);
-    } else {
-      setQuillReady(false);
     }
   }, [quill]);
 
@@ -352,7 +424,7 @@ ${bodyContent}
 
   // ✅ Đồng bộ Quill editor với htmlContent và track changes - CHỈ dùng quill
   useEffect(() => {
-    if (quill && quillReady) {
+    if (quill) {
       let debounceTimer;
       
       // Setup listener: luôn postprocess trước khi lưu về state (để htmlContent luôn là raw)
@@ -376,37 +448,17 @@ ${bodyContent}
         clearTimeout(debounceTimer);
       };
     }
-  }, [quill, quillReady, isUpdatingFromCode]);  // ✅ TÁCH BIỆT: Paste nội dung vào Quill - HOẠT ĐỘNG ĐỘC LẬP với loadTemplate
+  }, [quill, isUpdatingFromCode]);  // ✅ Debug Quill initialization - CHỈ log 1 lần khi ready
   useEffect(() => {
-    if (!quill || !quillReady || !htmlContent) return;
-
-    console.log('✅ Auto-syncing HTML to Quill editor, content length:', htmlContent.length);
-    const processed = preprocessHtmlForQuill(htmlContent);
-    setIsUpdatingFromCode(true);
-
-    try {
-      const delta = quill.clipboard.convert(processed);
-      quill.setContents(delta);
-    } catch (error) {
-      console.warn('setContents failed, fallback to dangerouslyPasteHTML:', error);
-      quill.clipboard.dangerouslyPasteHTML(processed);
-    }
-
-    setTimeout(() => setIsUpdatingFromCode(false), 50);
-  }, [quill, quillReady, htmlContent]); // ✅ Tự động sync khi có Quill + content (độc lập API)
-
-  // ✅ Debug Quill initialization - CHỈ log 1 lần khi ready
-  useEffect(() => {
-    if (quill && quillReady) {
+    if (quill) {
       console.log('=== QUILL READY ===');
       console.log('Quill:', !!quill);
-      console.log('QuillRef:', !!quillRef);
-      console.log('QuillReady:', quillReady);
+      console.log('QuillRef:', !!quillRef.current);
       console.log('Modal visible:', visible);
       console.log('Contract ID:', contractId);
       console.log('HTML Content length:', htmlContent?.length || 0);
     }
-  }, [quillReady]); // CHỈ log khi quillReady thay đổi
+  }, [quill]); // CHỈ log khi quill thay đổi
 
   // ✅ Load template NGAY khi modal mở - KHÔNG phụ thuộc quillReady
   useEffect(() => {
@@ -566,6 +618,7 @@ ${bodyContent}
       // Clear Quill content
       if (quill) {
         quill.setText('');
+        setIsPasted(false); // Reset paste flag
       }
       
       // Reset positions
@@ -644,18 +697,31 @@ ${bodyContent}
     onCancel();
   };
 
-  // ✅ Reset states khi modal đóng
+  // ✅ Reset states và cleanup Quill khi modal đóng
   useEffect(() => {
     if (!visible) {
       // Reset các flag và states
       setIsUpdatingFromCode(false);
       setLoading(false);
       setSaveLoading(false);
-      setQuillReady(false);
+      setIsPasted(false);
       setTemplateLoaded(false); // ✅ Reset để cho phép reload template lần sau
-      console.log('✅ Modal closed → Reset all states');
+      
+      // ✅ Cleanup Quill instance khi modal đóng
+      if (quill) {
+        console.log('🗑️ Cleaning up Quill instance');
+        try {
+          // Quill cleanup - remove listeners và destroy instance
+          quill.off('text-change'); // Remove listeners trước
+          setQuill(null); // Reset state
+        } catch (error) {
+          console.warn('Quill cleanup warning:', error);
+        }
+      }
+      
+      console.log('✅ Modal closed → Reset all states + cleanup Quill');
     }
-  }, [visible]);
+  }, [visible, quill]); // Thêm quill vào dependencies
 
   return (
     <Modal
@@ -766,30 +832,41 @@ ${bodyContent}
                     </span>
                   ),
                   children: (
-                    <div className="h-full overflow-hidden">                      
-                        {quill && quillReady ? (
-                          <div className="h-full overflow-hidden">
-                            <div className="ql-editor-container h-full">
-                              <div 
-                                ref={quillRef} 
-                                className="border border-gray-300 rounded bg-white h-full"
-                                style={{ 
-                                  height: 'calc(100vh - 320px)',
-                                  maxHeight: 'calc(100vh - 320px)',
-                                  visibility: 'visible',
-                                  opacity: 1
-                                }}
-                              />
+                    <div className="h-full overflow-hidden relative">
+                      {/* ✅ quillRef LUÔN được render - không phụ thuộc vào quill instance */}
+                      <div className="ql-editor-container h-full">
+                        <div 
+                          ref={quillRef} 
+                          className="border border-gray-300 rounded bg-white h-full"
+                          style={{ 
+                            height: 'calc(100vh - 320px)',
+                            maxHeight: 'calc(100vh - 320px)',
+                            visibility: 'visible',
+                            opacity: 1
+                          }}
+                        />
+                      </div>
+
+                      {/* ✅ Loading overlay - chỉ hiển thị khi chưa có Quill */}
+                      {!quill && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 bg-opacity-90 backdrop-blur-sm rounded">
+                          <Spin size="large" tip="Đang khởi tạo editor..." />
+                          <div className="mt-4 text-center">
+                            <div className="text-sm text-gray-500 mb-2">
+                              📦 Async polling DOM mount...
+                            </div>
+                            <div className="text-xs text-gray-400 space-y-1">
+                              <div>Modal: {visible ? '✓' : '✗'}</div>
+                              <div>DOM Ref: {quillRef.current ? '✓' : '✗'}</div>
+                              <div>In Document: {quillRef.current && document.contains(quillRef.current) ? '✓' : '✗'}</div>
+                              <div>Instance: {quill ? '✓' : '✗'}</div>
+                            </div>
+                            <div className="text-xs text-blue-500 mt-2">
+                              Đợi Portal DOM + Quill init...
                             </div>
                           </div>
-                        ) : (
-                          <div className="flex items-center justify-center h-full border border-gray-300 rounded bg-gray-50">
-                            <Spin size="large" tip="Đang khởi tạo editor..." />
-                            <div className="ml-4 text-sm text-gray-500">
-                              Quill: {quill ? '✓' : '✗'}, Ready: {quillReady ? '✓' : '✗'}
-                            </div>
-                          </div>
-                        )}
+                        </div>
+                      )}
                     </div>
                   )
                 },

@@ -871,14 +871,16 @@ const CreateContract = () => {
         )}
 
         {/* Template Edit Modal - FIX: Thêm key để force re-render */}
-        <PDFEdit
-          key={showTemplateEdit ? contractId : 'hidden'} // ✅ Force re-render mỗi lần mở
-          visible={showTemplateEdit}
-          onCancel={() => setShowTemplateEdit(false)}
-          onSave={handleUpdateContract} // ✅ Sử dụng function mới
-          contractId={contractId}
-          contractNo={contractNo}
-        />
+        <App>
+          <PDFEdit
+            key={showTemplateEdit ? contractId : 'hidden'} // ✅ Force re-render mỗi lần mở
+            visible={showTemplateEdit}
+            onCancel={() => setShowTemplateEdit(false)}
+            onSave={handleUpdateContract} // ✅ Sử dụng function mới
+            contractId={contractId}
+            contractNo={contractNo}
+          />
+        </App>
       </div>
     </AdminLayout>
   );
