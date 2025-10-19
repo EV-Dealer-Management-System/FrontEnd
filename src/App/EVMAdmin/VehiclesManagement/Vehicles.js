@@ -1,9 +1,5 @@
 // Vehicles.js - Business logic cho quản lý Vehicle của EVM Admin
 import api from "../../../api/api";
-import axios from "axios";
-
-
-// API functions cho Vehicle Management
 export const vehicleApi = {
   // === OVERVIEW FUNCTIONS ===
 
@@ -260,21 +256,12 @@ export const vehicleApi = {
     }
   },
 
-
-
-  // === ELECTRIC VEHICLE IMAGE SERVICE - CLEAN & SIMPLE ===
   ElectricVehicleImageService: {
-    // Detect content type (fixed: image/jpeg)
-    detectContentType(fileName) {
-      return 'image/jpeg';
-    },
-
-    // Upload 1 ảnh duy nhất
+  
     async uploadSingleImage(file) {
       try {
         const contentType = this.detectContentType(file.name);
 
-        // 1️⃣ Gọi API để lấy pre-signed URL
         const { data } = await api.post(
           '/ElectricVehicle/upload-file-url-electric-vehicle',
           { fileName: file.name, contentType },
@@ -296,8 +283,6 @@ export const vehicleApi = {
             : file.name;
 
         if (!uploadUrl) throw new Error('Pre-signed URL không hợp lệ');
-
-        // 2️⃣ Upload file thật lên S3 qua pre-signed URL
         const response = await fetch(uploadUrl, {
           method: 'PUT',
           headers: { 'Content-Type': contentType },
@@ -314,7 +299,6 @@ export const vehicleApi = {
       }
     },
 
-    // Upload nhiều ảnh → trả về mảng keys
     async uploadMultipleImages(files) {
       console.log(`🔄 Starting upload for ${files.length} files`);
       const keys = [];
