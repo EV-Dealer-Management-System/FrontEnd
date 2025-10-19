@@ -8,7 +8,7 @@ import {
   SmileTwoTone,
   MailTwoTone,
 } from "@ant-design/icons";
-import { createDealerStaff } from "../../../../App/DealerManager/GetAllDealerStaff/GetAllDealerStaff";
+import { createDealerStaff } from "../../../../App/DealerManager/DealerStaffManagement/GetAllDealerStaff";
 
 const { Text, Title } = Typography;
 

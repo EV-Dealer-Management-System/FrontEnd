@@ -30,7 +30,7 @@ import DealerManagerLayout from "../../../Components/DealerManager/DealerManager
 import {
   getAllDealerStaff,
   toggleDealerStaffStatus,
-} from "../../../App/DealerManager/GetAllDealerStaff/GetAllDealerStaff";
+} from "../../../App/DealerManager/DealerStaffManagement/GetAllDealerStaff";
 import DealerStaffCreateModal from "./Components/DealerStaffCreateModal";
 
 const DealerStaffList = () => {
