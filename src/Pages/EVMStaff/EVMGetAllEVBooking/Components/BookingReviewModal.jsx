@@ -19,7 +19,7 @@ function BookingReviewModal({
       title={
         <div className="flex items-center">
           <AuditOutlined className="mr-2 text-blue-500" />
-          <span className="font-semibold">Hủy Đơn Booking</span>
+          <span className="font-semibold">Duyệt Đơn Booking</span>
         </div>
       }
       open={visible}
@@ -30,7 +30,7 @@ function BookingReviewModal({
     >
       <div className="py-6">
         <p className="text-lg mb-8 text-center text-gray-700">
-          Bạn có chắc chắn muốn hủy đơn booking này không?
+          Bạn có chắc chắn muốn duyệt đơn booking này không?
         </p>
 
         <div className="flex gap-3">

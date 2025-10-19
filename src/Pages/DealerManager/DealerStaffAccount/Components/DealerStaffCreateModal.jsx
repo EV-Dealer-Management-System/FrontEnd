@@ -8,7 +8,7 @@ import {
   SmileTwoTone,
   MailTwoTone,
 } from "@ant-design/icons";
-import { createDealerStaff } from "../../../../App/DealerManager/DealerStaff/StaffService";
+import { createDealerStaff } from "../../../../App/DealerManager/GetAllDealerStaff/GetAllDealerStaff";
 
 const { Text, Title } = Typography;
 
@@ -49,7 +49,7 @@ function DealerStaffCreateModal({ visible, onCancel, onSuccess }) {
           if (backendMsg.includes("still active at dealer")) {
             message.error(
               "Nhân viên này đang làm việc tại một đại lý khác. " +
-                "Vui lòng chọn người khác hoặc yêu cầu họ rời khỏi đại lý cũ trước khi thêm mới."
+              "Vui lòng chọn người khác hoặc yêu cầu họ rời khỏi đại lý cũ trước khi thêm mới."
             );
           } else {
             message.error(

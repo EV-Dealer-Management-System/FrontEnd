@@ -30,7 +30,7 @@ import DealerManagerLayout from "../../../Components/DealerManager/DealerManager
 import {
   getAllDealerStaff,
   toggleDealerStaffStatus,
-} from "../../../App/DealerManager/DealerStaff/StaffService";
+} from "../../../App/DealerManager/GetAllDealerStaff/GetAllDealerStaff";
 import DealerStaffCreateModal from "./Components/DealerStaffCreateModal";
 
 const DealerStaffList = () => {
@@ -93,9 +93,8 @@ const DealerStaffList = () => {
   const handleToggleStatus = async (record) => {
     Modal.confirm({
       title: `${record.isActive ? "Khóa" : "Mở khóa"} tài khoản`,
-      content: `Bạn có chắc muốn ${
-        record.isActive ? "khóa" : "mở khóa"
-      } tài khoản của nhân viên "${record.fullName}" không?`,
+      content: `Bạn có chắc muốn ${record.isActive ? "khóa" : "mở khóa"
+        } tài khoản của nhân viên "${record.fullName}" không?`,
       okText: "Xác nhận",
       cancelText: "Hủy",
       centered: true,

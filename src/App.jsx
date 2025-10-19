@@ -110,7 +110,7 @@ function App() {
                 <Route path="" element={<DealerManager />} />
                 <Route path="ev/ev-booking" element={<EVBooking />} />
                 <Route path="ev/all-ev-booking" element={<GetAllEVBooking />} />
-                <Route path="/staff/staff-list" element={<DealerStaffList/>} />
+                <Route path="staff/staff-list" element={<DealerStaffList/>} />
                 <Route path="settings/change-password" element={<ChangePasswordDealerManager />} />
                 <Route path="staff/create-dealer-staff-account" element={<CreateDealerAccount />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}

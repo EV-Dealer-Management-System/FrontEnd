@@ -290,7 +290,7 @@ function BookingTable({
                                     borderColor: "#1890ff",
                                 }}
                             >
-                                Hủy Đơn
+                                Duyệt Đơn
                             </Button>
                         )}
                     </Space>
