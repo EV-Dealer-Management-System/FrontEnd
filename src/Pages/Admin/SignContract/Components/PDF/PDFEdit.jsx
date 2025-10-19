@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 // ✅ Bỏ static import Quill - sẽ dùng dynamic import
 import 'quill/dist/quill.snow.css';
+import Quill from 'quill';
 import { 
   Modal, 
   Button, 
@@ -25,6 +26,7 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons';
 import { PDFUpdateService } from '../../../../../App/Home/PDFconfig/PDFUpdate';
+import { range } from 'pdf-lib';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -140,7 +142,18 @@ function PDFEdit({
           formats: quillFormats,
           placeholder: 'Nhập nội dung hợp đồng...'
         });
-        
+        const Delta = Quill.import('delta');
+        //bỏ toàn bộ blocks signature khi khởi tạo
+        q.clipboard.addMatcher(Node.ELEMENT_NODE, (node, delta) => {
+          //nếu node có class "sign" thì bỏ toàn bộ delta
+          if(node && node.nodeType === 1) {
+            if(node.matches?.('.sign')|| node.closest?.('.sign')) {
+              return new Delta();
+            }
+          }
+          return delta;
+        });
+        q.root.setAttribute('spellcheck', 'false');
         setQuill(q);
         setIsPasted(false);
         globalRetry = 0; // ✅ Reset sau khi thành công
@@ -159,7 +172,7 @@ function PDFEdit({
     };
   }, [visible]); // Chỉ phụ thuộc vào visible
 
-  // ✅ Paste HTML khi Quill sẵn sàng và có nội dung
+  // ✅ Paste toàn bộ HTML khi Quill sẵn sàng và có nội dung
   useEffect(() => {
     if (quill && htmlContent && !isPasted) {
       console.log('✅ Pasting HTML to Quill, content length:', htmlContent.length);
@@ -264,6 +277,8 @@ ${bodyContent}
   useEffect(() => {
     const styleSheet = document.createElement("style");
     styleSheet.innerText = `
+      .ql-editor .sign { display: none !important; }
+
       .ql-editor {
         font-family: 'Noto Sans', 'DejaVu Sans', Arial, sans-serif !important;
         font-size: 12pt !important;
