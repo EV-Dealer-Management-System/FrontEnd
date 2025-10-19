@@ -10,7 +10,7 @@ import {
     InfoCircleOutlined,
     CheckCircleOutlined,
 } from '@ant-design/icons';
-import { CreateDealerStaff } from '../../../App/DealerManager/CreateDealerStaff/CreateDealerStaff';
+import { CreateDealerStaff } from '../../../App/DealerManager/DealerStaffManagement/CreateDealerStaff';
 import DealerManagerLayout from '../../../Components/DealerManager/DealerManagerLayout';
 import SuccessResult from './Components/SuccessResult';
 

@@ -10,7 +10,7 @@ import {
     ExclamationCircleOutlined,
     EditOutlined
 } from '@ant-design/icons';
-import { GetDealerContractByID } from '../../../../App/EVMAdmin/GetAllDealerContract/GetDealerContractByID';
+import { GetDealerContractByID } from '../../../../App/EVMAdmin/DealerContract/GetDealerContractByID';
 import useContractSigning from '../../SignContract/useContractSigning';
 import SignatureModal from '../../SignContract/Components/SignatureModal';
 import SmartCAModal from '../../SignContract/Components/SmartCAModal';
