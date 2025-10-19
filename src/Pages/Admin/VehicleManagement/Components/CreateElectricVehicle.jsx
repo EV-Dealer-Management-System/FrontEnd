@@ -37,14 +37,16 @@ import dayjs from "dayjs";
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// Helper function cho VIN
+// Helper function cho VIN - Format: VIN + 6 chữ số
 const generateSampleVIN = () => {
-  const chars = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789";
-  let vin = "";
-  for (let i = 0; i < 17; i++) {
-    vin += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return vin;
+  const randomNum = Math.floor(Math.random() * 900000) + 100000; // 6 chữ số từ 100000-999999
+  return `VIN${randomNum}`;
+};
+
+// Validation function cho VIN format
+const validateVINFormat = (vin) => {
+  const vinPattern = /^VIN\d{6}$/; // VIN theo sau bởi đúng 6 chữ số
+  return vinPattern.test(vin);
 };
 
 function CreateElectricVehicle() {
@@ -786,32 +788,41 @@ function CreateElectricVehicle() {
                     rules={[
                       { required: true, message: "Vui lòng nhập VIN!" },
                       {
-                        min: 17,
-                        max: 17,
-                        message: "VIN phải có đúng 17 ký tự!",
+                        len: 9,
+                        message: "VIN phải có đúng 9 ký tự (VIN + 6 chữ số)!",
                       },
                       {
-                        pattern: /^[A-HJ-NPR-Z0-9]{17}$/,
+                        pattern: /^VIN\d{6}$/,
                         message:
-                          "VIN không đúng định dạng! Chỉ được sử dụng A-H, J-N, P-R, T-Z, 0-9 (không có I, O, Q)",
+                          "VIN phải theo định dạng VIN + 6 chữ số (ví dụ: VIN101005)!",
+                      },
+                      {
+                        validator: (_, value) => {
+                          if (!value) return Promise.resolve();
+                          if (validateVINFormat(value)) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject(
+                            new Error("Định dạng VIN không hợp lệ!")
+                          );
+                        },
                       },
                     ]}
                     extra={
                       <div style={{ fontSize: 12, color: "#666" }}>
                         <strong>Quy tắc VIN:</strong>
-                        <br />• Đúng 17 ký tự
-                        <br />• Chỉ sử dụng: A-H, J-N, P-R, T-Z, 0-9
-                        <br />• Không được dùng: I, O, Q (để tránh nhầm lẫn)
-                        <br />• Ví dụ hợp lệ: 1HGBH41JXMN109186,
-                        WVWZZZ1JZ3W386752
+                        <br />• Định dạng: VIN + 6 chữ số
+                        <br />• Tổng cộng 9 ký tự
+                        <br />• Ví dụ hợp lệ: VIN101005, VIN101006, VIN101008
+                        <br />• Không được trùng lặp với VIN đã có
                       </div>
                     }
                   >
                     <Input.Group compact>
                       <Input
-                        placeholder="Nhập 17 ký tự VIN (tự động viết hoa)"
+                        placeholder="Nhập VIN theo format VIN + 6 chữ số"
                         size="large"
-                        maxLength={17}
+                        maxLength={9}
                         style={{
                           width: "calc(100% - 120px)",
                           textTransform: "uppercase",
@@ -819,10 +830,28 @@ function CreateElectricVehicle() {
                           letterSpacing: "1px",
                         }}
                         onChange={(e) => {
-                          // Auto uppercase và chỉ giữ ký tự hợp lệ
-                          const value = e.target.value
-                            .toUpperCase()
-                            .replace(/[^A-HJ-NPR-Z0-9]/g, "");
+                          // Tự động format VIN + chỉ số
+                          let value = e.target.value.toUpperCase();
+
+                          // Nếu user nhập không có VIN prefix, tự động thêm
+                          if (value && !value.startsWith("VIN")) {
+                            // Nếu chỉ nhập số thì thêm VIN prefix
+                            if (/^\d/.test(value)) {
+                              value = "VIN" + value;
+                            }
+                          }
+
+                          // Chỉ giữ VIN + số
+                          value = value.replace(/[^VIN0-9]/g, "");
+
+                          // Đảm bảo format đúng VIN + 6 số
+                          if (value.startsWith("VIN")) {
+                            const numbers = value
+                              .substring(3)
+                              .replace(/\D/g, "");
+                            value = "VIN" + numbers.substring(0, 6);
+                          }
+
                           form.setFieldsValue({ vin: value });
                         }}
                       />

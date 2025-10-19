@@ -148,8 +148,7 @@ function VehicleManagement() {
       } else {
         console.warn("⚠️ API result not successful:", result);
         message.error(result?.error || "Không thể tải danh sách xe");
-        // Fallback to mock data if API fails
-        setVehicles(getMockVehicles());
+        setVehicles([]);
       }
     } catch (error) {
       console.error("❌ Error loading vehicles:", error);
@@ -157,8 +156,7 @@ function VehicleManagement() {
       message.error(
         "Lỗi khi tải danh sách xe: " + (error.message || "Unknown error")
       );
-      // Fallback to mock data
-      setVehicles(getMockVehicles());
+      setVehicles([]);
     } finally {
       setTableLoading(false);
     }
@@ -182,61 +180,6 @@ function VehicleManagement() {
       // Don't show error message for models as it's not critical
     }
   };
-
-  // Mock data fallback - structure giống API response
-  const getMockVehicles = () => [
-    {
-      id: "01994f39-7894-78bc-a1ed-c88f87499078",
-      warehouseId: "01994f2c-5ff2-7177-8fde-475270081264",
-      versionId: "01994f2d-1c4f-7759-8429-475270081264",
-      colorId: "01994f2d-1cff-7b50-9e88-3bf32018f2fc",
-      vin: "VF001MOCK001",
-      status: 1,
-      manufactureDate: "2025-09-28T10:00Z",
-      importDate: "2025-09-29T10:00Z",
-      warrantyExpiryDate: "2027-09-28T10:00Z",
-      costPrice: 1200000000,
-      imageUrl: null,
-      // Extended info for display
-      versionName: "EV-A1 Standard",
-      colorName: "Đỏ Ruby",
-      warehouseName: "Kho Hà Nội",
-    },
-    {
-      id: "01994f39-7113-71f7-af50-3e38f6e48c95",
-      warehouseId: "01994f2c-5ff2-7977-8f76-a95188b341c5",
-      versionId: "01994f2d-1c4f-7759-8429-475270081264",
-      colorId: "01994f2d-1cff-7b50-9e88-3bf32018f2fc",
-      vin: "VF002MOCK002",
-      status: 1,
-      manufactureDate: "2025-09-27T10:00Z",
-      importDate: "2025-09-28T10:00Z",
-      warrantyExpiryDate: "2027-09-27T10:00Z",
-      costPrice: 1500000000,
-      imageUrl: null,
-      // Extended info for display
-      versionName: "EV-A1 Premium",
-      colorName: "Trắng Ngọc Trai",
-      warehouseName: "Kho TP.HCM",
-    },
-    {
-      id: "01994f39-mock-71f7-af50-sample003",
-      warehouseId: "01994f2c-mock-7977-8f76-warehouse3",
-      versionId: "01994f2d-mock-7759-8429-version003",
-      colorId: "01994f2d-mock-7b50-9e88-color003",
-      vin: "VF003MOCK003",
-      status: 0,
-      manufactureDate: "2025-09-26T10:00Z",
-      importDate: "2025-09-27T10:00Z",
-      warrantyExpiryDate: "2027-09-26T10:00Z",
-      costPrice: 800000000,
-      imageUrl: null,
-      // Extended info for display
-      versionName: "EV-A1 Lite",
-      colorName: "Xanh Đại Dương",
-      warehouseName: "Kho Đà Nẵng",
-    },
-  ];
 
   // Tính toán thống kê theo API response structure (với safe check)
   const totalVehicles = vehicles?.length || 0;
@@ -327,19 +270,32 @@ function VehicleManagement() {
     setIsViewModalVisible(true);
   };
 
-  // Cấu hình cột bảng theo API response thực tế
+  // Cấu hình cột bảng hiển thị TẤT CẢ thông tin xe (trừ versionId, colorId)
   const columns = [
     {
       title: "STT",
       key: "index",
       width: 60,
+      fixed: "left",
       render: (_, __, index) => index + 1,
+    },
+    {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 120,
+      fixed: "left",
+      render: (text) => (
+        <Text copyable style={{ fontSize: "11px", color: "#666" }}>
+          {text ? text.substring(0, 8) + "..." : "N/A"}
+        </Text>
+      ),
     },
     {
       title: "VIN",
       dataIndex: "vin",
       key: "vin",
-      width: 150,
+      width: 130,
       render: (text) => (
         <Text copyable strong style={{ color: "#1890ff", fontSize: "12px" }}>
           {text || "N/A"}
@@ -347,75 +303,127 @@ function VehicleManagement() {
       ),
     },
     {
-      title: "Version",
-      dataIndex: "versionId",
-      key: "version",
-      width: 120,
-      render: (versionId, record) => {
-        // Hiển thị version name hoặc rút gọn versionId
-        const displayText =
-          record.versionName ||
-          (versionId ? versionId.substring(0, 8) + "..." : "N/A");
-        return (
-          <Tag color="blue" title={versionId}>
-            {displayText}
+      title: "Warehouse",
+      key: "warehouse",
+      width: 160,
+      render: (_, record) => (
+        <div>
+          <Text strong style={{ display: "block", fontSize: "12px" }}>
+            {record.warehouseName || "Chưa có tên"}
+          </Text>
+          <Text style={{ fontSize: "10px", color: "#999" }}>
+            ID:{" "}
+            {record.warehouseId
+              ? record.warehouseId.substring(0, 8) + "..."
+              : "N/A"}
+          </Text>
+        </div>
+      ),
+    },
+    {
+      title: "Model & Version",
+      key: "modelVersion",
+      width: 200,
+      render: (_, record) => (
+        <div>
+          <Text
+            strong
+            style={{ color: "#1890ff", display: "block", fontSize: "12px" }}
+          >
+            {record.modelName || "N/A"}
+          </Text>
+          <Tag color="blue" size="small" style={{ marginTop: 2 }}>
+            {record.versionName || "N/A"}
           </Tag>
-        );
-      },
+          {record.modelId && (
+            <Text style={{ fontSize: "10px", color: "#999", display: "block" }}>
+              Model ID: {record.modelId.substring(0, 8)}...
+            </Text>
+          )}
+        </div>
+      ),
     },
     {
       title: "Màu sắc",
-      dataIndex: "colorId",
       key: "color",
-      width: 100,
-      render: (colorId, record) => {
-        const displayText =
-          record.colorName ||
-          (colorId ? colorId.substring(0, 8) + "..." : "N/A");
-        return (
-          <Tag color="purple" title={colorId}>
-            {displayText}
-          </Tag>
-        );
-      },
+      width: 150,
+      render: (_, record) => (
+        <div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              marginBottom: 4,
+            }}
+          >
+            <div
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: "50%",
+                backgroundColor: record.hexCode || "#CCCCCC",
+                border: "1px solid #d9d9d9",
+              }}
+            />
+            <Text strong style={{ fontSize: "12px" }}>
+              {record.colorName || "N/A"}
+            </Text>
+          </div>
+          <Text style={{ fontSize: "10px", color: "#666" }}>
+            Hex: {record.hexCode || "N/A"}
+          </Text>
+          {record.additionalPrice > 0 && (
+            <Text style={{ fontSize: "10px", color: "#fa8c16" }}>
+              +{record.additionalPrice.toLocaleString("vi-VN")} ₫
+            </Text>
+          )}
+        </div>
+      ),
     },
     {
-      title: "Kho",
-      dataIndex: "warehouseId",
-      key: "warehouse",
-      width: 100,
-      render: (warehouseId, record) => {
-        const displayText =
-          record.warehouseName ||
-          (warehouseId ? warehouseId.substring(0, 8) + "..." : "N/A");
-        return (
-          <Tag color="orange" title={warehouseId}>
-            {displayText}
-          </Tag>
-        );
-      },
-    },
-    {
-      title: "Giá cost",
-      dataIndex: "costPrice",
-      key: "costPrice",
-      width: 120,
-      sorter: (a, b) => (a.costPrice || 0) - (b.costPrice || 0),
-      render: (price) => (
-        <Text strong style={{ color: "#52c41a" }}>
-          {price ? `${price.toLocaleString("vi-VN")} ₫` : "N/A"}
-        </Text>
+      title: "Thông số & Giá",
+      key: "specifications",
+      width: 160,
+      render: (_, record) => (
+        <div>
+          <Text style={{ fontSize: "11px", color: "#666" }}>
+            Giá bán:{" "}
+            <Text strong style={{ color: "#52c41a" }}>
+              {record.price
+                ? `${record.price.toLocaleString("vi-VN")} ₫`
+                : "N/A"}
+            </Text>
+          </Text>
+          <br />
+          <Text style={{ fontSize: "11px", color: "#666" }}>
+            Cost:{" "}
+            <Text strong style={{ color: "#fa8c16" }}>
+              {record.costPrice
+                ? `${record.costPrice.toLocaleString("vi-VN")} ₫`
+                : "N/A"}
+            </Text>
+          </Text>
+          <br />
+          <Text style={{ fontSize: "11px", color: "#666" }}>
+            Pin: <Text strong>{record.batteryCapacity || 0} kWh</Text>
+          </Text>
+          <br />
+          <Text style={{ fontSize: "11px", color: "#666" }}>
+            Tầm xa: <Text strong>{record.range || 0} km</Text>
+          </Text>
+        </div>
       ),
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      width: 120,
+      width: 110,
       render: (status) => {
         const statusMap = {
-          1: { color: "success", text: "Đang hoạt động" },
-          0: { color: "error", text: "Không hoạt động" },
+          1: { color: "success", text: "Hoạt động" },
+          0: { color: "error", text: "Ngừng hoạt động" },
         };
         const config = statusMap[status] || {
           color: "default",
@@ -425,17 +433,48 @@ function VehicleManagement() {
       },
     },
     {
-      title: "Ngày sản xuất",
-      dataIndex: "manufactureDate",
-      key: "manufactureDate",
-      width: 120,
-      render: (date) => {
-        if (!date) return "N/A";
-        try {
-          return new Date(date).toLocaleDateString("vi-VN");
-        } catch {
-          return "N/A";
+      title: "Ngày tháng",
+      key: "dates",
+      width: 140,
+      render: (_, record) => (
+        <div>
+          <Text style={{ fontSize: "10px", color: "#666" }}>
+            SX:{" "}
+            {record.manufactureDate
+              ? new Date(record.manufactureDate).toLocaleDateString("vi-VN")
+              : "N/A"}
+          </Text>
+          <br />
+          <Text style={{ fontSize: "10px", color: "#666" }}>
+            NK:{" "}
+            {record.importDate
+              ? new Date(record.importDate).toLocaleDateString("vi-VN")
+              : "N/A"}
+          </Text>
+          <br />
+          <Text style={{ fontSize: "10px", color: "#666" }}>
+            BH:{" "}
+            {record.warrantyExpiryDate
+              ? new Date(record.warrantyExpiryDate).toLocaleDateString("vi-VN")
+              : "N/A"}
+          </Text>
+        </div>
+      ),
+    },
+    {
+      title: "Hình ảnh",
+      dataIndex: "imageUrl",
+      key: "imageUrl",
+      width: 100,
+      render: (imageUrl) => {
+        if (imageUrl && Array.isArray(imageUrl) && imageUrl.length > 0) {
+          return (
+            <div>
+              <Tag color="green">{imageUrl.length} ảnh</Tag>
+            </div>
+          );
         }
+        return <Tag color="default">Chưa có ảnh</Tag>;
       },
     },
     {
@@ -526,652 +565,690 @@ function VehicleManagement() {
           minHeight: "100vh",
         }}
       >
-        <PageContainer
-          header={{
-            title: "Quản lý xe điện",
-            subTitle: "Quản lý danh sách và thông tin các mẫu xe điện",
-            breadcrumb: {
-              items: [
-                { title: "Trang chủ" },
-                { title: "Admin" },
-                { title: "Quản lý xe điện" },
-              ],
-            },
-          }}
-          className="p-6"
-        >
-          {/* Quick Action Buttons */}
-          <Card
-            className="mb-4"
-            style={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              border: "none",
-              borderRadius: "12px",
+        <Spin spinning={loading} tip="Đang xử lý...">
+          <PageContainer
+            header={{
+              title: "Quản lý xe điện",
+              subTitle: "Quản lý danh sách và thông tin các mẫu xe điện",
+              breadcrumb: {
+                items: [
+                  { title: "Trang chủ" },
+                  { title: "Admin" },
+                  { title: "Quản lý xe điện" },
+                ],
+              },
             }}
+            className="p-6"
           >
-            <div style={{ textAlign: "center" }}>
-              <Title
-                level={4}
-                style={{ margin: "8px 0 16px 0", color: "white" }}
-              >
-                ⚡ Quản lý Hệ thống Xe Điện
-              </Title>
-              <div
-                style={{
-                  display: "flex",
-                  gap: "12px",
-                  justifyContent: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={<ThunderboltOutlined />}
-                  onClick={() => setActiveTab("create-vehicle")}
-                  style={{
-                    minWidth: "160px",
-                    background: "#52c41a",
-                    borderColor: "#52c41a",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Tạo Xe Điện
-                </Button>
-                <Button
-                  size="large"
-                  icon={<CarOutlined />}
-                  onClick={() => setActiveTab("manage-models")}
-                  style={{
-                    minWidth: "160px",
-                    background: "rgba(255,255,255,0.9)",
-                    borderColor: "white",
-                    color: "#1890ff",
-                    fontWeight: "500",
-                  }}
-                >
-                  Quản lý Model
-                </Button>
-                <Button
-                  size="large"
-                  icon={<BuildOutlined />}
-                  onClick={() => setActiveTab("manage-versions")}
-                  style={{
-                    minWidth: "160px",
-                    background: "rgba(255,255,255,0.9)",
-                    borderColor: "white",
-                    color: "#722ed1",
-                    fontWeight: "500",
-                  }}
-                >
-                  Quản lý Version
-                </Button>
-                <Button
-                  size="large"
-                  icon={<BgColorsOutlined />}
-                  onClick={() => setActiveTab("manage-colors")}
-                  style={{
-                    minWidth: "160px",
-                    background: "rgba(255,255,255,0.9)",
-                    borderColor: "white",
-                    color: "#eb2f96",
-                    fontWeight: "500",
-                  }}
-                >
-                  Quản lý Màu sắc
-                </Button>
-              </div>
-              <div
-                style={{
-                  marginTop: "12px",
-                  fontSize: "14px",
-                  color: "rgba(255,255,255,0.8)",
-                }}
-              >
-                💡 Chọn chức năng để bắt đầu quản lý thông tin xe điện
-              </div>
-            </div>
-          </Card>
-
-          <Divider style={{ margin: "16px 0" }} />
-
-          <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            items={[
-              {
-                key: "overview",
-                label: (
-                  <span>
-                    <DashboardOutlined />
-                    Tổng quan
-                  </span>
-                ),
-                children: (
-                  <>
-                    {/* Thông tin tổng quan */}
-                    <Row gutter={[16, 16]} className="mb-6">
-                      <Col xs={24} sm={12} lg={8}>
-                        <Card className="text-center">
-                          <Statistic
-                            title="Số mẫu xe"
-                            value={totalVehicles}
-                            prefix={<CarOutlined className="text-blue-500" />}
-                          />
-                        </Card>
-                      </Col>
-                      <Col xs={24} sm={12} lg={8}>
-                        <Card className="text-center">
-                          <Statistic
-                            title="Xe hoạt động"
-                            value={activeVehicles}
-                            suffix=" xe"
-                            prefix={
-                              <DashboardOutlined className="text-green-500" />
-                            }
-                          />
-                        </Card>
-                      </Col>
-                      <Col xs={24} sm={12} lg={8}>
-                        <Card className="text-center">
-                          <Statistic
-                            title="Xe có sẵn"
-                            value={filteredData.length}
-                            suffix=" mẫu"
-                            prefix={
-                              <SettingOutlined className="text-orange-500" />
-                            }
-                          />
-                        </Card>
-                      </Col>
-                    </Row>
-
-                    {/* Filters and Search */}
-                    <ProCard className="mb-6 shadow-sm">
-                      <Row gutter={[16, 16]} align="middle">
-                        <Col xs={24} sm={8} md={6}>
-                          <Search
-                            placeholder="Tìm kiếm xe..."
-                            value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
-                            prefix={<SearchOutlined />}
-                          />
-                        </Col>
-                        <Col xs={24} sm={8} md={4}>
-                          <Select
-                            value={filterStatus}
-                            onChange={setFilterStatus}
-                            style={{ width: "100%" }}
-                            placeholder="Trạng thái"
-                          >
-                            <Option value="all">Tất cả trạng thái</Option>
-                            <Option value="1">Hoạt động</Option>
-                            <Option value="0">Không hoạt động</Option>
-                          </Select>
-                        </Col>
-                        <Col xs={24} sm={24} md={10}>
-                          <Space wrap>
-                            <Button
-                              type="primary"
-                              icon={<ThunderboltOutlined />}
-                              onClick={() => setActiveTab("create-vehicle")}
-                              size="small"
-                            >
-                              Tạo Xe Điện
-                            </Button>
-                            <Button
-                              icon={<CarOutlined />}
-                              onClick={() => setActiveTab("manage-models")}
-                              size="small"
-                            >
-                              Model
-                            </Button>
-                            <Button
-                              icon={<BuildOutlined />}
-                              onClick={() => setActiveTab("manage-versions")}
-                              size="small"
-                            >
-                              Version
-                            </Button>
-                            <Button
-                              icon={<BgColorsOutlined />}
-                              onClick={() => setActiveTab("manage-colors")}
-                              size="small"
-                            >
-                              Màu sắc
-                            </Button>
-                            <Button icon={<ExportOutlined />} size="small">
-                              Xuất Excel
-                            </Button>
-                          </Space>
-                        </Col>
-                      </Row>
-                    </ProCard>
-
-                    {/* Vehicle Table */}
-                    <Card>
-                      <Table
-                        columns={columns}
-                        dataSource={filteredData}
-                        loading={tableLoading}
-                        scroll={{ x: "max-content" }}
-                        pagination={{
-                          total: filteredData.length,
-                          pageSize: 10,
-                          showSizeChanger: true,
-                          showQuickJumper: true,
-                          showTotal: (total, range) =>
-                            `${range[0]}-${range[1]} của ${total} xe`,
-                        }}
-                      />
-                    </Card>
-                  </>
-                ),
-              },
-              {
-                key: "create-vehicle",
-                label: (
-                  <span>
-                    <PlusOutlined />
-                    Tạo Xe Điện
-                  </span>
-                ),
-                children: <CreateElectricVehicle />,
-              },
-              {
-                key: "manage-models",
-                label: (
-                  <span>
-                    <CarOutlined />
-                    Quản lý Model
-                  </span>
-                ),
-                children: (
-                  <div>
-                    <div
-                      style={{
-                        padding: "16px",
-                        background: "#f0f2f5",
-                        marginBottom: "16px",
-                      }}
-                    >
-                      <Text type="secondary">
-                        📋 Tab: Quản lý Model - Component đang tải...
-                      </Text>
-                    </div>
-                    <ManageModel />
-                  </div>
-                ),
-              },
-              {
-                key: "manage-versions",
-                label: (
-                  <span>
-                    <BuildOutlined />
-                    Quản lý Version
-                  </span>
-                ),
-                children: (
-                  <div>
-                    <div
-                      style={{
-                        padding: "16px",
-                        background: "#f0f2f5",
-                        marginBottom: "16px",
-                      }}
-                    >
-                      <Text type="secondary">
-                        🔧 Tab: Quản lý Version - Component đang tải...
-                      </Text>
-                    </div>
-                    <ManageVersion />
-                  </div>
-                ),
-              },
-              {
-                key: "manage-colors",
-                label: (
-                  <span>
-                    <BgColorsOutlined />
-                    Quản lý Màu sắc
-                  </span>
-                ),
-                children: (
-                  <div>
-                    <div
-                      style={{
-                        padding: "16px",
-                        background: "#f0f2f5",
-                        marginBottom: "16px",
-                      }}
-                    >
-                      <Text type="secondary">
-                        🎨 Tab: Quản lý Màu sắc - Component đang tải...
-                      </Text>
-                    </div>
-                    <ColorManagement />
-                  </div>
-                ),
-              },
-              {
-                key: "debug",
-                label: (
-                  <span>
-                    <ThunderboltOutlined />
-                    Debug Info
-                  </span>
-                ),
-                children: (
-                  <Card>
-                    <div style={{ padding: "20px" }}>
-                      <h3>🧪 Vehicle Management Debug</h3>
-                      <p>Total vehicles: {vehicles.length}</p>
-                      <p>Active vehicles: {activeVehicles}</p>
-                      <p>
-                        Total cost value:{" "}
-                        {totalCostValue?.toLocaleString("vi-VN")} ₫
-                      </p>
-
-                      <div style={{ marginTop: "20px" }}>
-                        <h4>Raw Vehicle Data:</h4>
-                        <pre
-                          style={{
-                            background: "#f5f5f5",
-                            padding: "10px",
-                            borderRadius: "4px",
-                            fontSize: "12px",
-                            maxHeight: "300px",
-                            overflow: "auto",
-                          }}
-                        >
-                          {JSON.stringify(vehicles, null, 2)}
-                        </pre>
-                      </div>
-                    </div>
-                  </Card>
-                ),
-              },
-            ]}
-          />
-
-          {/* Add/Edit Modal */}
-          <Modal
-            title={editingRecord ? "Chỉnh sửa xe điện" : "Thêm xe điện mới"}
-            open={isModalVisible}
-            onCancel={() => {
-              setIsModalVisible(false);
-              setEditingRecord(null);
-              form.resetFields();
-            }}
-            width={800}
-            footer={null}
-          >
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleAddOrEditVehicle}
-              className="mt-4"
+            {/* Quick Action Buttons */}
+            <Card
+              className="mb-4"
+              style={{
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                border: "none",
+                borderRadius: "12px",
+              }}
             >
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label="Mã xe"
-                    name="id"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập mã xe!" },
-                    ]}
-                  >
-                    <Input placeholder="VD: VF001" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label="Tên xe"
-                    name="name"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập tên xe!" },
-                    ]}
-                  >
-                    <Input placeholder="VD: VinFast VF8" />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label="Phân loại"
-                    name="category"
-                    rules={[
-                      { required: true, message: "Vui lòng chọn phân loại!" },
-                    ]}
-                  >
-                    <Select placeholder="Chọn phân loại">
-                      <Option value="SUV Điện">SUV Điện</Option>
-                      <Option value="Sedan Điện">Sedan Điện</Option>
-                      <Option value="Hatchback Điện">Hatchback Điện</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label="Giá (VND)"
-                    name="price"
-                    rules={[{ required: true, message: "Vui lòng nhập giá!" }]}
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      formatter={(value) =>
-                        `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                      }
-                      parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-                      placeholder="VD: 1200000000"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item
-                    label="Dung lượng pin (kWh)"
-                    name="batteryCapacity"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập dung lượng pin!",
-                      },
-                    ]}
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={0}
-                      placeholder="VD: 82"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    label="Quãng đường (km)"
-                    name="range"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập quãng đường!" },
-                    ]}
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={0}
-                      placeholder="VD: 420"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item
-                    label="Số chỗ ngồi"
-                    name="seats"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập số chỗ ngồi!" },
-                    ]}
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={2}
-                      max={9}
-                      placeholder="VD: 7"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label="Tồn kho"
-                    name="stock"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng nhập số lượng tồn kho!",
-                      },
-                    ]}
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      min={0}
-                      placeholder="VD: 150"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    label="Trạng thái"
-                    name="status"
-                    rules={[
-                      { required: true, message: "Vui lòng chọn trạng thái!" },
-                    ]}
-                  >
-                    <Select placeholder="Chọn trạng thái">
-                      <Option value="Đang bán">Đang bán</Option>
-                      <Option value="Ngừng bán">Ngừng bán</Option>
-                      <Option value="Sắp ra mắt">Sắp ra mắt</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Form.Item label="Mô tả" name="description">
-                <Input.TextArea rows={3} placeholder="Mô tả về xe điện..." />
-              </Form.Item>
-
-              <Form.Item>
-                <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+              <div style={{ textAlign: "center" }}>
+                <Title
+                  level={4}
+                  style={{ margin: "8px 0 16px 0", color: "white" }}
+                >
+                  ⚡ Quản lý Hệ thống Xe Điện
+                </Title>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "12px",
+                    justifyContent: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
                   <Button
-                    onClick={() => {
-                      setIsModalVisible(false);
-                      setEditingRecord(null);
-                      form.resetFields();
+                    type="primary"
+                    size="large"
+                    icon={<ThunderboltOutlined />}
+                    onClick={() => setActiveTab("create-vehicle")}
+                    style={{
+                      minWidth: "160px",
+                      background: "#52c41a",
+                      borderColor: "#52c41a",
+                      fontWeight: "bold",
                     }}
                   >
-                    Hủy
+                    Tạo Xe Điện
                   </Button>
-                  <Button type="primary" htmlType="submit">
-                    {editingRecord ? "Cập nhật" : "Thêm mới"}
+                  <Button
+                    size="large"
+                    icon={<CarOutlined />}
+                    onClick={() => setActiveTab("manage-models")}
+                    style={{
+                      minWidth: "160px",
+                      background: "rgba(255,255,255,0.9)",
+                      borderColor: "white",
+                      color: "#1890ff",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Quản lý Model
                   </Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          </Modal>
+                  <Button
+                    size="large"
+                    icon={<BuildOutlined />}
+                    onClick={() => setActiveTab("manage-versions")}
+                    style={{
+                      minWidth: "160px",
+                      background: "rgba(255,255,255,0.9)",
+                      borderColor: "white",
+                      color: "#722ed1",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Quản lý Version
+                  </Button>
+                  <Button
+                    size="large"
+                    icon={<BgColorsOutlined />}
+                    onClick={() => setActiveTab("manage-colors")}
+                    style={{
+                      minWidth: "160px",
+                      background: "rgba(255,255,255,0.9)",
+                      borderColor: "white",
+                      color: "#eb2f96",
+                      fontWeight: "500",
+                    }}
+                  >
+                    Quản lý Màu sắc
+                  </Button>
+                </div>
+                <div
+                  style={{
+                    marginTop: "12px",
+                    fontSize: "14px",
+                    color: "rgba(255,255,255,0.8)",
+                  }}
+                >
+                  💡 Chọn chức năng để bắt đầu quản lý thông tin xe điện
+                </div>
+              </div>
+            </Card>
 
-          {/* View Details Modal */}
-          <Modal
-            title="Chi tiết xe điện"
-            open={isViewModalVisible}
-            onCancel={() => setIsViewModalVisible(false)}
-            width={600}
-            footer={[
-              <Button key="close" onClick={() => setIsViewModalVisible(false)}>
-                Đóng
-              </Button>,
-            ]}
-          >
-            {selectedRecord && (
-              <div>
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} sm={12}>
-                    <Image
-                      src={
-                        selectedRecord.image ||
-                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjZjAiLz4KPHN2ZyB4PSIxNDAiIHk9IjkwIiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzk5OSI+Cjxwb2x5Z29uIHBvaW50cz0iMTIsMiBsMCwyMjQgMjQsMyAiIC8+CjxsaW5lIHgxPSIxMiIgeTE9IjEyIiB4Mj0iMTIiIHkyPSIxNiIgc3Ryb2tlPSIjOTk5IiBzdHJva2Utd2lkdGg9IjEuNSIvPgo8L3N2Zz4KPHR2ZyB4PSIxNTAiIHk9IjEzMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5Ij5Lw7RuZyBjw7MgaOG7ueG7oCBhbmg8L3RleHQ+Cjwvc3ZnPg=="
-                      }
-                      alt={selectedRecord.name}
-                      style={{ width: "100%", borderRadius: 8 }}
-                      preview={false}
-                      fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjZjAiLz4KPGNpcmNsZSBjeD0iMTUwIiBjeT0iMTAwIiByPSIyMCIgZmlsbD0iIzk5OSIvPgo8dGV4dCB4PSIxNTAiIHk9IjEzMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Lw7RuZyBjw7MgaOG7ueG7oCBhbmg8L3RleHQ+Cjwvc3ZnPg=="
-                    />
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Title level={4}>{selectedRecord.name}</Title>
-                    <Text strong>Mã xe: </Text>
-                    <Text copyable>{selectedRecord.id}</Text>
-                    <br />
-                    <Text strong>Phân loại: </Text>
-                    <Tag color="blue">{selectedRecord.category}</Tag>
-                    <br />
-                    <Text strong>Giá: </Text>
-                    <Text
-                      style={{
-                        color: "#52c41a",
-                        fontSize: "16px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {selectedRecord.price?.toLocaleString()} VND
-                    </Text>
-                  </Col>
-                </Row>
+            <Divider style={{ margin: "16px 0" }} />
 
-                <Divider />
+            <Tabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              items={[
+                {
+                  key: "overview",
+                  label: (
+                    <span>
+                      <DashboardOutlined />
+                      Tổng quan
+                    </span>
+                  ),
+                  children: (
+                    <>
+                      {/* Thông tin tổng quan */}
+                      <Row gutter={[16, 16]} className="mb-6">
+                        <Col xs={24} sm={12} lg={8}>
+                          <Card className="text-center">
+                            <Statistic
+                              title="Số mẫu xe"
+                              value={totalVehicles}
+                              prefix={<CarOutlined className="text-blue-500" />}
+                            />
+                          </Card>
+                        </Col>
+                        <Col xs={24} sm={12} lg={8}>
+                          <Card className="text-center">
+                            <Statistic
+                              title="Xe hoạt động"
+                              value={activeVehicles}
+                              suffix=" xe"
+                              prefix={
+                                <DashboardOutlined className="text-green-500" />
+                              }
+                            />
+                          </Card>
+                        </Col>
+                        <Col xs={24} sm={12} lg={8}>
+                          <Card className="text-center">
+                            <Statistic
+                              title="Xe có sẵn"
+                              value={filteredData.length}
+                              suffix=" mẫu"
+                              prefix={
+                                <SettingOutlined className="text-orange-500" />
+                              }
+                            />
+                          </Card>
+                        </Col>
+                      </Row>
 
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} sm={12}>
-                    <Title level={5}>Thông số kỹ thuật</Title>
+                      {/* Filters and Search */}
+                      <ProCard className="mb-6 shadow-sm">
+                        <Row gutter={[16, 16]} align="middle">
+                          <Col xs={24} sm={8} md={6}>
+                            <Search
+                              placeholder="Tìm kiếm xe..."
+                              value={searchText}
+                              onChange={(e) => setSearchText(e.target.value)}
+                              prefix={<SearchOutlined />}
+                            />
+                          </Col>
+                          <Col xs={24} sm={8} md={4}>
+                            <Select
+                              value={filterStatus}
+                              onChange={setFilterStatus}
+                              style={{ width: "100%" }}
+                              placeholder="Trạng thái"
+                            >
+                              <Option value="all">Tất cả trạng thái</Option>
+                              <Option value="1">Hoạt động</Option>
+                              <Option value="0">Không hoạt động</Option>
+                            </Select>
+                          </Col>
+                          <Col xs={24} sm={24} md={10}>
+                            <Space wrap>
+                              <Button
+                                type="primary"
+                                icon={<ThunderboltOutlined />}
+                                onClick={() => setActiveTab("create-vehicle")}
+                                size="small"
+                              >
+                                Tạo Xe Điện
+                              </Button>
+                              <Button
+                                icon={<CarOutlined />}
+                                onClick={() => setActiveTab("manage-models")}
+                                size="small"
+                              >
+                                Model
+                              </Button>
+                              <Button
+                                icon={<BuildOutlined />}
+                                onClick={() => setActiveTab("manage-versions")}
+                                size="small"
+                              >
+                                Version
+                              </Button>
+                              <Button
+                                icon={<BgColorsOutlined />}
+                                onClick={() => setActiveTab("manage-colors")}
+                                size="small"
+                              >
+                                Màu sắc
+                              </Button>
+                              <Button icon={<ExportOutlined />} size="small">
+                                Xuất Excel
+                              </Button>
+                            </Space>
+                          </Col>
+                        </Row>
+                      </ProCard>
+
+                      {/* Vehicle Table */}
+                      <Card>
+                        <Table
+                          columns={columns}
+                          dataSource={filteredData}
+                          loading={tableLoading}
+                          scroll={{ x: 1800, y: 600 }}
+                          size="small"
+                          rowKey="id"
+                          pagination={{
+                            total: filteredData.length,
+                            pageSize: 20,
+                            showSizeChanger: true,
+                            showQuickJumper: true,
+                            showTotal: (total, range) =>
+                              `Hiển thị ${range[0]}-${range[1]} trong tổng số ${total} xe điện (Loại bỏ versionId & colorId)`,
+                            pageSizeOptions: ["10", "20", "30", "50", "100"],
+                          }}
+                          bordered
+                          title={() => (
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                              }}
+                            >
+                              <Text strong>
+                                📋 Danh sách xe điện - Hiển thị tất cả thông tin
+                              </Text>
+                              <Text style={{ fontSize: "12px", color: "#666" }}>
+                                Total: {filteredData.length} vehicles
+                              </Text>
+                            </div>
+                          )}
+                        />
+                      </Card>
+                    </>
+                  ),
+                },
+                {
+                  key: "create-vehicle",
+                  label: (
+                    <span>
+                      <PlusOutlined />
+                      Tạo Xe Điện
+                    </span>
+                  ),
+                  children: <CreateElectricVehicle />,
+                },
+                {
+                  key: "manage-models",
+                  label: (
+                    <span>
+                      <CarOutlined />
+                      Quản lý Model
+                    </span>
+                  ),
+                  children: (
                     <div>
-                      <Text strong>Dung lượng pin: </Text>
-                      <Text>{selectedRecord.batteryCapacity} kWh</Text>
-                    </div>
-                    <div>
-                      <Text strong>Quãng đường: </Text>
-                      <Text>{selectedRecord.range} km</Text>
-                    </div>
-                    <div>
-                      <Text strong>Số chỗ ngồi: </Text>
-                      <Text>{selectedRecord.seats} chỗ</Text>
-                    </div>
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <Title level={5}>Tình trạng kho</Title>
-                    <div>
-                      <Text strong>Tồn kho: </Text>
-                      <Text
+                      <div
                         style={{
-                          color:
-                            selectedRecord.stock < 100 ? "#ff4d4f" : "#52c41a",
+                          padding: "16px",
+                          background: "#f0f2f5",
+                          marginBottom: "16px",
                         }}
                       >
-                        {selectedRecord.stock} xe
-                      </Text>
+                        <Text type="secondary">
+                          📋 Tab: Quản lý Model - Component đang tải...
+                        </Text>
+                      </div>
+                      <ManageModel />
                     </div>
+                  ),
+                },
+                {
+                  key: "manage-versions",
+                  label: (
+                    <span>
+                      <BuildOutlined />
+                      Quản lý Version
+                    </span>
+                  ),
+                  children: (
+                    <div>
+                      <div
+                        style={{
+                          padding: "16px",
+                          background: "#f0f2f5",
+                          marginBottom: "16px",
+                        }}
+                      >
+                        <Text type="secondary">
+                          🔧 Tab: Quản lý Version - Component đang tải...
+                        </Text>
+                      </div>
+                      <ManageVersion />
+                    </div>
+                  ),
+                },
+                {
+                  key: "manage-colors",
+                  label: (
+                    <span>
+                      <BgColorsOutlined />
+                      Quản lý Màu sắc
+                    </span>
+                  ),
+                  children: (
+                    <div>
+                      <div
+                        style={{
+                          padding: "16px",
+                          background: "#f0f2f5",
+                          marginBottom: "16px",
+                        }}
+                      >
+                        <Text type="secondary">
+                          🎨 Tab: Quản lý Màu sắc - Component đang tải...
+                        </Text>
+                      </div>
+                      <ColorManagement />
+                    </div>
+                  ),
+                },
+                {
+                  key: "debug",
+                  label: (
+                    <span>
+                      <ThunderboltOutlined />
+                      Debug Info
+                    </span>
+                  ),
+                  children: (
+                    <Card>
+                      <div style={{ padding: "20px" }}>
+                        <h3>🧪 Vehicle Management Debug</h3>
+                        <p>Total vehicles: {vehicles.length}</p>
+                        <p>Active vehicles: {activeVehicles}</p>
+                        <p>
+                          Total cost value:{" "}
+                          {totalCostValue?.toLocaleString("vi-VN")} ₫
+                        </p>
+
+                        <div style={{ marginTop: "20px" }}>
+                          <h4>Raw Vehicle Data:</h4>
+                          <pre
+                            style={{
+                              background: "#f5f5f5",
+                              padding: "10px",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                              maxHeight: "300px",
+                              overflow: "auto",
+                            }}
+                          >
+                            {JSON.stringify(vehicles, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+                    </Card>
+                  ),
+                },
+              ]}
+            />
+
+            {/* Add/Edit Modal */}
+            <Modal
+              title={editingRecord ? "Chỉnh sửa xe điện" : "Thêm xe điện mới"}
+              open={isModalVisible}
+              onCancel={() => {
+                setIsModalVisible(false);
+                setEditingRecord(null);
+                form.resetFields();
+              }}
+              width={800}
+              footer={null}
+            >
+              <Form
+                form={form}
+                layout="vertical"
+                onFinish={handleAddOrEditVehicle}
+                className="mt-4"
+              >
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      label="Mã xe"
+                      name="id"
+                      rules={[
+                        { required: true, message: "Vui lòng nhập mã xe!" },
+                      ]}
+                    >
+                      <Input placeholder="VD: VF001" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      label="Tên xe"
+                      name="name"
+                      rules={[
+                        { required: true, message: "Vui lòng nhập tên xe!" },
+                      ]}
+                    >
+                      <Input placeholder="VD: VinFast VF8" />
+                    </Form.Item>
                   </Col>
                 </Row>
 
-                <Divider />
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      label="Phân loại"
+                      name="category"
+                      rules={[
+                        { required: true, message: "Vui lòng chọn phân loại!" },
+                      ]}
+                    >
+                      <Select placeholder="Chọn phân loại">
+                        <Option value="SUV Điện">SUV Điện</Option>
+                        <Option value="Sedan Điện">Sedan Điện</Option>
+                        <Option value="Hatchback Điện">Hatchback Điện</Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      label="Giá (VND)"
+                      name="price"
+                      rules={[
+                        { required: true, message: "Vui lòng nhập giá!" },
+                      ]}
+                    >
+                      <InputNumber
+                        style={{ width: "100%" }}
+                        formatter={(value) =>
+                          `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                        }
+                        parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                        placeholder="VD: 1200000000"
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
 
-                <Title level={5}>Mô tả</Title>
-                <Text>{selectedRecord.description}</Text>
-              </div>
-            )}
-          </Modal>
-        </PageContainer>
+                <Row gutter={16}>
+                  <Col span={8}>
+                    <Form.Item
+                      label="Dung lượng pin (kWh)"
+                      name="batteryCapacity"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Vui lòng nhập dung lượng pin!",
+                        },
+                      ]}
+                    >
+                      <InputNumber
+                        style={{ width: "100%" }}
+                        min={0}
+                        placeholder="VD: 82"
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item
+                      label="Quãng đường (km)"
+                      name="range"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Vui lòng nhập quãng đường!",
+                        },
+                      ]}
+                    >
+                      <InputNumber
+                        style={{ width: "100%" }}
+                        min={0}
+                        placeholder="VD: 420"
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item
+                      label="Số chỗ ngồi"
+                      name="seats"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Vui lòng nhập số chỗ ngồi!",
+                        },
+                      ]}
+                    >
+                      <InputNumber
+                        style={{ width: "100%" }}
+                        min={2}
+                        max={9}
+                        placeholder="VD: 7"
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      label="Tồn kho"
+                      name="stock"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Vui lòng nhập số lượng tồn kho!",
+                        },
+                      ]}
+                    >
+                      <InputNumber
+                        style={{ width: "100%" }}
+                        min={0}
+                        placeholder="VD: 150"
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      label="Trạng thái"
+                      name="status"
+                      rules={[
+                        {
+                          required: true,
+                          message: "Vui lòng chọn trạng thái!",
+                        },
+                      ]}
+                    >
+                      <Select placeholder="Chọn trạng thái">
+                        <Option value="Đang bán">Đang bán</Option>
+                        <Option value="Ngừng bán">Ngừng bán</Option>
+                        <Option value="Sắp ra mắt">Sắp ra mắt</Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                <Form.Item label="Mô tả" name="description">
+                  <Input.TextArea rows={3} placeholder="Mô tả về xe điện..." />
+                </Form.Item>
+
+                <Form.Item>
+                  <Space style={{ width: "100%", justifyContent: "flex-end" }}>
+                    <Button
+                      onClick={() => {
+                        setIsModalVisible(false);
+                        setEditingRecord(null);
+                        form.resetFields();
+                      }}
+                    >
+                      Hủy
+                    </Button>
+                    <Button type="primary" htmlType="submit">
+                      {editingRecord ? "Cập nhật" : "Thêm mới"}
+                    </Button>
+                  </Space>
+                </Form.Item>
+              </Form>
+            </Modal>
+
+            {/* View Details Modal */}
+            <Modal
+              title="Chi tiết xe điện"
+              open={isViewModalVisible}
+              onCancel={() => setIsViewModalVisible(false)}
+              width={600}
+              footer={[
+                <Button
+                  key="close"
+                  onClick={() => setIsViewModalVisible(false)}
+                >
+                  Đóng
+                </Button>,
+              ]}
+            >
+              {selectedRecord && (
+                <div>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12}>
+                      <Image
+                        src={
+                          selectedRecord.image ||
+                          "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjZjAiLz4KPHN2ZyB4PSIxNDAiIHk9IjkwIiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzk5OSI+Cjxwb2x5Z29uIHBvaW50cz0iMTIsMiBsMCwyMjQgMjQsMyAiIC8+CjxsaW5lIHgxPSIxMiIgeTE9IjEyIiB4Mj0iMTIiIHkyPSIxNiIgc3Ryb2tlPSIjOTk5IiBzdHJva2Utd2lkdGg9IjEuNSIvPgo8L3N2Zz4KPHR2ZyB4PSIxNTAiIHk9IjEzMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5Ij5Lw7RuZyBjw7MgaOG7ueG7oCBhbmg8L3RleHQ+Cjwvc3ZnPg=="
+                        }
+                        alt={selectedRecord.name}
+                        style={{ width: "100%", borderRadius: 8 }}
+                        preview={false}
+                        fallback="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjZjAiLz4KPGNpcmNsZSBjeD0iMTUwIiBjeT0iMTAwIiByPSIyMCIgZmlsbD0iIzk5OSIvPgo8dGV4dCB4PSIxNTAiIHk9IjEzMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Lw7RuZyBjw7MgaOG7ueG7oCBhbmg8L3RleHQ+Cjwvc3ZnPg=="
+                      />
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Title level={4}>{selectedRecord.name}</Title>
+                      <Text strong>Mã xe: </Text>
+                      <Text copyable>{selectedRecord.id}</Text>
+                      <br />
+                      <Text strong>Phân loại: </Text>
+                      <Tag color="blue">{selectedRecord.category}</Tag>
+                      <br />
+                      <Text strong>Giá: </Text>
+                      <Text
+                        style={{
+                          color: "#52c41a",
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {selectedRecord.price?.toLocaleString()} VND
+                      </Text>
+                    </Col>
+                  </Row>
+
+                  <Divider />
+
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12}>
+                      <Title level={5}>Thông số kỹ thuật</Title>
+                      <div>
+                        <Text strong>Dung lượng pin: </Text>
+                        <Text>{selectedRecord.batteryCapacity} kWh</Text>
+                      </div>
+                      <div>
+                        <Text strong>Quãng đường: </Text>
+                        <Text>{selectedRecord.range} km</Text>
+                      </div>
+                      <div>
+                        <Text strong>Số chỗ ngồi: </Text>
+                        <Text>{selectedRecord.seats} chỗ</Text>
+                      </div>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Title level={5}>Tình trạng kho</Title>
+                      <div>
+                        <Text strong>Tồn kho: </Text>
+                        <Text
+                          style={{
+                            color:
+                              selectedRecord.stock < 100
+                                ? "#ff4d4f"
+                                : "#52c41a",
+                          }}
+                        >
+                          {selectedRecord.stock} xe
+                        </Text>
+                      </div>
+                    </Col>
+                  </Row>
+
+                  <Divider />
+
+                  <Title level={5}>Mô tả</Title>
+                  <Text>{selectedRecord.description}</Text>
+                </div>
+              )}
+            </Modal>
+          </PageContainer>
+        </Spin>
       </div>
     </div>
   );
