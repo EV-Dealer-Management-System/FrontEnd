@@ -90,7 +90,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         icon: <CarOutlined />,
         routes: [
           {
-            path: "/dealer/inventory/vehicles",
+            path: "/dealer-manager/ev/inventory",
             name: "Xe trong kho",
             icon: <DatabaseOutlined />,
             component: "./Inventory",
