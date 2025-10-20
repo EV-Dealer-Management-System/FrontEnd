@@ -16,7 +16,7 @@ import { getAllEVTemplates } from '../../../App/EVMAdmin/EVPromotion/Layouts/Get
 import { createPromotion } from '../../../App/EVMAdmin/EVPromotion/CreatePromotion';
 import AdminLayout from '../../../Components/Admin/AdminLayout';
 import VehicleSelection from './Components/VehicleSelection';
-import SuccessModal from './components/SuccessModal';
+import SuccessModal from './Components/SuccessModal';
 
 function CreateEVPromotion() {
     const navigate = useNavigate();
