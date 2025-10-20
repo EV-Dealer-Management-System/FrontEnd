@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Layout,
   Card,
@@ -38,6 +38,9 @@ const { Search } = Input;
 function TemplateEditorPage() {
   const { modal } = App.useApp();
   
+  // Guard chống fetch lặp React 19
+  const fetchedRef = useRef(false);
+  
   // States cho UI
   const [searchText, setSearchText] = useState('');
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -52,10 +55,12 @@ function TemplateEditorPage() {
     rebuildCompleteHtml
   } = useTemplateEditor();
 
-  // ✅ Load templates on mount
+  // ✅ Load templates on mount với useRef chống fetch lặp React 19
   useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
     fetchTemplates();
-  }, []);
+  }, [fetchTemplates]);
 
   // ✅ Filter templates theo search
   const filteredTemplates = templates.filter(template =>
@@ -242,7 +247,7 @@ function TemplateEditorPage() {
       />
 
       {/* Custom Table Styling */}
-      <style jsx>{`
+      <style>{`
         .template-table .ant-table-thead > tr > th {
           background: #fafafa !important;
           border-bottom: 2px solid #f0f0f0 !important;

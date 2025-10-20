@@ -1,268 +1,205 @@
-import { useState, useEffect } from 'react';
-import { App } from 'antd';
-import { TemplateEditorService } from '../../../App/Admin/TemplateEditor';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getAllTemplates, updateTemplate } from "../../../App/Admin/TemplateEditor";
+
+// simple HTML parser (thay bằng useHtmlParser nếu cần giữ 100% tính năng)
+const parseHtmlFromBE = (rawHtml = "") => {
+  const allStyles = [];
+  const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+  let match;
+  while ((match = styleRegex.exec(rawHtml))) {
+    allStyles.push(match[1]);
+  }
+  const noStyles = rawHtml.replace(styleRegex, "");
+  const headMatch = noStyles.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+  const headContent = headMatch ? headMatch[1] : "";
+  const htmlAttrMatch = noStyles.match(/<html([^>]*)>/i);
+  const htmlAttrs = htmlAttrMatch ? htmlAttrMatch[1] : "";
+  let bodyContent = "";
+  const bodyMatch = noStyles.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (bodyMatch) bodyContent = bodyMatch[1];
+  else bodyContent = noStyles;
+
+  return {
+    bodyContent,
+    allStyles: allStyles.join("\n"),
+    headContent,
+    htmlAttrs,
+  };
+};
+
+const rebuildCompleteHtml = (bodyContent = "", subject = "", extras = {}) => {
+  const { allStyles = "", headContent = "", htmlAttrs = "" } = extras;
+  const stylesTag = allStyles?.trim() ? `<style>${allStyles}</style>` : "";
+  const head = `<head>${headContent || ""}${stylesTag}</head>`;
+  const htmlOpen = `<html${htmlAttrs || ""}>`;
+  return `${htmlOpen}${head}<body>${bodyContent || ""}</body></html>`;
+};
 
 export const useTemplateEditor = () => {
-  const { message } = App.useApp();
-  
-  // States cơ bản
-  const [templates, setTemplates] = useState([]);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [htmlContent, setHtmlContent] = useState('');
-  const [originalContent, setOriginalContent] = useState('');
+  // list
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [total, setTotal] = useState(0);
+
+  // modal/editor
+  const [visible, setVisible] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+
+  // content & parse pieces
+  const [htmlContent, setHtmlContent] = useState(""); // body only
+  const [parsed, setParsed] = useState({
+    allStyles: "",
+    headContent: "",
+    htmlAttrs: "",
+  });
+
+  // flags
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  
-  // HTML parsing states - gom từ useHtmlParser
-  const [allStyles, setAllStyles] = useState('');
-  const [htmlHead, setHtmlHead] = useState('');
-  const [htmlAttributes, setHtmlAttributes] = useState('');
+  const loadedTemplateIdRef = useRef(null); // tránh load trùng template
+  const fetchedRef = useRef(false);         // tránh fetch list lặp
 
-  // ✅ Parse HTML từ BE - tách TẤT CẢ STYLE (gộp từ useHtmlParser.js)
-  const parseHtmlFromBE = (rawHtml) => {
-    console.log('=== PARSING TEMPLATE HTML FROM BE ===');
-    console.log('Raw HTML length:', rawHtml?.length || 0);
-    
-    if (!rawHtml) return { bodyContent: '', allStyles: '', htmlHead: '', htmlAttributes: '' };
-    
-    // ✅ Tách TẤT CẢ <style> tags (cả trong <head> và <body>)
-    const allStyleMatches = rawHtml.match(/<style[\s\S]*?<\/style>/gi);
-    const allStyles = allStyleMatches ? allStyleMatches.join('\n') : '';
-    
-    // ✅ Tách <head> content (KHÔNG bao gồm <style> đã tách)
-    let headMatch = rawHtml.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
-    let htmlHead = '';
-    if (headMatch) {
-      htmlHead = headMatch[1]
-        .replace(/<style[\s\S]*?<\/style>/gi, '') // Xóa style đã tách
-        .replace(/<title[\s\S]*?<\/title>/gi, '') // Xóa title để tránh trùng
-        .trim();
-    }
-    
-    // ✅ Tách html attributes
-    const htmlMatch = rawHtml.match(/<html([^>]*)>/i);
-    const htmlAttributes = htmlMatch ? htmlMatch[1] : ' lang="vi"';
-    
-    // ✅ Tách body content và LOẠI BỎ tất cả <style> rải rác
-    let bodyMatch = rawHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-    let bodyContent = bodyMatch ? bodyMatch[1] : rawHtml;
-    
-    // Loại bỏ tất cả <style> rải rác trong body content
-    bodyContent = bodyContent.replace(/<style[\s\S]*?<\/style>/gi, '');
-    
-    console.log('Parsed template results:');
-    console.log('- All styles length:', allStyles.length);
-    console.log('- Style blocks found:', allStyleMatches?.length || 0);
-    console.log('- Head content length:', htmlHead.length);
-    console.log('- HTML attributes:', htmlAttributes);
-    console.log('- Body content length (after removing styles):', bodyContent.length);
-    
-    return { bodyContent, allStyles, htmlHead, htmlAttributes };
-  };
-
-  // ✅ Rebuild HTML đầy đủ khi save - BAO GỒM TẤT CẢ STYLE (gộp từ useHtmlParser.js)
-  const rebuildCompleteHtml = (bodyContent, templateName) => {
-    console.log('=== REBUILDING COMPLETE TEMPLATE HTML ===');
-    console.log('Body content length:', bodyContent?.length || 0);
-    console.log('All styles length:', allStyles?.length || 0);
-    console.log('HTML head length:', htmlHead?.length || 0);
-    
-    const finalHtml = `<!doctype html>
-<html${htmlAttributes}>
-<head>
-<meta charset="utf-8" />
-<title>${templateName || 'Template Hợp đồng'}</title>
-${htmlHead}
-${allStyles}
-</head>
-<body>
-${bodyContent}
-</body>
-</html>`;
-
-    console.log('Final template HTML length:', finalHtml.length);
-    console.log('Styles included in rebuild:', !!allStyles);
-    return finalHtml;
-  };
-
-  // ✅ Fetch all templates - sử dụng service từ TemplateEditor.js
-  const fetchTemplates = async () => {
+  // ====== LIST ======
+  const fetchTemplates = useCallback(async (page = 1, size = 10000) => {
+    if (loading) return;
     setLoading(true);
     try {
-      const result = await TemplateEditorService.getAllTemplates(1, 10);
-      
-      if (result.success) {
-        setTemplates(result.data);
-        console.log('✅ Templates loaded via service:', result.data.length);
-        message.success(result.message);
+      console.log('🔄 Fetching templates...');
+      const res = await getAllTemplates(page, size);
+      if (res?.success) {
+        setTemplates(res.data || []);
+        setTotal(res.total || 0);
+        console.log("📋 Templates loaded:", res.data?.length || 0);
       } else {
-        throw new Error(result.message);
+        console.error('❌ Failed to fetch templates:', res?.message);
+        setTemplates([]);
+        setTotal(0);
       }
     } catch (error) {
-      console.error('❌ Error fetching templates via service:', error);
-      message.error(error.message || 'Lỗi khi tải danh sách template');
+      console.error('❌ Error fetching templates:', error);
+      setTemplates([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  };
+  }, [loading]);
 
-  // ✅ Load template content và parse HTML structure
-  const loadTemplate = (template) => {
-    console.log('📋 Loading template:', template.code, template.name);
-    
-    setSelectedTemplate(template);
-    
-    // ✅ Parse HTML từ BE - tách TẤT CẢ style và structure
-    const rawHtml = template.contentHtml || '';
-    const parsedResult = parseHtmlFromBE(rawHtml);
-    
-    // Lưu structure vào state
-    setAllStyles(parsedResult.allStyles);
-    setHtmlHead(parsedResult.htmlHead);
-    setHtmlAttributes(parsedResult.htmlAttributes);
-    
-    // Chỉ hiển thị body content trong Quill (đã loại bỏ style rải rác)
-    setHtmlContent(parsedResult.bodyContent);
-    setOriginalContent(parsedResult.bodyContent);
+  // React 19 dev double-effect -> chặn lặp
+  useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    fetchTemplates(1, 10000);
+  }, [fetchTemplates]);
+
+  // ====== OPEN/CLOSE ======
+  const openEditor = useCallback((tpl) => {
+    setSelectedTemplate(tpl || null);
+    setVisible(true);
+  }, []);
+
+  const closeEditor = useCallback(() => {
+    setVisible(false);
+    setSelectedTemplate(null);
+    setHtmlContent("");
+    setParsed({ allStyles: "", headContent: "", htmlAttrs: "" });
     setHasUnsavedChanges(false);
+    loadedTemplateIdRef.current = null;
+  }, []);
+
+  // ====== LOAD ONE TEMPLATE (chỉ 1 lần cho cùng template) ======
+  useEffect(() => {
+    const run = async () => {
+      if (!visible || !selectedTemplate) return;
+      if (loadedTemplateIdRef.current === selectedTemplate.id) return;
+
+      console.log("📋 Loading template:", selectedTemplate.code, selectedTemplate.name);
+
+      // selectedTemplate.contentHtml là rawHtml từ BE (theo API response)
+      const rawHtml = selectedTemplate.contentHtml || "";
+      const parsedResult = parseHtmlFromBE(rawHtml);
+
+      setParsed({
+        allStyles: parsedResult.allStyles || "",
+        headContent: parsedResult.headContent || "",
+        htmlAttrs: parsedResult.htmlAttrs || "",
+      });
+
+      setHtmlContent(parsedResult.bodyContent || ""); // body vào quill
+      loadedTemplateIdRef.current = selectedTemplate.id;
+      setHasUnsavedChanges(false);
+    };
+    run();
+  }, [visible, selectedTemplate]);
+
+  // ====== SAVE ======
+  const saveTemplate = useCallback(async (getCurrentContent) => {
+    if (!selectedTemplate) return { success: false, message: 'No template selected' };
     
-    console.log('✅ Template loaded và parsed successfully');
-    console.log('- Body content length:', parsedResult.bodyContent.length);
-    console.log('- All styles length:', parsedResult.allStyles.length);
-    console.log('- Styles preserved:', !!parsedResult.allStyles);
-    
-    message.success(`Đã tải template: ${template.name}`);
-  };
-
-  // ✅ Save template - sử dụng service từ TemplateEditor.js
-  const saveTemplate = async () => {
-    if (!selectedTemplate) {
-      message.error('Chưa chọn template để lưu');
-      return false;
-    }
-
-    if (!htmlContent.trim()) {
-      message.error('Nội dung template không được rỗng');
-      return false;
-    }
-
-    setSaving(true);
-
     try {
-      console.log('💾 Saving template via service:', selectedTemplate.code);
+      console.log('💾 Saving template...');
       
-      // ✅ Rebuild HTML đầy đủ với TẤT CẢ styles preserved
-      const completeHtml = rebuildCompleteHtml(htmlContent, selectedTemplate.name);
-      
-      // ✅ Validate content trước khi save
-      const validation = TemplateEditorService.validateTemplateContent(completeHtml);
-      if (!validation.isValid) {
-        message.error(`Validation failed: ${validation.errors.join(', ')}`);
-        return false;
-      }
-      
-      if (validation.warnings.length > 0) {
-        console.warn('Template validation warnings:', validation.warnings);
-      }
+      // lấy body content trực tiếp từ quill
+      const body = typeof getCurrentContent === "function"
+        ? getCurrentContent()
+        : htmlContent;
 
-      // ✅ Gọi service để update template
-      const result = await TemplateEditorService.updateTemplate(
-        selectedTemplate.code,
-        selectedTemplate.name,
-        completeHtml
+      const fullHtml = rebuildCompleteHtml(body, selectedTemplate.name, parsed);
+      
+      const res = await updateTemplate(
+        selectedTemplate.code, 
+        selectedTemplate.name, 
+        fullHtml
       );
-
-      if (result.success) {
-        console.log('✅ Template saved successfully via service');
-        message.success(result.message);
-        
-        setOriginalContent(htmlContent);
+      
+      if (res?.success) {
+        console.log('✅ Template saved successfully');
         setHasUnsavedChanges(false);
-        
-        // ✅ Update template in list với HTML mới
-        setTemplates(prev => 
-          prev.map(t => 
-            t.code === selectedTemplate.code 
-              ? { ...t, contentHtml: completeHtml }
-              : t
-          )
-        );
-        
-        // ✅ Update selected template
-        setSelectedTemplate(prev => ({
-          ...prev,
-          contentHtml: completeHtml
-        }));
-
-        return true;
+        // Refresh danh sách để hiển thị thay đổi mới
+        await fetchTemplates(1, 10);
+        return { success: true, message: 'Template saved successfully' };
       } else {
-        throw new Error(result.message);
+        console.error('❌ Failed to save template:', res?.message);
+        return { success: false, message: res?.message || 'Save failed' };
       }
     } catch (error) {
-      console.error('❌ Error saving template via service:', error);
-      message.error(error.message || 'Lỗi khi lưu template');
-      return false;
-    } finally {
-      setSaving(false);
+      console.error('❌ Error saving template:', error);
+      return { success: false, message: error.message || 'Save error' };
     }
-  };
+  }, [selectedTemplate, htmlContent, parsed, fetchTemplates]);
 
-  // ✅ Reset to original content
-  const resetTemplate = () => {
-    if (!selectedTemplate) {
-      message.error('Chưa chọn template để reset');
-      return;
-    }
-
-    console.log('🔄 Resetting template to original content');
-    setHtmlContent(originalContent);
+  // ====== INGEST TEMPLATE (for Modal direct load) ======
+  const ingestTemplate = useCallback((tpl) => {
+    if (!tpl) return;
+    setSelectedTemplate(tpl);
+    const rawHtml = tpl.contentHtml || "";
+    const parsedResult = parseHtmlFromBE(rawHtml);
+    setParsed({
+      allStyles: parsedResult.allStyles || "",
+      headContent: parsedResult.headContent || "",
+      htmlAttrs: parsedResult.htmlAttrs || "",
+    });
+    setHtmlContent(parsedResult.bodyContent || "");
     setHasUnsavedChanges(false);
-    message.success('Đã khôi phục nội dung gốc');
-  };
-
-  // ✅ Update content và track changes
-  const updateContent = (newContent) => {
-    setHtmlContent(newContent);
-    setHasUnsavedChanges(newContent !== originalContent);
-  };
-
-  // ✅ Reset all states
-  const resetAllStates = () => {
-    setSelectedTemplate(null);
-    setHtmlContent('');
-    setOriginalContent('');
-    setHasUnsavedChanges(false);
-    setAllStyles('');
-    setHtmlHead('');
-    setHtmlAttributes('');
-  };
-
-  // ✅ Load templates on mount
-  useEffect(() => {
-    fetchTemplates();
+    loadedTemplateIdRef.current = tpl.id ?? null;
   }, []);
 
   return {
-    // States
-    templates,
+    // list
+    loading, templates, total, fetchTemplates,
+
+    // modal/editor
+    visible, openEditor, closeEditor,
     selectedTemplate,
-    htmlContent,
-    originalContent,
-    loading,
-    saving,
-    hasUnsavedChanges,
-    allStyles,
-    htmlHead,
-    htmlAttributes,
-    
-    // Actions
-    fetchTemplates,
-    loadTemplate,
+
+    // content
+    htmlContent, setHtmlContent,
+    parsed,
+
+    // flags
+    hasUnsavedChanges, setHasUnsavedChanges,
+
+    // actions
     saveTemplate,
-    resetTemplate,
-    updateContent,
-    resetAllStates,
-    rebuildCompleteHtml
+    rebuildCompleteHtml,
+    ingestTemplate,
   };
 };

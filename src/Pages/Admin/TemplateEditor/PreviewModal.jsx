@@ -1,8 +1,9 @@
-import React from 'react';
+import React, {useMemo, useState} from 'react';
 import { Modal, Button, Typography, Card, Divider } from 'antd';
 import { EyeOutlined, CodeOutlined, PrinterOutlined, DownloadOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
+
 
 // Modal xem trước template với HTML đầy đủ (style + head + body)
 function PreviewModal({
@@ -15,22 +16,56 @@ function PreviewModal({
   htmlAttributes,
   rebuildCompleteHtml
 }) {
+  // chức năng zoom cho preview
+  const [zoom, setZoom] = useState(1);
 
   // ✅ Tạo HTML đầy đủ cho preview
-  const getCompleteHtml = () => {
-    if (!templateData || !htmlContent) return '';
-    
-    return rebuildCompleteHtml(htmlContent, templateData.name);
-  };
+  const completeHtml = useMemo(() => {
+    // 0) Không có gì để hiển thị
+    if (!htmlContent || !String(htmlContent).trim()) {
+      console.warn('[PreviewModal] Missing htmlContent');
+      return '';
+    }
+
+    // 1) Nếu htmlContent đã là tài liệu HTML đầy đủ -> dùng trực tiếp (không rebuild)
+    const isFullDoc = /<(html|head|body)(\s|>)/i.test(htmlContent);
+    if (isFullDoc) {
+      console.log('[PreviewModal] Detected full HTML doc. Using as-is.');
+      return htmlContent;
+    }
+
+    // 2) htmlContent là body-only -> rebuild với đủ phần head/style/attrs (nếu có)
+    if (typeof rebuildCompleteHtml === 'function') {
+      const extras = {
+        allStyles: allStyles || '',
+        headContent: htmlHead || '',
+        htmlAttrs: htmlAttributes || '',
+      };
+      const subject = templateData?.name || 'Preview';
+      const html = rebuildCompleteHtml(htmlContent, subject, extras);
+      console.log('[PreviewModal] Built completeHtml (body-only -> full):', html?.length);
+      return html;
+    }
+
+    // 3) Fallback cuối (rất an toàn): tự bọc nhanh body vào HTML đầy đủ
+    const fallback = `
+      <!DOCTYPE html>
+      <html>
+        <head><meta charset="utf-8"><title>${templateData?.name || 'Preview'}</title></head>
+        <body>${htmlContent}</body>
+      </html>`;
+    console.warn('[PreviewModal] Using local fallback rebuild (no rebuildCompleteHtml provided)');
+    return fallback;
+  }, [htmlContent, templateData, allStyles, htmlHead, htmlAttributes, rebuildCompleteHtml]);
 
   // ✅ Handle print preview
   const handlePrint = () => {
-    const completeHtml = getCompleteHtml();
-    if (!completeHtml) return;
+    const html = completeHtml;
+    if (!html) return;
 
     // Tạo window mới để print
     const printWindow = window.open('', '_blank');
-    printWindow.document.write(completeHtml);
+    printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
     
@@ -42,7 +77,7 @@ function PreviewModal({
 
   // ✅ Handle download HTML
   const handleDownload = () => {
-    const completeHtml = getCompleteHtml();
+    
     if (!completeHtml) return;
 
     const blob = new Blob([completeHtml], { type: 'text/html;charset=utf-8' });
@@ -87,11 +122,12 @@ function PreviewModal({
       onCancel={onClose}
       width="95vw"
       style={{ top: 20 }}
+      destroyOnHidden
       styles={{
         body: { 
           height: 'calc(100vh - 150px)', 
           padding: '16px',
-          overflow: 'hidden'
+          overflow: 'auto'
         }
       }}
       footer={[
@@ -121,20 +157,26 @@ function PreviewModal({
             </div>
           </div>
         </Card>
-
+        
         {/* Preview Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-            
             {/* Preview Panel */}
             <div className="flex flex-col">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center">
                   <EyeOutlined className="mr-2 text-blue-500" />
                   <Title level={5} className="mb-0">A4 Preview (Real Size)</Title>
-                </div>
-                <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                  Scale: 60% • A4 Portrait
+                     {/* Zoom Controls */}
+                      <div className="flex items-center space-x-2 mb-4">
+                        <Button onClick={() => setZoom(zoom - 0.1)} disabled={zoom <= 0.1}>
+                          -
+                        </Button>
+                        <span> Scale: {Math.round(zoom * 100)}% </span>
+                        <Button onClick={() => setZoom(zoom + 0.1)} disabled={zoom >= 2}>
+                          +
+                        </Button>
+                      </div>
                 </div>
               </div>
               
@@ -146,14 +188,13 @@ function PreviewModal({
                       width: '210mm', 
                       minHeight: '297mm',
                       maxWidth: '100%',
-                      transform: 'scale(0.6)',
-                      transformOrigin: 'top center',
+                      zoom: zoom,
                       marginBottom: '-120px',
                       padding: '10mm'
                     }}
                   >
                     <iframe
-                      srcDoc={getCompleteHtml()}
+                      srcDoc={completeHtml}
                       className="w-full border-0"
                       style={{ 
                         width: '100%',
@@ -172,11 +213,12 @@ function PreviewModal({
               <div className="flex items-center mb-2">
                 <CodeOutlined className="mr-2 text-green-500" />
                 <Title level={5} className="mb-0">Complete HTML Source</Title>
+                <span className="ml-2 text-sm text-gray-500">Kéo mở rộng để coi thêm</span>
               </div>
               
               <div className="flex-1 overflow-hidden">
                 <textarea
-                  value={getCompleteHtml()}
+                  value={completeHtml}
                   readOnly
                   className="w-full h-full p-3 font-mono text-xs border rounded resize-none bg-gray-50"
                   style={{ 
@@ -197,7 +239,7 @@ function PreviewModal({
         <Card size="small" className="mt-2">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-gray-600">
             <div>
-              <strong>Total HTML:</strong> {getCompleteHtml().length} chars
+              <strong>Total HTML:</strong> {completeHtml.length} chars
             </div>
             <div>
               <strong>Body Content:</strong> {htmlContent?.length || 0} chars

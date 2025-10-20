@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import 'quill/dist/quill.snow.css';
 import {
   Modal,
@@ -43,59 +43,85 @@ function TemplateEditorModal({ visible, onClose, template }) {
   const {
     selectedTemplate,
     htmlContent,
-    originalContent,
-    loading,
-    saving,
+    setHtmlContent,
+    parsed,
     hasUnsavedChanges,
-    allStyles,
-    htmlHead,
-    htmlAttributes,
-    loadTemplate,
+    setHasUnsavedChanges,
     saveTemplate,
-    resetTemplate,
-    updateContent,
-    resetAllStates,
-    rebuildCompleteHtml
+    rebuildCompleteHtml,
+    ingestTemplate,
   } = useTemplateEditor();
 
-  // Hook quản lý Quill editor
+  const allStyles = parsed?.allStyles || '';
+  const htmlHead = parsed?.headContent || '';
+  const htmlAttributes = parsed?.htmlAttrs || '';
+
+  // Hook quản lý Quill editor - truyền htmlContent và onContentChange
   const {
     quill,
     quillRef,
     isReady,
     getCurrentContent,
-    setContent
-  } = useQuillEditor(htmlContent, updateContent);
+    setContent,
+    resetPasteState
+  } = useQuillEditor(
+    htmlContent,
+    (val) => { setHtmlContent(val); setHasUnsavedChanges(true); },
+    visible
+  );
+  // Ref để lưu ID của template đã nạp
+  const lastIngestedId = useRef(null);
+  const hasInitializedRef = useRef(false);
 
   // ✅ Load template khi modal mở
   useEffect(() => {
-    if (visible && template) {
+    if (visible && template && template.id !== lastIngestedId.current) {
       console.log('📋 Loading template into modal:', template.name);
-      loadTemplate(template);
+      resetPasteState();
+      ingestTemplate(template); // nạp template prop vào hook (parse + body)
+      lastIngestedId.current = template.id;
     }
-  }, [visible, template]);
+  }, [visible, template, resetPasteState, ingestTemplate]);
 
   // ✅ Reset states khi đóng modal
   useEffect(() => {
     if (!visible) {
-      resetAllStates();
       setActiveTab('editor');
+      setHasUnsavedChanges(false);
     }
-  }, [visible]);
+  }, [visible, setHasUnsavedChanges]);
 
-  // ✅ Update Quill khi content change
+  // ✅ Sync Quill khi editor sẵn sàng và body HTML đã có
   useEffect(() => {
-    if (selectedTemplate && htmlContent && isReady && visible) {
-      console.log('🔄 Syncing content to Quill in modal');
+    if (isReady && typeof htmlContent === 'string' && !hasInitializedRef.current) {
+      // khi editor sẵn sàng và body đã có ⇒ ép paste vào Quill
       setContent(htmlContent);
+      hasInitializedRef.current = true;
     }
-  }, [selectedTemplate, htmlContent, isReady, visible]);
+  }, [isReady, htmlContent, setContent]);
+    
 
-  // ✅ Handle save và close modal
+
+  // ✅ Handle save với getCurrentContent từ Quill
   const handleSave = async () => {
-    const success = await saveTemplate();
+    if (!selectedTemplate) {
+      return;
+    }
+
+    // Lấy HTML từ Quill editor (đã có postprocess trong hook listener)
+    const currentHtml = getCurrentContent();
+    if (!currentHtml.trim()) {
+      return;
+    }
+
+    // Cập nhật nội dung hiện tại vào state trước khi save
+    setHtmlContent(currentHtml);
+    
+    const successObj = await saveTemplate(getCurrentContent);
+    const success = !!successObj?.success;
     if (success) {
       console.log('✅ Template saved successfully in modal');
+      setHasUnsavedChanges(false);
       // Đóng modal sau khi save thành công
       setTimeout(() => {
         onClose();
@@ -106,15 +132,14 @@ function TemplateEditorModal({ visible, onClose, template }) {
   // ✅ Handle reset với confirmation
   const handleReset = () => {
     modal.confirm({
-      title: 'Khôi phục nội dung gốc?',
+      title: 'Khôi phục nội dung đã nạp?',
       content: 'Tất cả thay đổi chưa lưu sẽ bị mất. Bạn có chắc chắn không?',
       okText: 'Khôi phục',
       cancelText: 'Hủy',
       onOk: () => {
-        resetTemplate();
-        if (originalContent && isReady) {
-          setContent(originalContent);
-        }
+        // khôi phục lại từ template gốc (prop)
+        if (template) ingestTemplate(template);
+        setHasUnsavedChanges(false);
       }
     });
   };
@@ -136,16 +161,15 @@ function TemplateEditorModal({ visible, onClose, template }) {
     }
   };
 
-  // ✅ Handle HTML content change
+  // ✅ Handle HTML content change và sync với Quill
   const handleHtmlContentChange = (e) => {
     const newContent = e.target.value;
-    updateContent(newContent);
+    setHtmlContent(newContent);
+    setHasUnsavedChanges(true);
     
-    // Sync to Quill if ready và đang ở tab editor
-    if (isReady && activeTab === 'html') {
-      setTimeout(() => {
-        setContent(newContent);
-      }, 500);
+    // Sync ngay với Quill editor nếu ready
+    if (isReady) {
+      setContent(newContent);
     }
   };
 
@@ -155,10 +179,14 @@ function TemplateEditorModal({ visible, onClose, template }) {
         title={
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <EditOutlined className="text-blue-500" />
+             
+              <span className="flex items-center">
+                    <EditOutlined className="text-blue-500" /> 
+                    Chỉnh Sửa Mẫu Hợp Đồng
+                </span>
               <div>
                 <Title level={4} className="mb-0">
-                  Chỉnh sửa Template: {template?.name}
+                  Chỉnh sửa Template: {selectedTemplate?.name || template?.name || ''}
                 </Title>
                 {selectedTemplate && (
                   <div className="flex items-center space-x-3 mt-1">
@@ -189,6 +217,7 @@ function TemplateEditorModal({ visible, onClose, template }) {
         onCancel={handleClose}
         width="95vw"
         style={{ top: 20 }}
+        destroyOnHidden
         styles={{
           body: { 
             height: 'calc(100vh - 150px)', 
@@ -216,18 +245,18 @@ function TemplateEditorModal({ visible, onClose, template }) {
           <Button 
             key="save"
             type="primary"
-            icon={saving ? <Spin size="small" /> : <SaveOutlined />}
+            icon={<SaveOutlined />}
             onClick={handleSave}
-            loading={saving}
+            loading={false}
             disabled={!hasUnsavedChanges}
             className="bg-green-500 hover:bg-green-600 border-green-500"
           >
-            {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+            Lưu thay đổi
           </Button>
         ]}
       >
         
-        {selectedTemplate ? (
+        
           <div className="h-full flex flex-col">
             
             {/* Template Info Banner */}
@@ -236,10 +265,10 @@ function TemplateEditorModal({ visible, onClose, template }) {
                 <div className="flex items-center space-x-3">
                   <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
                   <span className="text-blue-800">
-                    Đang chỉnh sửa: <strong>{selectedTemplate.name} </strong>
+                    Đang chỉnh sửa: <strong>{selectedTemplate?.name} </strong>
                   </span>
                   <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded font-mono">
-                    - {selectedTemplate.code}
+                    - {selectedTemplate?.code}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -381,22 +410,21 @@ function TemplateEditorModal({ visible, onClose, template }) {
             </div>
 
           </div>
-        ) : (
+        {!selectedTemplate && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <Spin size="large" />
-              <div className="mt-4 text-gray-600">Đang tải template...</div>
+              <div className="mt-4 text-gray-600">Đang tải nội dung...</div>
             </div>
           </div>
         )}
-
       </Modal>
 
       {/* Preview Modal */}
       <PreviewModal
         visible={previewVisible}
         onClose={() => setPreviewVisible(false)}
-        templateData={selectedTemplate}
+        templateData={selectedTemplate || template}
         htmlContent={htmlContent}
         allStyles={allStyles}
         htmlHead={htmlHead}
@@ -405,7 +433,7 @@ function TemplateEditorModal({ visible, onClose, template }) {
       />
 
       {/* Custom Styling cho Modal */}
-      <style jsx>{`
+      <style>{`
         .editor-tabs .ant-tabs-content-holder {
           height: 100% !important;
           overflow: hidden !important;
@@ -436,6 +464,7 @@ function TemplateEditorModal({ visible, onClose, template }) {
         }
         
         .ql-editor {
+          spell-check: false;
           padding: 20px !important;
           min-height: 350px !important;
           background: white;
