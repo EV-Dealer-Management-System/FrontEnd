@@ -77,10 +77,10 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: "./DealerList",
           },
           {
-            path: '/admin/dealer/create-contract',
-            name: 'Tạo hợp đồng đại lý',
+            path: "/admin/dealer/create-contract",
+            name: "Tạo hợp đồng đại lý",
             icon: <FileTextOutlined />,
-            component: './CreateContract',
+            component: "./CreateContract",
           },
           {
             path: "/admin/dealer/contracts",
@@ -88,7 +88,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <FileTextOutlined />,
             component: "./DealerContracts",
           },
-          
+
           // {
           //   path: "/admin/dealer/promotions",
           //   name: "Quản lý khuyến Mãi ",
@@ -109,10 +109,10 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: "./VehicleCatalog",
           },
           {
-            path: "/admin/vehicle/inventory",
+            path: "/admin/inventory-management",
             name: "Kho xe",
             icon: <DeploymentUnitOutlined />,
-            component: "./Inventory",
+            component: "./InventoryManagement",
           },
           {
             path: "/admin/vehicle/allocation",
@@ -141,7 +141,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           },
         ],
       },
-       {
+      {
         path: "/admin/promotions",
         name: "Quản lý khuyến mãi",
         icon: <ShopOutlined />,
@@ -153,12 +153,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: "./PromotionList",
           },
           {
-            path: '/admin/promotions/create-promotion',
-            name: 'Tạo khuyến mãi',
+            path: "/admin/promotions/create-promotion",
+            name: "Tạo khuyến mãi",
             icon: <FileTextOutlined />,
-            component: './CreatePromotion',
+            component: "./CreatePromotion",
           },
-          
+
           // {
           //   path: "/admin/dealer/promotions",
           //   name: "Quản lý khuyến Mãi ",

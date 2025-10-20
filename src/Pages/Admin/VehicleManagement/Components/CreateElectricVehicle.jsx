@@ -43,9 +43,7 @@ const extractErrorMessage = (err) => {
   // Axios error shape
   const status = err?.response?.status;
   const serverMsg =
-    err?.response?.data?.message ||
-    err?.response?.data?.error ||
-    err?.message;
+    err?.response?.data?.message || err?.response?.data?.error || err?.message;
 
   // Validation errors array/object
   const errorsObj = err?.response?.data?.errors;
@@ -61,7 +59,8 @@ const extractErrorMessage = (err) => {
     } catch {}
   }
 
-  if (err?.code === "ECONNABORTED") return "Yêu cầu bị timeout. Vui lòng thử lại.";
+  if (err?.code === "ECONNABORTED")
+    return "Yêu cầu bị timeout. Vui lòng thử lại.";
   if (status === 400) return serverMsg || "Yêu cầu không hợp lệ (400).";
   if (status === 401) return "Chưa được xác thực (401).";
   if (status === 403) return "Không có quyền thực hiện (403).";
@@ -109,7 +108,8 @@ function CreateElectricVehicle() {
 
       if (!nv.success) message.warning(nv.message || "Không thể tải xe.");
       if (!nm.success) message.warning(nm.message || "Không thể tải model.");
-      if (!nver.success) message.warning(nver.message || "Không thể tải version.");
+      if (!nver.success)
+        message.warning(nver.message || "Không thể tải version.");
       if (!nc.success) message.warning(nc.message || "Không thể tải màu.");
 
       setVehicles(nv.data || []);
@@ -160,7 +160,9 @@ function CreateElectricVehicle() {
       title: "Model",
       dataIndex: ["version", "modelName"],
       width: 220,
-      render: (text) => <Text ellipsis={{ tooltip: text }}>{text || "N/A"}</Text>,
+      render: (text) => (
+        <Text ellipsis={{ tooltip: text }}>{text || "N/A"}</Text>
+      ),
     },
     {
       title: "Version",
@@ -249,7 +251,8 @@ function CreateElectricVehicle() {
     setIsCreateModalVisible(true);
   };
 
-  const customUpload = ({ onSuccess }) => setTimeout(() => onSuccess("ok"), 100);
+  const customUpload = ({ onSuccess }) =>
+    setTimeout(() => onSuccess("ok"), 100);
 
   const handleImageChange = ({ fileList }) => {
     let list = [...fileList];
@@ -265,7 +268,10 @@ function CreateElectricVehicle() {
     setPreviewVisible(true);
   };
 
-  const steps = [{ title: "Thông tin xe & hình ảnh" }, { title: "Xác nhận thông tin" }];
+  const steps = [
+    { title: "Thông tin xe & hình ảnh" },
+    { title: "Xác nhận thông tin" },
+  ];
 
   const next = () => {
     form
@@ -284,7 +290,11 @@ function CreateElectricVehicle() {
       const values = form.getFieldsValue(true);
 
       // 1) Upload ảnh
-      message.loading({ content: "Đang upload ảnh lên S3...", key: "uploading", duration: 0 });
+      message.loading({
+        content: "Đang upload ảnh lên S3...",
+        key: "uploading",
+        duration: 0,
+      });
       let attachmentKeys = [];
       try {
         const uploadPromises = uploadedImages.map((f) =>
@@ -312,7 +322,11 @@ function CreateElectricVehicle() {
 
       console.log("📤 FINAL PAYLOAD:", JSON.stringify(payload, null, 2));
 
-      message.loading({ content: "Đang tạo xe mẫu...", key: "creatingVehicle", duration: 0 });
+      message.loading({
+        content: "Đang tạo xe mẫu...",
+        key: "creatingVehicle",
+        duration: 0,
+      });
       const res = await vehicleApi.createVehicle(payload);
       message.destroy("creatingVehicle");
 
@@ -344,10 +358,20 @@ function CreateElectricVehicle() {
         subTitle: "Quản lý xe điện, model, version và màu sắc",
         breadcrumb: undefined,
         extra: [
-          <Button key="reload" icon={<ReloadOutlined />} onClick={loadAll} loading={loading}>
+          <Button
+            key="reload"
+            icon={<ReloadOutlined />}
+            onClick={loadAll}
+            loading={loading}
+          >
             Tải lại
           </Button>,
-          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={handleCreateModal}>
+          <Button
+            key="create"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleCreateModal}
+          >
             Tạo Xe Điện
           </Button>,
         ],
@@ -387,7 +411,11 @@ function CreateElectricVehicle() {
         width={980}
         destroyOnClose
       >
-        <Steps current={currentStep} items={steps} style={{ marginBottom: 24 }} />
+        <Steps
+          current={currentStep}
+          items={steps}
+          style={{ marginBottom: 24 }}
+        />
         <Form form={form} layout="vertical" onFinish={handleSubmit} preserve>
           {currentStep === 0 && (
             <>
@@ -423,7 +451,11 @@ function CreateElectricVehicle() {
                     name="versionId"
                     rules={[{ required: true, message: "Chọn version" }]}
                   >
-                    <Select placeholder="Chọn version" showSearch optionFilterProp="children">
+                    <Select
+                      placeholder="Chọn version"
+                      showSearch
+                      optionFilterProp="children"
+                    >
                       {filteredVersions.map((v) => (
                         <Option key={v.id} value={v.id}>
                           {v.versionName}
@@ -439,7 +471,11 @@ function CreateElectricVehicle() {
                     name="colorId"
                     rules={[{ required: true, message: "Chọn màu sắc" }]}
                   >
-                    <Select placeholder="Chọn màu" showSearch optionFilterProp="children">
+                    <Select
+                      placeholder="Chọn màu"
+                      showSearch
+                      optionFilterProp="children"
+                    >
                       {colors.map((c) => (
                         <Option key={c.id} value={c.id}>
                           <Space>
@@ -472,7 +508,9 @@ function CreateElectricVehicle() {
                     <InputNumber
                       min={0}
                       style={{ width: "100%" }}
-                      formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                      formatter={(v) =>
+                        `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                      }
                       parser={(v) => v.replace(/\$\s?|(,*)/g, "")}
                     />
                   </Form.Item>
@@ -513,7 +551,9 @@ function CreateElectricVehicle() {
                     </div>
                   )}
                 </Upload>
-                <div className="text-xs text-gray-500">Mỗi ảnh &lt; 5MB. Tối đa 8 ảnh.</div>
+                <div className="text-xs text-gray-500">
+                  Mỗi ảnh &lt; 5MB. Tối đa 8 ảnh.
+                </div>
               </Form.Item>
             </>
           )}
@@ -530,23 +570,34 @@ function CreateElectricVehicle() {
                 <Col span={12}>
                   <p>
                     <strong>Model:</strong>{" "}
-                    {models.find((m) => m.id === form.getFieldValue("modelId"))?.modelName || "—"}
+                    {models.find((m) => m.id === form.getFieldValue("modelId"))
+                      ?.modelName || "—"}
                   </p>
                   <p>
                     <strong>Version:</strong>{" "}
-                    {versions.find((v) => v.id === form.getFieldValue("versionId"))?.versionName}
+                    {
+                      versions.find(
+                        (v) => v.id === form.getFieldValue("versionId")
+                      )?.versionName
+                    }
                   </p>
                   <p>
                     <strong>Màu sắc:</strong>{" "}
-                    {colors.find((c) => c.id === form.getFieldValue("colorId"))?.colorName || "—"}
+                    {colors.find((c) => c.id === form.getFieldValue("colorId"))
+                      ?.colorName || "—"}
                   </p>
                   <p>
                     <strong>Giá:</strong>{" "}
-                    {(form.getFieldValue("costPrice") || 0).toLocaleString("vi-VN")} ₫
+                    {(form.getFieldValue("costPrice") || 0).toLocaleString(
+                      "vi-VN"
+                    )}{" "}
+                    ₫
                   </p>
                   <p>
                     <strong>Mô tả:</strong>{" "}
-                    {form.getFieldValue("description") || <span className="text-gray-400">—</span>}
+                    {form.getFieldValue("description") || (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </p>
                 </Col>
                 <Col span={12}>
@@ -625,7 +676,12 @@ function CreateElectricVehicle() {
       </Modal>
 
       {/* Modal xem ảnh lớn */}
-      <Modal open={previewVisible} footer={null} onCancel={() => setPreviewVisible(false)} width={800}>
+      <Modal
+        open={previewVisible}
+        footer={null}
+        onCancel={() => setPreviewVisible(false)}
+        width={800}
+      >
         <img alt="preview" style={{ width: "100%" }} src={previewImage} />
       </Modal>
 
@@ -645,7 +701,8 @@ function CreateElectricVehicle() {
                   <strong>Model:</strong> {selectedVehicle.version?.modelName}
                 </p>
                 <p>
-                  <strong>Version:</strong> {selectedVehicle.version?.versionName}
+                  <strong>Version:</strong>{" "}
+                  {selectedVehicle.version?.versionName}
                 </p>
                 <p>
                   <strong>Màu sắc:</strong> {selectedVehicle.color?.colorName}
@@ -658,8 +715,12 @@ function CreateElectricVehicle() {
                 </p>
                 <p>
                   <strong>Trạng thái:</strong>{" "}
-                  <Tag color={selectedVehicle.status === 1 ? "success" : "error"}>
-                    {selectedVehicle.status === 1 ? "Hoạt động" : "Không hoạt động"}
+                  <Tag
+                    color={selectedVehicle.status === 1 ? "success" : "error"}
+                  >
+                    {selectedVehicle.status === 1
+                      ? "Hoạt động"
+                      : "Không hoạt động"}
                   </Tag>
                 </p>
                 <p>
@@ -670,17 +731,23 @@ function CreateElectricVehicle() {
               <Col span={12}>
                 {selectedVehicle.imgUrl?.length > 0 ? (
                   <>
-                    <strong>Hình ảnh xe ({selectedVehicle.imgUrl.length}):</strong>
+                    <strong>
+                      Hình ảnh xe ({selectedVehicle.imgUrl.length}):
+                    </strong>
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))",
+                        gridTemplateColumns:
+                          "repeat(auto-fill, minmax(110px, 1fr))",
                         gap: 10,
                         marginTop: 10,
                       }}
                     >
                       <Image.PreviewGroup
-                        items={selectedVehicle.imgUrl.map((url) => ({ src: url, alt: "Xe điện" }))}
+                        items={selectedVehicle.imgUrl.map((url) => ({
+                          src: url,
+                          alt: "Xe điện",
+                        }))}
                       >
                         {selectedVehicle.imgUrl.map((url, i) => (
                           <Image
