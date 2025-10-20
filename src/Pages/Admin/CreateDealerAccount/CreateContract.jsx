@@ -31,7 +31,7 @@ import {
 import { locationApi } from '../../../App/APIComponent/Address';
 import api from '../../../api/api';
 import ContractViewer from '../SignContract/Components/ContractViewer';
-import PDFEdit from '../SignContract/Components/PDF/PDFEdit';
+import PDFEdit from '../SignContract/Components/PDF/PDFEdit/PDFEditMain';
 import { createAccountApi } from '../../../App/EVMAdmin/DealerContract/CreateDealerContract';
 import { PDFUpdateService } from '../../../App/Home/PDFconfig/PDFUpdate';
 import AdminLayout from '../../../Components/Admin/AdminLayout';
