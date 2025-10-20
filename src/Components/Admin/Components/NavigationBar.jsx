@@ -210,6 +210,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <UserOutlined />,
             component: "./UserManagement",
           },
+          {
+            path: "/admin/settings/template-editor",
+            name: "Sửa Hợp đồng",
+            icon: <FileTextOutlined />,
+            component: "./TemplateEditorPage",
+          },
         ],
       },
       {
