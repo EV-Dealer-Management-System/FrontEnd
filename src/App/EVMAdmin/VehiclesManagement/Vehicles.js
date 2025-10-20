@@ -170,7 +170,6 @@ export const vehicleApi = {
     }
   },
 
-  // === COLOR MANAGEMENT ===
   getAllColors: async function () {
     try {
       const response = await api.get("/ElectricVehicleColor/get-all-colors");

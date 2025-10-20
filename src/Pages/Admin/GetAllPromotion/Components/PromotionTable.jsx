@@ -1,15 +1,18 @@
 import React from 'react';
-import { Card, Table, Tag, Badge, Typography, Button, Space, Tooltip } from 'antd';
+import { Card, Table, Tag, Typography, Button, Space, Tooltip, Divider } from 'antd';
 import {
     GiftOutlined,
     PercentageOutlined,
     DollarOutlined,
     CalendarOutlined,
     EditOutlined,
-    EyeOutlined
+    EyeOutlined,
+    ClockCircleOutlined,
+    CheckCircleOutlined,
+    StopOutlined
 } from '@ant-design/icons';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 function PromotionTable({
     promotions,
@@ -22,84 +25,64 @@ function PromotionTable({
 
     const columns = [
         {
-            title: 'Tên khuyến mãi',
+            title: 'Khuyến mãi',
             dataIndex: 'name',
             key: 'name',
-            width: 300,
+            width: 280,
             render: (text, record) => (
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                        <GiftOutlined className="text-white text-lg" />
+                <div className="py-2">
+                    <div className="font-semibold text-gray-900 text-base mb-1 line-clamp-1">
+                        {text}
                     </div>
-                    <div className="flex-1">
-                        <div className="font-semibold text-gray-800 text-base mb-1">{text}</div>
-                        <div className="text-sm text-gray-500 line-clamp-2">
-                            {record.description}
-                        </div>
+                    <div className="text-sm text-gray-500 line-clamp-1">
+                        {record.description}
                     </div>
                 </div>
             ),
         },
         {
-            title: 'Loại giảm giá',
+            title: 'Giảm giá',
             dataIndex: 'discountType',
             key: 'discountType',
-            width: 200,
+            width: 140,
+            align: 'center',
             render: (type, record) => {
                 if (type === 0) {
                     return (
-                        <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                            <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                                <DollarOutlined className="text-white text-sm" />
+                        <div className="text-center">
+                            <div className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">
+                                <DollarOutlined className="text-xs" />
+                                {formatCurrency(record.fixedAmount)}
                             </div>
-                            <div>
-                                <div className="font-semibold text-green-700 text-sm">Giảm cố định</div>
-                                <div className="text-lg font-bold text-green-800">
-                                    {formatCurrency(record.fixedAmount)}
-                                </div>
-                            </div>
+                            <div className="text-xs text-gray-500 mt-1">Cố định</div>
                         </div>
                     );
                 } else {
                     return (
-                        <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                                <PercentageOutlined className="text-white text-sm" />
+                        <div className="text-center">
+                            <div className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
+                                <PercentageOutlined className="text-xs" />
+                                {record.percentage}%
                             </div>
-                            <div>
-                                <div className="font-semibold text-orange-700 text-sm">Giảm theo %</div>
-                                <div className="text-lg font-bold text-orange-800">
-                                    {record.percentage}%
-                                </div>
-                            </div>
+                            <div className="text-xs text-gray-500 mt-1">Phần trăm</div>
                         </div>
                     );
                 }
             },
         },
         {
-            title: 'Thời gian áp dụng',
+            title: 'Thời gian',
             key: 'duration',
-            width: 280,
+            width: 200,
             render: (_, record) => (
-                <div className="space-y-2">
-                    <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-md">
-                        <CalendarOutlined className="text-blue-500" />
-                        <div>
-                            <span className="text-xs text-gray-600 block">Bắt đầu</span>
-                            <span className="font-medium text-blue-700 text-sm">
-                                {formatDate(record.startDate)}
-                            </span>
-                        </div>
+                <div className="py-1">
+                    <div className="text-xs text-gray-500 mb-1">Bắt đầu</div>
+                    <div className="text-sm font-medium text-gray-700 mb-2">
+                        {formatDate(record.startDate)}
                     </div>
-                    <div className="flex items-center gap-2 p-2 bg-red-50 rounded-md">
-                        <CalendarOutlined className="text-red-500" />
-                        <div>
-                            <span className="text-xs text-gray-600 block">Kết thúc</span>
-                            <span className="font-medium text-red-700 text-sm">
-                                {formatDate(record.endDate)}
-                            </span>
-                        </div>
+                    <div className="text-xs text-gray-500 mb-1">Kết thúc</div>
+                    <div className="text-sm font-medium text-gray-700">
+                        {formatDate(record.endDate)}
                     </div>
                 </div>
             ),
@@ -107,49 +90,44 @@ function PromotionTable({
         {
             title: 'Trạng thái',
             key: 'status',
-            width: 150,
+            width: 120,
+            align: 'center',
             render: (_, record) => {
                 const status = getPromotionStatus(record.startDate, record.endDate, record.isActive);
+
                 const statusConfig = {
                     'active': {
-                        badgeStatus: 'processing',
-                        tagColor: 'green',
-                        bgColor: 'bg-green-50',
-                        borderColor: 'border-green-200'
+                        color: 'success',
+                        icon: <CheckCircleOutlined />,
+                        text: 'Đang chạy'
                     },
                     'upcoming': {
-                        badgeStatus: 'default',
-                        tagColor: 'blue',
-                        bgColor: 'bg-blue-50',
-                        borderColor: 'border-blue-200'
+                        color: 'processing',
+                        icon: <ClockCircleOutlined />,
+                        text: 'Sắp tới'
                     },
                     'expired': {
-                        badgeStatus: 'error',
-                        tagColor: 'red',
-                        bgColor: 'bg-red-50',
-                        borderColor: 'border-red-200'
+                        color: 'error',
+                        icon: <StopOutlined />,
+                        text: 'Hết hạn'
                     },
                     'inactive': {
-                        badgeStatus: 'default',
-                        tagColor: 'default',
-                        bgColor: 'bg-gray-50',
-                        borderColor: 'border-gray-200'
+                        color: 'default',
+                        icon: <StopOutlined />,
+                        text: 'Tạm dừng'
                     }
                 };
 
                 const config = statusConfig[status.status] || statusConfig.inactive;
 
                 return (
-                    <div className={`p-3 rounded-lg ${config.bgColor} ${config.borderColor} border`}>
-                        <Badge
-                            status={config.badgeStatus}
-                            text={
-                                <Tag color={config.tagColor} className="font-medium border-0">
-                                    {status.text}
-                                </Tag>
-                            }
-                        />
-                    </div>
+                    <Tag
+                        color={config.color}
+                        icon={config.icon}
+                        className="font-medium px-3 py-1"
+                    >
+                        {config.text}
+                    </Tag>
                 );
             },
         },
@@ -157,11 +135,11 @@ function PromotionTable({
             title: 'Ngày tạo',
             dataIndex: 'createdAt',
             key: 'createdAt',
-            width: 180,
+            width: 130,
+            align: 'center',
             render: (date) => (
                 <div className="text-center">
-                    <div className="text-sm text-gray-600 mb-1">Ngày tạo</div>
-                    <div className="font-medium text-gray-800 text-sm">
+                    <div className="text-sm font-medium text-gray-700">
                         {formatDate(date)}
                     </div>
                 </div>
@@ -170,24 +148,27 @@ function PromotionTable({
         {
             title: 'Thao tác',
             key: 'actions',
-            width: 120,
+            width: 100,
             fixed: 'right',
+            align: 'center',
             render: (_, record) => (
                 <Space size="small">
                     <Tooltip title="Xem chi tiết">
                         <Button
                             type="text"
+                            size="small"
                             icon={<EyeOutlined />}
                             onClick={() => onView && onView(record)}
-                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-0 rounded-lg"
                         />
                     </Tooltip>
                     <Tooltip title="Chỉnh sửa">
                         <Button
                             type="text"
+                            size="small"
                             icon={<EditOutlined />}
                             onClick={() => onEdit && onEdit(record)}
-                            className="text-green-500 hover:text-green-700 hover:bg-green-50"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50 border-0 rounded-lg"
                         />
                     </Tooltip>
                 </Space>
@@ -198,21 +179,20 @@ function PromotionTable({
     return (
         <Card
             title={
-                <div className="flex items-center gap-3 py-2">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                        <GiftOutlined className="text-white text-lg" />
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">     
+                        <div>
+                            <Title level={4} className="m-0 text-gray-900">
+                                Danh sách khuyến mãi
+                            </Title>
+                        </div>
                     </div>
-                    <div>
-                        <Title level={4} className="m-0 text-gray-800">
-                            Danh sách khuyến mãi xe điện
-                        </Title>
-                        <p className="text-sm text-gray-500 m-0 mt-1">
-                            Quản lý và theo dõi tất cả chương trình khuyến mãi
-                        </p>
-                    </div>
+                    {/* <div className="text-sm text-gray-500">
+                        {promotions?.length || 0} khuyến mãi
+                    </div> */}
                 </div>
             }
-            className="shadow-lg border-0 rounded-xl overflow-hidden"
+            className="shadow-sm border border-gray-200 rounded-lg"
             bodyStyle={{ padding: 0 }}
         >
             <Table
@@ -220,19 +200,18 @@ function PromotionTable({
                 dataSource={promotions}
                 rowKey="id"
                 pagination={{
-                    pageSize: 8,
+                    pageSize: 10,
                     showSizeChanger: true,
                     showQuickJumper: true,
                     showTotal: (total, range) =>
-                        `Hiển thị ${range[0]}-${range[1]} của ${total} khuyến mãi`,
-                    pageSizeOptions: ['5', '8', '10', '20'],
+                        `${range[0]}-${range[1]} của ${total} khuyến mãi`,
+                    pageSizeOptions: ['10', '20', '50'],
+                    size: 'small'
                 }}
-                scroll={{ x: 1200 }}
+                scroll={{ x: 1000 }}
+                size="small"
                 className="promotion-table"
-                rowClassName={(record, index) =>
-                    `${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-blue-50 transition-colors duration-200`
-                }
-                size="middle"
+                rowClassName="hover:bg-gray-50 transition-colors duration-150"
             />
         </Card>
     );

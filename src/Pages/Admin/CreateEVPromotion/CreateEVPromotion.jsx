@@ -15,7 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAllEVTemplates } from '../../../App/EVMAdmin/EVPromotion/Layouts/GetAllEVTemplate';
 import { createPromotion } from '../../../App/EVMAdmin/EVPromotion/CreatePromotion';
 import AdminLayout from '../../../Components/Admin/AdminLayout';
-import VehicleSelection from './components/VehicleSelection';
+import VehicleSelection from './Components/VehicleSelection';
 import SuccessModal from './components/SuccessModal';
 
 function CreateEVPromotion() {

@@ -520,12 +520,12 @@ function UpdatePromotionForm({ visible, onCancel, onSuccess, promotionData }) {
                                     } else if (applyToAllValue === true) {
                                         return (
                                             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                                <p className="text-blue-700 font-medium">
+                                                {/* <p className="text-blue-700 font-medium">
                                                     🎯 Khuyến mãi này sẽ áp dụng cho tất cả xe điện
                                                 </p>
                                                 <p className="text-blue-600 text-sm mt-1">
                                                     Không cần chọn model hay phiên bản cụ thể
-                                                </p>
+                                                </p> */}
                                             </div>
                                         );
                                     }
@@ -538,61 +538,65 @@ function UpdatePromotionForm({ visible, onCancel, onSuccess, promotionData }) {
                                     Thời gian áp dụng
                                 </h4>
 
-                                <div className="grid grid-cols-1 gap-4">
-                                    <ProFormDateTimePicker
-                                        name="startDate"
-                                        label="Ngày bắt đầu"
-                                        placeholder="Chọn ngày bắt đầu"
-                                        rules={[
-                                            { required: true, message: 'Vui lòng chọn ngày bắt đầu!' },
-                                            {
-                                                validator(_, value) {
-                                                    if (!value) return Promise.resolve();
-                                                    const now = dayjs();
-                                                    if (value.isAfter(now)) {
-                                                        return Promise.resolve();
-                                                    }
-                                                    return Promise.reject(new Error('Ngày bắt đầu phải là thời điểm trong tương lai!'));
-                                                },
-                                            }
-                                        ]}
-                                        fieldProps={{
-                                            className: 'rounded-lg w-full',
-                                            format: 'DD/MM/YYYY HH:mm',
-                                            showTime: { format: 'HH:mm' },
-                                            disabledDate: (current) => {
-                                                // Disable tất cả ngày trong quá khứ
-                                                return current && current < dayjs().startOf('day');
-                                            },
-                                            disabledTime: (current) => {
-                                                // Nếu là ngày hôm nay, disable giờ trong quá khứ
-                                                if (current && current.isSame(dayjs(), 'day')) {
-                                                    const now = dayjs();
-                                                    return {
-                                                        disabledHours: () => {
-                                                            const hours = [];
-                                                            for (let i = 0; i < now.hour(); i++) {
-                                                                hours.push(i);
-                                                            }
-                                                            return hours;
-                                                        },
-                                                        disabledMinutes: (hour) => {
-                                                            if (hour === now.hour()) {
-                                                                const minutes = [];
-                                                                for (let i = 0; i <= now.minute(); i++) {
-                                                                    minutes.push(i);
-                                                                }
-                                                                return minutes;
-                                                            }
-                                                            return [];
+                                <div className="flex flex-col lg:flex-row lg:gap-6 gap-0">
+                                    <div className="flex-1">
+                                        <ProFormDateTimePicker
+                                            name="startDate"
+                                            label="Ngày bắt đầu"
+                                            placeholder="Chọn ngày bắt đầu"
+                                            rules={[
+                                                { required: true, message: 'Vui lòng chọn ngày bắt đầu!' },
+                                                {
+                                                    validator(_, value) {
+                                                        if (!value) return Promise.resolve();
+                                                        const now = dayjs();
+                                                        if (value.isAfter(now)) {
+                                                            return Promise.resolve();
                                                         }
-                                                    };
+                                                        return Promise.reject(new Error('Ngày bắt đầu phải là thời điểm trong tương lai!'));
+                                                    },
                                                 }
-                                                return {};
-                                            }
-                                        }}
-                                    />
+                                            ]}
+                                            fieldProps={{
+                                                className: 'rounded-lg w-full',
+                                                format: 'DD/MM/YYYY HH:mm',
+                                                showTime: { format: 'HH:mm' },
+                                                disabledDate: (current) => {
+                                                    // Disable tất cả ngày trong quá khứ
+                                                    return current && current < dayjs().startOf('day');
+                                                },
+                                                disabledTime: (current) => {
+                                                    // Nếu là ngày hôm nay, disable giờ trong quá khứ
+                                                    if (current && current.isSame(dayjs(), 'day')) {
+                                                        const now = dayjs();
+                                                        return {
+                                                            disabledHours: () => {
+                                                                const hours = [];
+                                                                for (let i = 0; i < now.hour(); i++) {
+                                                                    hours.push(i);
+                                                                }
+                                                                return hours;
+                                                            },
+                                                            disabledMinutes: (hour) => {
+                                                                if (hour === now.hour()) {
+                                                                    const minutes = [];
+                                                                    for (let i = 0; i <= now.minute(); i++) {
+                                                                        minutes.push(i);
+                                                                    }
+                                                                    return minutes;
+                                                                }
+                                                                return [];
+                                                            }
+                                                        };
+                                                    }
+                                                    return {};
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
 
+                                <div className="flex-1">
                                     <ProFormDateTimePicker
                                         name="endDate"
                                         label="Ngày kết thúc"
@@ -625,7 +629,17 @@ function UpdatePromotionForm({ visible, onCancel, onSuccess, promotionData }) {
                                             showTime: { format: 'HH:mm' },
                                             disabledDate: (current) => {
                                                 // Disable tất cả ngày trong quá khứ
-                                                return current && current < dayjs().startOf('day');
+                                                if (current && current < dayjs().startOf('day')) {
+                                                    return true;
+                                                }
+
+                                                // Disable ngày trước startDate
+                                                const startDate = form.getFieldValue('startDate');
+                                                if (startDate && current && current.isBefore(startDate, 'day')) {
+                                                    return true;
+                                                }
+
+                                                return false;
                                             },
                                             disabledTime: (current) => {
                                                 // Nếu là ngày hôm nay, disable giờ trong quá khứ
@@ -656,7 +670,7 @@ function UpdatePromotionForm({ visible, onCancel, onSuccess, promotionData }) {
                                         }}
                                     />
                                 </div>
-
+                                {/* 
                                 <div className="mt-4">
                                     <ProFormSelect
                                         name="isActive"
@@ -670,7 +684,7 @@ function UpdatePromotionForm({ visible, onCancel, onSuccess, promotionData }) {
                                             className: 'rounded-lg'
                                         }}
                                     />
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                     </div>
