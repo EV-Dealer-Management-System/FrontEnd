@@ -1,385 +1,373 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { PageContainer, ProCard, StatisticCard } from "@ant-design/pro-components";
-import { Row, Col, Card, Typography, Space, Button, Table, Tag, Progress } from "antd";
+import React, { useMemo } from 'react';
+import { PageContainer, ProCard, StatisticCard } from '@ant-design/pro-components';
+import { Row, Col, Table, Tag, Progress, Button, Space } from 'antd';
 import {
-    FileTextOutlined,
-    BankOutlined,
-    CheckCircleOutlined,
-    ClockCircleOutlined,
-    ExclamationCircleOutlined,
-    TrophyOutlined,
-    TeamOutlined,
-} from "@ant-design/icons";
-import NavigationBar from "../../Components/EVMStaff/Components/NavigationBar";
+    ShoppingCartOutlined,
+    UserOutlined,
+    CarOutlined,
+    DollarOutlined,
+    RiseOutlined,
+    FallOutlined,
+    FileTextOutlined
+} from '@ant-design/icons';
+import EVMStaffLayout from '../../Components/EVMStaff/EVMStaffLayout';
 
-const { Title, Text } = Typography;
+const { Statistic } = StatisticCard;
 
 function EVMStaff() {
-    const [collapsed, setCollapsed] = useState(false);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-    // Handle responsive design
-    useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    // Mock data cho dashboard EVM Staff
-    const dashboardData = useMemo(() => ({
-        contractStats: {
-            total: 156,
-            pending: 23,
-            approved: 118,
-            rejected: 15,
-        },
-        dealerStats: {
-            total: 45,
-            active: 38,
-            inactive: 7,
-            topPerformer: "Đại lý Miền Nam",
-        },
-        recentContracts: [
-            {
-                id: 1,
-                contractNumber: "HD001234",
-                dealerName: "Đại lý Hà Nội",
-                type: "Hợp đồng phân phối",
-                status: "pending",
-                createdDate: "2024-10-10",
-                value: "2,500,000,000",
-            },
-            {
-                id: 2,
-                contractNumber: "HD001235",
-                dealerName: "Đại lý TP.HCM",
-                type: "Hợp đồng bảo hành",
-                status: "approved",
-                createdDate: "2024-10-09",
-                value: "1,800,000,000",
-            },
-            {
-                id: 3,
-                contractNumber: "HD001236",
-                dealerName: "Đại lý Đà Nẵng",
-                type: "Hợp đồng phân phối",
-                status: "pending",
-                createdDate: "2024-10-08",
-                value: "3,200,000,000",
-            },
-            {
-                id: 4,
-                contractNumber: "HD001237",
-                dealerName: "Đại lý Cần Thơ",
-                type: "Hợp đồng dịch vụ",
-                status: "approved",
-                createdDate: "2024-10-07",
-                value: "950,000,000",
-            },
-        ],
-        topDealers: [
-            {
-                id: 1,
-                name: "Đại lý Miền Nam",
-                location: "TP.HCM",
-                performance: 95,
-                revenue: "15,500,000,000",
-                contracts: 12,
-            },
-            {
-                id: 2,
-                name: "Đại lý Miền Bắc",
-                location: "Hà Nội",
-                performance: 88,
-                revenue: "12,800,000,000",
-                contracts: 10,
-            },
-            {
-                id: 3,
-                name: "Đại lý Miền Trung",
-                location: "Đà Nẵng",
-                performance: 82,
-                revenue: "9,200,000,000",
-                contracts: 8,
-            },
-        ],
+    // Mock data cho Dashboard - Thống kê tổng quan
+    const overviewStats = useMemo(() => ({
+        totalDealers: 45,
+        activeDealers: 42,
+        totalContracts: 38,
+        pendingContracts: 7,
+        totalVehicles: 1250,
+        vehiclesInStock: 320,
+        monthlyRevenue: 15750000000,
+        revenueGrowth: 12.5
     }), []);
 
-    // Columns cho bảng hợp đồng gần đây
+    // Mock data - Danh sách hợp đồng gần đây
+    const recentContracts = useMemo(() => [
+        {
+            key: '1',
+            contractId: 'CT2024001',
+            dealerName: 'Đại lý ABC Hà Nội',
+            signDate: '2024-10-15',
+            value: 5000000000,
+            status: 'active',
+            vehicleTarget: 50
+        },
+        {
+            key: '2',
+            contractId: 'CT2024002',
+            dealerName: 'Đại lý XYZ TP.HCM',
+            signDate: '2024-10-12',
+            value: 7500000000,
+            status: 'pending',
+            vehicleTarget: 75
+        },
+        {
+            key: '3',
+            contractId: 'CT2024003',
+            dealerName: 'Đại lý DEF Đà Nẵng',
+            signDate: '2024-10-10',
+            value: 3500000000,
+            status: 'active',
+            vehicleTarget: 35
+        },
+        {
+            key: '4',
+            contractId: 'CT2024004',
+            dealerName: 'Đại lý GHI Hải Phòng',
+            signDate: '2024-10-08',
+            value: 4200000000,
+            status: 'pending',
+            vehicleTarget: 42
+        },
+        {
+            key: '5',
+            contractId: 'CT2024005',
+            dealerName: 'Đại lý JKL Cần Thơ',
+            signDate: '2024-10-05',
+            value: 2800000000,
+            status: 'active',
+            vehicleTarget: 28
+        }
+    ], []);
+
+    // Mock data - Hiệu suất đại lý theo khu vực
+    const dealerPerformance = useMemo(() => [
+        {
+            key: '1',
+            region: 'Miền Bắc',
+            dealers: 15,
+            vehiclesSold: 450,
+            target: 500,
+            revenue: 6750000000,
+            performance: 90
+        },
+        {
+            key: '2',
+            region: 'Miền Trung',
+            dealers: 12,
+            vehiclesSold: 320,
+            target: 360,
+            revenue: 4800000000,
+            performance: 88.9
+        },
+        {
+            key: '3',
+            region: 'Miền Nam',
+            dealers: 18,
+            vehiclesSold: 580,
+            target: 640,
+            revenue: 8700000000,
+            performance: 90.6
+        }
+    ], []);
+
+    // Cột cho bảng hợp đồng
     const contractColumns = [
         {
-            title: "Số hợp đồng",
-            dataIndex: "contractNumber",
-            key: "contractNumber",
-            render: (text) => <Text strong className="text-blue-600">{text}</Text>,
+            title: 'Mã HĐ',
+            dataIndex: 'contractId',
+            key: 'contractId',
+            width: 120,
+            render: (text) => <span className="font-semibold text-blue-600">{text}</span>
         },
         {
-            title: "Đại lý",
-            dataIndex: "dealerName",
-            key: "dealerName",
+            title: 'Tên Đại Lý',
+            dataIndex: 'dealerName',
+            key: 'dealerName',
+            ellipsis: true
         },
         {
-            title: "Loại hợp đồng",
-            dataIndex: "type",
-            key: "type",
+            title: 'Ngày Ký',
+            dataIndex: 'signDate',
+            key: 'signDate',
+            width: 110
         },
         {
-            title: "Trạng thái",
-            dataIndex: "status",
-            key: "status",
-            render: (status) => {
-                const statusConfig = {
-                    pending: { color: "orange", text: "Chờ xử lý", icon: <ClockCircleOutlined /> },
-                    approved: { color: "green", text: "Đã duyệt", icon: <CheckCircleOutlined /> },
-                    rejected: { color: "red", text: "Từ chối", icon: <ExclamationCircleOutlined /> },
-                };
-                const config = statusConfig[status];
-                return (
-                    <Tag color={config.color} icon={config.icon}>
-                        {config.text}
-                    </Tag>
-                );
-            },
+            title: 'Giá Trị HĐ',
+            dataIndex: 'value',
+            key: 'value',
+            width: 150,
+            render: (value) => (
+                <span className="font-medium">
+                    {new Intl.NumberFormat('vi-VN', {
+                        style: 'currency',
+                        currency: 'VND'
+                    }).format(value)}
+                </span>
+            )
         },
         {
-            title: "Giá trị (VND)",
-            dataIndex: "value",
-            key: "value",
-            render: (value) => <Text strong>{value}</Text>,
+            title: 'Mục Tiêu',
+            dataIndex: 'vehicleTarget',
+            key: 'vehicleTarget',
+            width: 100,
+            render: (target) => <span>{target} xe</span>
         },
         {
-            title: "Ngày tạo",
-            dataIndex: "createdDate",
-            key: "createdDate",
-        },
+            title: 'Trạng Thái',
+            dataIndex: 'status',
+            key: 'status',
+            width: 120,
+            render: (status) => (
+                <Tag color={status === 'active' ? 'green' : 'orange'}>
+                    {status === 'active' ? 'Đang hoạt động' : 'Chờ duyệt'}
+                </Tag>
+            )
+        }
     ];
 
-    // Columns cho bảng đại lý hàng đầu
-    const dealerColumns = [
+    // Cột cho bảng hiệu suất
+    const performanceColumns = [
         {
-            title: "Tên đại lý",
-            dataIndex: "name",
-            key: "name",
-            render: (text) => <Text strong>{text}</Text>,
+            title: 'Khu Vực',
+            dataIndex: 'region',
+            key: 'region',
+            render: (text) => <span className="font-semibold">{text}</span>
         },
         {
-            title: "Địa điểm",
-            dataIndex: "location",
-            key: "location",
+            title: 'Số Đại Lý',
+            dataIndex: 'dealers',
+            key: 'dealers',
+            align: 'center'
         },
         {
-            title: "Hiệu suất",
-            dataIndex: "performance",
-            key: "performance",
+            title: 'Xe Đã Bán',
+            dataIndex: 'vehiclesSold',
+            key: 'vehiclesSold',
+            align: 'center',
+            render: (sold, record) => (
+                <span className="font-medium">
+                    {sold}/{record.target}
+                </span>
+            )
+        },
+        {
+            title: 'Doanh Thu',
+            dataIndex: 'revenue',
+            key: 'revenue',
+            render: (revenue) => (
+                <span className="font-medium text-green-600">
+                    {new Intl.NumberFormat('vi-VN', {
+                        style: 'currency',
+                        currency: 'VND',
+                        notation: 'compact',
+                        maximumFractionDigits: 1
+                    }).format(revenue)}
+                </span>
+            )
+        },
+        {
+            title: 'Hiệu Suất',
+            dataIndex: 'performance',
+            key: 'performance',
+            width: 200,
             render: (performance) => (
                 <div className="flex items-center gap-2">
                     <Progress
                         percent={performance}
                         size="small"
-                        strokeColor={performance >= 90 ? "#52c41a" : performance >= 70 ? "#faad14" : "#ff4d4f"}
+                        status={performance >= 90 ? 'success' : performance >= 80 ? 'normal' : 'exception'}
                     />
-                    <Text>{performance}%</Text>
                 </div>
-            ),
-        },
-        {
-            title: "Doanh thu (VND)",
-            dataIndex: "revenue",
-            key: "revenue",
-        },
-        {
-            title: "Số hợp đồng",
-            dataIndex: "contracts",
-            key: "contracts",
-            render: (contracts) => <Tag color="blue">{contracts}</Tag>,
-        },
+            )
+        }
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <NavigationBar
-                collapsed={collapsed}
-                onCollapse={setCollapsed}
-                isMobile={isMobile}
-            />
-
-            <div
-                style={{
-                    marginLeft: collapsed ? 64 : 280,
-                    transition: "all 0.2s ease",
-                    padding: 0,
-                }}
+        <EVMStaffLayout>
+            <PageContainer
+                title="Dashboard - Nhân Viên Nhà Sản Xuất"
+                subTitle="Tổng quan hoạt động kinh doanh và quản lý đại lý"
+                className="bg-transparent"
             >
-                <PageContainer
-                    header={{
-                        title: "Dashboard EVM Staff",
-                        breadcrumb: {
-                            items: [
-                                {
-                                    title: "Trang chủ",
-                                },
-                                {
-                                    title: "Dashboard",
-                                },
-                            ],
-                        },
-                    }}
-                    className="bg-white"
+                {/* Thống kê tổng quan */}
+                <Row gutter={[16, 16]} className="mb-6">
+                    <Col xs={24} sm={12} lg={6}>
+                        <StatisticCard
+                            statistic={{
+                                title: 'Tổng Đại Lý',
+                                value: overviewStats.totalDealers,
+                                prefix: <UserOutlined className="text-blue-500" />,
+                                description: (
+                                    <Space size={4}>
+                                        <span className="text-green-600 font-medium">
+                                            {overviewStats.activeDealers} đang hoạt động
+                                        </span>
+                                    </Space>
+                                )
+                            }}
+                            className="shadow-sm hover:shadow-md transition-shadow"
+                        />
+                    </Col>
+
+                    <Col xs={24} sm={12} lg={6}>
+                        <StatisticCard
+                            statistic={{
+                                title: 'Hợp Đồng',
+                                value: overviewStats.totalContracts,
+                                prefix: <FileTextOutlined className="text-green-500" />,
+                                description: (
+                                    <Space size={4}>
+                                        <span className="text-orange-600 font-medium">
+                                            {overviewStats.pendingContracts} chờ xử lý
+                                        </span>
+                                    </Space>
+                                )
+                            }}
+                            className="shadow-sm hover:shadow-md transition-shadow"
+                        />
+                    </Col>
+
+                    <Col xs={24} sm={12} lg={6}>
+                        <StatisticCard
+                            statistic={{
+                                title: 'Xe Trong Kho',
+                                value: overviewStats.vehiclesInStock,
+                                suffix: `/ ${overviewStats.totalVehicles}`,
+                                prefix: <CarOutlined className="text-purple-500" />,
+                                description: (
+                                    <Progress
+                                        percent={Math.round((overviewStats.vehiclesInStock / overviewStats.totalVehicles) * 100)}
+                                        size="small"
+                                        showInfo={false}
+                                    />
+                                )
+                            }}
+                            className="shadow-sm hover:shadow-md transition-shadow"
+                        />
+                    </Col>
+
+                    <Col xs={24} sm={12} lg={6}>
+                        <StatisticCard
+                            statistic={{
+                                title: 'Doanh Thu Tháng',
+                                value: overviewStats.monthlyRevenue,
+                                valueStyle: { color: '#3f8600' },
+                                prefix: <DollarOutlined />,
+                                suffix: 'VNĐ',
+                                description: (
+                                    <Space size={4}>
+                                        <RiseOutlined className="text-green-600" />
+                                        <span className="text-green-600 font-medium">
+                                            +{overviewStats.revenueGrowth}%
+                                        </span>
+                                        <span className="text-gray-500">so với tháng trước</span>
+                                    </Space>
+                                )
+                            }}
+                            className="shadow-sm hover:shadow-md transition-shadow"
+                        />
+                    </Col>
+                </Row>
+
+                {/* Bảng hợp đồng gần đây */}
+                <ProCard
+                    title="Hợp Đồng Gần Đây"
+                    className="mb-6 shadow-sm"
+                    extra={
+                        <Button type="link" className="text-blue-600">
+                            Xem tất cả →
+                        </Button>
+                    }
                 >
-                    {/* Thống kê tổng quan */}
-                    <Row gutter={[16, 16]} className="mb-6">
-                        <Col xs={24} sm={12} lg={6}>
-                            <StatisticCard
-                                statistic={{
-                                    title: "Tổng hợp đồng",
-                                    value: dashboardData.contractStats.total,
-                                    icon: <FileTextOutlined className="text-blue-500" />,
-                                }}
-                                className="shadow-sm hover:shadow-md transition-shadow"
-                            />
-                        </Col>
-                        <Col xs={24} sm={12} lg={6}>
-                            <StatisticCard
-                                statistic={{
-                                    title: "Chờ xử lý",
-                                    value: dashboardData.contractStats.pending,
-                                    icon: <ClockCircleOutlined className="text-orange-500" />,
-                                }}
-                                className="shadow-sm hover:shadow-md transition-shadow"
-                            />
-                        </Col>
-                        <Col xs={24} sm={12} lg={6}>
-                            <StatisticCard
-                                statistic={{
-                                    title: "Đã duyệt",
-                                    value: dashboardData.contractStats.approved,
-                                    icon: <CheckCircleOutlined className="text-green-500" />,
-                                }}
-                                className="shadow-sm hover:shadow-md transition-shadow"
-                            />
-                        </Col>
-                        <Col xs={24} sm={12} lg={6}>
-                            <StatisticCard
-                                statistic={{
-                                    title: "Tổng đại lý",
-                                    value: dashboardData.dealerStats.total,
-                                    icon: <BankOutlined className="text-purple-500" />,
-                                }}
-                                className="shadow-sm hover:shadow-md transition-shadow"
-                            />
-                        </Col>
-                    </Row>
+                    <Table
+                        columns={contractColumns}
+                        dataSource={recentContracts}
+                        pagination={{ pageSize: 5, showSizeChanger: false }}
+                        scroll={{ x: 800 }}
+                        className="rounded-lg"
+                    />
+                </ProCard>
 
-                    {/* Hợp đồng gần đây */}
-                    <Row gutter={[16, 16]} className="mb-6">
-                        <Col span={24}>
-                            <ProCard
-                                title={
-                                    <Space>
-                                        <FileTextOutlined className="text-blue-500" />
-                                        <span>Hợp đồng gần đây</span>
-                                    </Space>
-                                }
-                                extra={
-                                    <Button type="primary" ghost>
-                                        Xem tất cả
-                                    </Button>
-                                }
-                                className="shadow-sm"
-                            >
-                                <Table
-                                    columns={contractColumns}
-                                    dataSource={dashboardData.recentContracts}
-                                    pagination={false}
-                                    rowKey="id"
-                                    size="middle"
-                                />
-                            </ProCard>
-                        </Col>
-                    </Row>
+                {/* Hiệu suất theo khu vực */}
+                <ProCard
+                    title="Hiệu Suất Đại Lý Theo Khu Vực"
+                    className="shadow-sm"
+                >
+                    <Table
+                        columns={performanceColumns}
+                        dataSource={dealerPerformance}
+                        pagination={false}
+                        className="rounded-lg"
+                    />
 
-                    {/* Đại lý hàng đầu */}
-                    <Row gutter={[16, 16]}>
-                        <Col span={24}>
-                            <ProCard
-                                title={
-                                    <Space>
-                                        <TrophyOutlined className="text-yellow-500" />
-                                        <span>Đại lý hiệu suất cao</span>
-                                    </Space>
-                                }
-                                extra={
-                                    <Button type="primary" ghost>
-                                        Xem báo cáo chi tiết
-                                    </Button>
-                                }
-                                className="shadow-sm"
-                            >
-                                <Table
-                                    columns={dealerColumns}
-                                    dataSource={dashboardData.topDealers}
-                                    pagination={false}
-                                    rowKey="id"
-                                    size="middle"
-                                />
-                            </ProCard>
-                        </Col>
-                    </Row>
-
-                    {/* Quick Actions */}
-                    <Row gutter={[16, 16]} className="mt-6">
-                        <Col xs={24} md={8}>
-                            <Card
-                                hoverable
-                                className="text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                                onClick={() => console.log("Navigate to create contract")}
-                            >
-                                <div className="p-4">
-                                    <FileTextOutlined className="text-4xl text-blue-500 mb-4" />
-                                    <Title level={4} className="mb-2">Tạo hợp đồng mới</Title>
-                                    <Text className="text-gray-600">
-                                        Tạo hợp đồng phân phối cho đại lý mới
-                                    </Text>
+                    {/* Tổng kết */}
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <Row gutter={[16, 16]} className="text-center">
+                            <Col xs={24} md={8}>
+                                <div className="text-gray-600 mb-1">Tổng Đại Lý</div>
+                                <div className="text-2xl font-bold text-blue-600">
+                                    {dealerPerformance.reduce((sum, item) => sum + item.dealers, 0)}
                                 </div>
-                            </Card>
-                        </Col>
-                        <Col xs={24} md={8}>
-                            <Card
-                                hoverable
-                                className="text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                                onClick={() => console.log("Navigate to verify contracts")}
-                            >
-                                <div className="p-4">
-                                    <CheckCircleOutlined className="text-4xl text-green-500 mb-4" />
-                                    <Title level={4} className="mb-2">Xác nhận hợp đồng</Title>
-                                    <Text className="text-gray-600">
-                                        Xem và xác nhận các hợp đồng chờ duyệt
-                                    </Text>
+                            </Col>
+                            <Col xs={24} md={8}>
+                                <div className="text-gray-600 mb-1">Tổng Xe Đã Bán</div>
+                                <div className="text-2xl font-bold text-green-600">
+                                    {dealerPerformance.reduce((sum, item) => sum + item.vehiclesSold, 0)}
                                 </div>
-                            </Card>
-                        </Col>
-                        <Col xs={24} md={8}>
-                            <Card
-                                hoverable
-                                className="text-center shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                                onClick={() => console.log("Navigate to dealer management")}
-                            >
-                                <div className="p-4">
-                                    <TeamOutlined className="text-4xl text-purple-500 mb-4" />
-                                    <Title level={4} className="mb-2">Quản lý đại lý</Title>
-                                    <Text className="text-gray-600">
-                                        Theo dõi hiệu suất và quản lý đại lý
-                                    </Text>
+                            </Col>
+                            <Col xs={24} md={8}>
+                                <div className="text-gray-600 mb-1">Tổng Doanh Thu</div>
+                                <div className="text-2xl font-bold text-purple-600">
+                                    {new Intl.NumberFormat('vi-VN', {
+                                        style: 'currency',
+                                        currency: 'VND',
+                                        notation: 'compact',
+                                        maximumFractionDigits: 1
+                                    }).format(dealerPerformance.reduce((sum, item) => sum + item.revenue, 0))}
                                 </div>
-                            </Card>
-                        </Col>
-                    </Row>
-                </PageContainer>
-            </div>
-        </div>
+                            </Col>
+                        </Row>
+                    </div>
+                </ProCard>
+            </PageContainer>
+        </EVMStaffLayout>
     );
 }
 

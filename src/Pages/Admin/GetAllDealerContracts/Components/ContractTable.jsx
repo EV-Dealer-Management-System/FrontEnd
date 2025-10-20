@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Tag, Space, Button, Tooltip, message } from 'antd';
 import { EyeOutlined, FileTextOutlined, CheckCircleOutlined, ReloadOutlined } from '@ant-design/icons';
-import { GetAllDealerContract } from '../../../../App/EVMAdmin/GetAllDealerContract/GetAllDealerContract';
+import { GetAllDealerContract } from '../../../../App/EVMAdmin/DealerContract/GetAllDealerContract';
 
 // Component hiển thị bảng danh sách hợp đồng sẵn sàng (status = 2)
 function ContractTable({ onView }) {

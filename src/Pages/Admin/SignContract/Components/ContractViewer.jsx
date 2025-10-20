@@ -117,16 +117,7 @@ const ContractViewer = ({
                 Tải hợp đồng PDF
               </Button>
 
-              {!contractSigned && (
-                <Button
-                  type="primary"
-                  icon={<EditOutlined />}
-                  onClick={onSign}
-                  className="bg-blue-500 border-blue-500 hover:bg-blue-600"
-                >
-                  Ký Hợp Đồng
-                </Button>
-              )}
+              
 
               {contractSigned && (
                 <Button
@@ -140,8 +131,16 @@ const ContractViewer = ({
               )}
             </Space>
             
-            <Button onClick={onNewContract}>
-              Tạo hợp đồng mới
+            <Button 
+              type="primary"
+              onClick={() => {
+                if (onNewContract) {
+                  onNewContract();
+                }
+              }}
+              className="bg-blue-500 border-blue-500 hover:bg-blue-600"
+            >
+              🆕 Tạo hợp đồng mới
             </Button>
           </div>
         </div>

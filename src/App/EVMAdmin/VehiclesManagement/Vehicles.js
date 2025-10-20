@@ -1,36 +1,33 @@
 // Vehicles.js - Business logic cho quản lý Vehicle của EVM Admin
 import api from "../../../api/api";
-import axios from "axios";
-
-
-// API functions cho Vehicle Management
+import { normalizeApiResponse } from "../../../api/helpers/responseHelper";
 export const vehicleApi = {
-  // === OVERVIEW FUNCTIONS ===
-
-  // Lấy danh sách tất cả vehicles từ API
   getAllVehicles: async function () {
     try {
-      const response = await api.get('/ElectricVehicle/get-all-vehicles');
+      const response = await api.get("/EVTemplate/Get-all-template-vehicles");
+      const { isSuccess, data, message } = normalizeApiResponse(response);
 
-      if (response.data?.isSuccess && response.data?.result) {
+      if (isSuccess && Array.isArray(data)) {
         return {
           success: true,
-          data: response.data.result,
-          message: response.data.message || 'Lấy danh sách xe thành công'
+          data,
+          message: message || "Lấy danh sách xe thành công",
         };
       } else {
+        console.warn("⚠️ API result invalid:", response.data);
+        //test
         return {
           success: false,
           data: [],
-          error: 'API không trả về dữ liệu hợp lệ'
+          error: "API không trả về dữ liệu hợp lệ",
         };
       }
     } catch (error) {
-      console.error('Error getting vehicles from API:', error);
+      console.error("Error getting vehicles from API:", error);
       return {
         success: false,
         data: [],
-        error: error.message || 'Lỗi khi tải danh sách xe'
+        error: error.message || "Lỗi khi tải danh sách xe",
       };
     }
   },
@@ -39,14 +36,14 @@ export const vehicleApi = {
   combineVehicleData: function (models, versions, colors) {
     const vehicles = [];
 
-    models.forEach(model => {
-      const modelVersions = versions.filter(v => v.modelId === model.id);
+    models.forEach((model) => {
+      const modelVersions = versions.filter((v) => v.modelId === model.id);
 
-      modelVersions.forEach(version => {
-        const versionColors = colors.filter(c => c.versionId === version.id);
+      modelVersions.forEach((version) => {
+        const versionColors = colors.filter((c) => c.versionId === version.id);
 
         if (versionColors.length > 0) {
-          versionColors.forEach(color => {
+          versionColors.forEach((color) => {
             vehicles.push({
               id: `${model.id}-${version.id}-${color.id}`,
               modelId: model.id,
@@ -62,7 +59,7 @@ export const vehicleApi = {
               hexCode: color.hexCode,
               imageUrl: color.imageUrl,
               additionalPrice: color.additionalPrice || 0,
-              totalPrice: (version.price || 0) + (color.additionalPrice || 0)
+              totalPrice: (version.price || 0) + (color.additionalPrice || 0),
             });
           });
         } else {
@@ -78,11 +75,11 @@ export const vehicleApi = {
             batteryCapacity: version.batteryCapacity,
             range: version.range,
             colorId: null,
-            colorName: 'Chưa có màu',
-            hexCode: '#CCCCCC',
-            imageUrl: 'https://picsum.photos/400/300?random=default',
+            colorName: "Chưa có màu",
+            hexCode: "#CCCCCC",
+            imageUrl: "https://picsum.photos/400/300?random=default",
             additionalPrice: 0,
-            totalPrice: version.price || 0
+            totalPrice: version.price || 0,
           });
         }
       });
@@ -94,25 +91,25 @@ export const vehicleApi = {
   // === MODEL MANAGEMENT ===
   getAllModels: async function () {
     try {
-      const response = await api.get('/ElectricVehicleModel/get-all-models');
+      const response = await api.get("/ElectricVehicleModel/get-all-models");
       if (response.data?.isSuccess) {
         return {
           success: true,
-          data: response.data.result || response.data.data || []
+          data: response.data.result || response.data.data || [],
         };
       } else {
         return {
           success: false,
           data: [],
-          error: 'API không trả về dữ liệu models hợp lệ'
+          error: "API không trả về dữ liệu models hợp lệ",
         };
       }
     } catch (error) {
-      console.error('Error getting models:', error);
+      console.error("Error getting models:", error);
       return {
         success: false,
         data: [],
-        error: error.message || 'Lỗi khi tải danh sách models'
+        error: error.message || "Lỗi khi tải danh sách models",
       };
     }
   },
@@ -120,24 +117,27 @@ export const vehicleApi = {
   // Tạo model mới
   createModel: async function (modelData) {
     try {
-      const response = await api.post('/ElectricVehicleModel/create-model', modelData);
+      const response = await api.post(
+        "/ElectricVehicleModel/create-model",
+        modelData
+      );
       if (response.data?.isSuccess) {
         return {
           success: true,
           data: response.data.result || response.data.data,
-          message: response.data.message || 'Tạo model mới thành công!'
+          message: response.data.message || "Tạo model mới thành công!",
         };
       } else {
         return {
           success: false,
-          error: response.data?.message || 'Không thể tạo model'
+          error: response.data?.message || "Không thể tạo model",
         };
       }
     } catch (error) {
-      console.error('Error creating model:', error);
+      console.error("Error creating model:", error);
       return {
         success: false,
-        error: error.message || 'Lỗi khi tạo model'
+        error: error.message || "Lỗi khi tạo model",
       };
     }
   },
@@ -145,180 +145,173 @@ export const vehicleApi = {
   // === VERSION MANAGEMENT ===
   getAllVersions: async function () {
     try {
-      const response = await api.get('/ElectricVehicleVersion/get-all-versions');
+      const response = await api.get(
+        "/ElectricVehicleVersion/get-all-versions"
+      );
       if (response.data?.isSuccess) {
         return {
           success: true,
-          data: response.data.result || response.data.data || []
+          data: response.data.result || response.data.data || [],
         };
       } else {
         return {
           success: false,
           data: [],
-          error: 'API không trả về dữ liệu versions hợp lệ'
+          error: "API không trả về dữ liệu versions hợp lệ",
         };
       }
     } catch (error) {
-      console.error('Error getting versions:', error);
+      console.error("Error getting versions:", error);
       return {
         success: false,
         data: [],
-        error: error.message || 'Lỗi khi tải danh sách versions'
+        error: error.message || "Lỗi khi tải danh sách versions",
       };
     }
   },
 
-  // === COLOR MANAGEMENT ===
   getAllColors: async function () {
     try {
-      const response = await api.get('/ElectricVehicleColor/get-all-colors');
+      const response = await api.get("/ElectricVehicleColor/get-all-colors");
       if (response.data?.isSuccess) {
         return {
           success: true,
-          data: response.data.result || response.data.data || []
+          data: response.data.result || response.data.data || [],
         };
       } else {
         return {
           success: false,
           data: [],
-          error: 'API không trả về dữ liệu colors hợp lệ'
+          error: "API không trả về dữ liệu colors hợp lệ",
         };
       }
     } catch (error) {
-      console.error('Error getting colors:', error);
+      console.error("Error getting colors:", error);
       return {
         success: false,
         data: [],
-        error: error.message || 'Lỗi khi tải danh sách colors'
+        error: error.message || "Lỗi khi tải danh sách colors",
       };
     }
   },
 
   // === VEHICLE MANAGEMENT ===
-  createVehicle: async function (vehicleData) {
-    try {
-      console.log('=== CREATE VEHICLE DEBUG ===');
-      console.log('📤 Payload being sent:', JSON.stringify(vehicleData, null, 2));
+  // Vehicles.js
+createVehicle: async function (payload) {
+  try {
+    console.log("=== CREATE VEHICLE DEBUG ===");
+    console.log("📤 Payload being sent:", JSON.stringify(payload, null, 2));
 
-      const response = await api.post('/ElectricVehicle/create-vehicle', vehicleData);
-
-      const isSuccessful = response.data?.isSuccess === true ||
-        response.data?.isSuccess === 'true' ||
-        response.data?.success === true ||
-        response.status === 200 || response.status === 201;
-
-      if (isSuccessful) {
-        return {
-          success: true,
-          data: response.data.result || response.data.data || response.data,
-          message: response.data.message || 'Tạo xe điện mới thành công!'
-        };
-      } else {
-        return {
-          success: false,
-          error: response.data?.message || 'Không thể tạo xe điện'
-        };
-      }
-    } catch (error) {
-      console.error('CREATE VEHICLE ERROR:', error.response?.status, error.message);
-      return {
-        success: false,
-        error: error.message || 'Lỗi khi tạo xe điện'
-      };
+    // Lưu ra window để xem nhanh trong console nếu cần
+    if (typeof window !== "undefined") {
+      window.__LAST_EV_TEMPLATE_PAYLOAD__ = payload;
     }
-  },
+
+    // Gửi JSON thuần => DevTools sẽ hiển thị "Request Payload"
+    const res = await api.post(
+      "/EVTemplate/create-template-vehicles",
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Client": "EVM-Admin",   // giúp lọc trong Network
+        },
+      }
+    );
+
+    const { isSuccess, data, message: msg } = normalizeApiResponse(res);
+    if (isSuccess) {
+      return { success: true, data, message: msg || "Tạo template thành công" };
+    }
+    return { success: false, error: msg || "API không phản hồi hợp lệ" };
+  } catch (error) {
+    console.error("CREATE VEHICLE ERROR:", error?.response?.status, error?.message);
+    return { success: false, error: error?.message || "Lỗi API" };
+  }
+},
 
 
 
   // === WAREHOUSE MANAGEMENT ===
   getAllWarehouses: async () => {
     try {
-      const endpoint = '/Warehouse/get-all-warehouses';
+      const endpoint = "/Warehouse/get-all-warehouses";
       const response = await api.get(endpoint);
 
-      const isSuccessful = response.data?.isSuccess === true ||
-        response.status === 200;
+      const isSuccessful =
+        response.data?.isSuccess === true || response.status === 200;
 
       if (isSuccessful && response.data?.result) {
         return {
           success: true,
           data: response.data.result,
-          message: response.data.message || 'Lấy danh sách kho thành công!'
+          message: response.data.message || "Lấy danh sách kho thành công!",
         };
       } else {
         return {
           success: false,
-          error: response.data.message || 'Không thể lấy danh sách kho'
+          error: response.data.message || "Không thể lấy danh sách kho",
         };
       }
     } catch (error) {
-      console.error('Error getting warehouses:', error);
+      console.error("Error getting warehouses:", error);
       return {
         success: false,
-        error: error.response?.data?.message || error.message || 'Không thể lấy danh sách kho.'
+        error:
+          error.response?.data?.message ||
+          error.message ||
+          "Không thể lấy danh sách kho.",
       };
     }
   },
 
-
-
-  // === ELECTRIC VEHICLE IMAGE SERVICE - CLEAN & SIMPLE ===
   ElectricVehicleImageService: {
-    // Detect content type (fixed: image/jpeg)
-    detectContentType(fileName) {
-      return 'image/jpeg';
-    },
-
-    // Upload 1 ảnh duy nhất
     async uploadSingleImage(file) {
       try {
         const contentType = this.detectContentType(file.name);
 
-        // 1️⃣ Gọi API để lấy pre-signed URL
         const { data } = await api.post(
-          '/ElectricVehicle/upload-file-url-electric-vehicle',
+          "/ElectricVehicle/upload-file-url-electric-vehicle",
           { fileName: file.name, contentType },
-          { headers: { 'Content-Type': 'application/json' } }
+          { headers: { "Content-Type": "application/json" } }
         );
 
         if (!data?.isSuccess || !data?.result) {
-          throw new Error(data?.message || 'Không thể lấy URL upload');
+          throw new Error(data?.message || "Không thể lấy URL upload");
         }
 
         const uploadUrl =
-          typeof data.result === 'string'
+          typeof data.result === "string"
             ? data.result
-            : data.result.uploadUrl || '';
+            : data.result.uploadUrl || "";
 
         const objectKey =
-          typeof data.result === 'object'
+          typeof data.result === "object"
             ? data.result.objectKey || file.name
             : file.name;
 
-        if (!uploadUrl) throw new Error('Pre-signed URL không hợp lệ');
-
-        // 2️⃣ Upload file thật lên S3 qua pre-signed URL
+        if (!uploadUrl) throw new Error("Pre-signed URL không hợp lệ");
         const response = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': contentType },
+          method: "PUT",
+          headers: { "Content-Type": contentType },
           body: file,
         });
 
-        if (!response.ok) throw new Error(`Upload thất bại: ${response.status}`);
+        if (!response.ok)
+          throw new Error(`Upload thất bại: ${response.status}`);
 
         console.log(`✅ Uploaded ${file.name} → key: ${objectKey}`);
         return objectKey;
       } catch (err) {
-        console.error('❌ Upload ảnh lỗi:', err);
+        console.error("❌ Upload ảnh lỗi:", err);
         throw err;
       }
     },
 
-    // Upload nhiều ảnh → trả về mảng keys
     async uploadMultipleImages(files) {
       console.log(`🔄 Starting upload for ${files.length} files`);
       const keys = [];
-      
+
       for (const file of files) {
         try {
           console.log(`🔄 Uploading: ${file.name}`);
@@ -328,17 +321,50 @@ export const vehicleApi = {
         } catch (error) {
           console.error(`❌ Upload ${file.name} failed:`, error);
           // Tạo fallback key để không block workflow
-          const fallbackKey = `fallback-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9]/g, '')}`;
+          const fallbackKey = `fallback-${Date.now()}-${file.name.replace(
+            /[^a-zA-Z0-9]/g,
+            ""
+          )}`;
           keys.push(fallbackKey);
           console.log(`🔄 Using fallback key: ${fallbackKey}`);
         }
       }
-      
-      console.log('📦 Final attachment keys:', keys);
-      console.log(`📊 Upload summary: ${keys.length} keys generated for ${files.length} files`);
-      
+
+      console.log("📦 Final attachment keys:", keys);
+      console.log(
+        `📊 Upload summary: ${keys.length} keys generated for ${files.length} files`
+      );
+
       // Đảm bảo luôn trả về array, không bao giờ null/undefined
       return keys.length > 0 ? keys : [`default-key-${Date.now()}`];
     },
-  }
+  },
+
+  uploadImageAndGetKey: async (file) => {
+    try {
+      // 1️⃣ Gọi BE lấy pre-signed URL
+      const { data } = await api.post("/ElectricVehicle/upload-file-url-electric-vehicle", {
+        fileName: file.name,
+        contentType: file.type,
+      });
+
+      const uploadUrl = data?.result?.uploadUrl;
+      const objectKey = data?.result?.objectKey;
+
+      if (!uploadUrl || !objectKey) throw new Error("Thiếu uploadUrl hoặc objectKey");
+
+      // 2️⃣ Upload trực tiếp lên S3
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      console.log("✅ Upload thành công:", objectKey);
+      return objectKey;
+    } catch (err) {
+      console.error("❌ Upload lỗi:", err);
+      return null;
+    }
+  },
 };

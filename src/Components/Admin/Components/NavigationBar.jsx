@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Button, Badge, Space, Typography, Tooltip, message } from "antd";
 import { ProLayout, ProConfigProvider } from "@ant-design/pro-components";
 import {
+  LockOutlined,
+  UserOutlined,
   UserAddOutlined,
   FileTextOutlined,
   DashboardOutlined,
@@ -86,9 +88,10 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <FileTextOutlined />,
             component: "./DealerContracts",
           },
+          
           // {
-          //   path: "/admin/dealer/performance",
-          //   name: "Hiệu suất đại lý",
+          //   path: "/admin/dealer/promotions",
+          //   name: "Quản lý khuyến Mãi ",
           //   icon: <LineChartOutlined />,
           //   component: "./DealerPerformance",
           // },
@@ -117,6 +120,51 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <GlobalOutlined />,
             component: "./VehicleAllocation",
           },
+        ],
+      },
+      {
+        path: "/admin/staff",
+        name: "Quản lý nhân viên",
+        icon: <TeamOutlined />,
+        routes: [
+          {
+            path: "/admin/staff/evm-staff",
+            name: "Danh sách nhân viên ",
+            icon: <UserOutlined />,
+            component: "./EVMStaffList",
+          },
+          {
+            path: "/admin/staff/create-evm-staff",
+            name: "Tạo tài khoản nhân viên",
+            icon: <UserAddOutlined />,
+            component: "./CreateEVMStaff",
+          },
+        ],
+      },
+       {
+        path: "/admin/promotions",
+        name: "Quản lý khuyến mãi",
+        icon: <ShopOutlined />,
+        routes: [
+          {
+            path: "/admin/promotions/all-promotions",
+            name: "Danh sách khuyến mãi",
+            icon: <TeamOutlined />,
+            component: "./PromotionList",
+          },
+          {
+            path: '/admin/promotions/create-promotion',
+            name: 'Tạo khuyến mãi',
+            icon: <FileTextOutlined />,
+            component: './CreatePromotion',
+          },
+          
+          // {
+          //   path: "/admin/dealer/promotions",
+          //   name: "Quản lý khuyến Mãi ",
+          //   icon: <LineChartOutlined />,
+          //   component: "./DealerPerformance",
+          // },
         ],
       },
       {
@@ -149,6 +197,20 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         name: "Cài đặt hệ thống",
         icon: <SettingOutlined />,
         component: "./Settings",
+        routes: [
+          {
+            path: "/admin/settings/change-password",
+            name: "Đổi mật khẩu",
+            icon: <LockOutlined />,
+            component: "./ChangePassword",
+          },
+          {
+            path: "/admin/settings/user-management",
+            name: "Quản lý người dùng",
+            icon: <UserOutlined />,
+            component: "./UserManagement",
+          },
+        ],
       },
       {
         path: "/",

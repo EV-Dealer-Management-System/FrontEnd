@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from 'antd';
-import NavigationBar from '../DealerManager/Components/NavigationBar';
+import NavigationBar from './Components/NavigationBar';
 
 const { Content } = Layout;
 

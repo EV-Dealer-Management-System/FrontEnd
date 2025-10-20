@@ -23,11 +23,11 @@ export const handleResetPassword = async (email) => {
   return response.data;
 };
 
-export const handleConfirmResetPassword = async (email, token, newPassword, confirmPassword) => {
+export const handleConfirmResetPassword = async (userId, token, password, confirmPassword) => {
   const response = await api.post("/Auth/reset-password", {
-    email,
+    userId,
     token,
-    newPassword,
+    password,
     confirmPassword,
   });
   return response.data;
@@ -78,7 +78,11 @@ export const verifyEmail = async (userId, token) => {
   throw new Error(msg || "Xác thực email thất bại");
 };
 
-export const mailConfirmation = async (email) => {
-  const res = await api.post("/Auth/send-verification-email", { email });
-  return res.data;
+export const changePassword = async (currentPassword, newPassword, confirmNewPassword) => {
+  const response = await api.post("/Auth/change-password", {
+    currentPassword,
+    newPassword,
+    confirmNewPassword,
+  });
+  return response.data;
 };

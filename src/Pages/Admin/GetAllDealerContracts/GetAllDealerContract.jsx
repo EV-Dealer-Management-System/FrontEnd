@@ -3,7 +3,7 @@ import { PageContainer } from '@ant-design/pro-components';
 import { Card, message, Alert } from 'antd';
 import { FileTextOutlined } from '@ant-design/icons';
 import AdminLayout from '../../../Components/Admin/AdminLayout';
-import { GetAllDealerContract } from '../../../App/EVMAdmin/GetAllDealerContract/GetAllDealerContract';
+import { GetAllDealerContract } from '../../../App/EVMAdmin/DealerContract/GetAllDealerContract';
 import ContractStatistics from './Components/ContractStatistics';
 import ContractTable from './Components/ContractTable';
 import ContractDetailModal from './Components/ContractDetailModal';

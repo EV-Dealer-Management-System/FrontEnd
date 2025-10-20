@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Card,
   Table,
@@ -15,9 +15,6 @@ import {
   Col,
   Typography,
   Divider,
-  Alert,
-  Avatar,
-  ColorPicker,
 } from "antd";
 import {
   PlusOutlined,
@@ -26,13 +23,14 @@ import {
   BgColorsOutlined,
   ReloadOutlined,
   CheckCircleOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { PageContainer } from "@ant-design/pro-components";
 import { vehicleApi } from "../../../../App/EVMAdmin/VehiclesManagement/Vehicles";
 
 const { Title, Text } = Typography;
+const { TextArea } = Input; // (Không dùng nhưng giữ nếu muốn mô tả sau)
 
-// Danh sách màu phổ biến với mã màu chuẩn
 const popularColors = [
   { name: "Đỏ Cherry", code: "#DC143C" },
   { name: "Trắng Ngọc Trai", code: "#F8F8FF" },
@@ -51,9 +49,17 @@ const popularColors = [
   { name: "Cam Coral", code: "#FF7F50" },
 ];
 
-function ColorManagement() {
-  console.log("🎨 ColorManagement component rendering...");
+// Utils chọn màu chữ (đen/trắng) theo nền
+const getContrastText = (hex) => {
+  const c = (hex || "#000000").replace("#", "");
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128 ? "#000" : "#fff";
+};
 
+function ColorManagement() {
   const [loading, setLoading] = useState(false);
   const [colors, setColors] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -61,28 +67,24 @@ function ColorManagement() {
   const [currentColor, setCurrentColor] = useState(null);
   const [form] = Form.useForm();
 
-  // Load colors khi component mount
+  // Search
+  const [query, setQuery] = useState("");
+
   useEffect(() => {
     loadColors();
   }, []);
 
-  // Tải danh sách colors
   const loadColors = async () => {
     setLoading(true);
     try {
-      console.log("=== LOADING COLORS ===");
       const result = await vehicleApi.getAllColors();
-
       if (result.success) {
-        console.log("✅ Colors loaded successfully:", result.data);
         setColors(result.data || []);
       } else {
-        console.error("❌ Failed to load colors:", result.error);
-        message.error("Không thể tải danh sách màu sắc: " + result.error);
+        message.error("Không thể tải danh sách màu sắc");
         setColors([]);
       }
-    } catch (error) {
-      console.error("Error loading colors:", error);
+    } catch (err) {
       message.error("Lỗi khi tải danh sách màu sắc");
       setColors([]);
     } finally {
@@ -90,36 +92,28 @@ function ColorManagement() {
     }
   };
 
-  // Validate mã màu HEX
-  const validateColorCode = (colorCode) => {
-    const hexRegex = /^#[0-9A-Fa-f]{6}$/;
-    return hexRegex.test(colorCode);
-  };
-
-  // Validate tên màu (chỉ cho phép chữ cái, số, khoảng trắng và một số ký tự đặc biệt)
-  const validateColorName = (colorName) => {
-    const nameRegex = /^[a-zA-ZÀ-ỹ0-9\s\-_()]+$/;
-    return (
-      nameRegex.test(colorName) &&
-      colorName.length >= 2 &&
-      colorName.length <= 50
+  const filtered = useMemo(() => {
+    if (!query) return colors;
+    const q = query.toLowerCase();
+    return (colors || []).filter(
+      (c) =>
+        c.colorName?.toLowerCase().includes(q) ||
+        c.colorCode?.toLowerCase().includes(q)
     );
-  };
+  }, [colors, query]);
 
-  // Mở modal tạo màu mới
   const handleCreate = () => {
     setIsEditing(false);
     setCurrentColor(null);
     form.resetFields();
-    // Set default values
     form.setFieldsValue({
+      colorName: "",
+      colorCode: "#FF0000",
       extraCost: 0,
-      colorCode: "#FF0000", // Default red color
     });
     setIsModalVisible(true);
   };
 
-  // Mở modal chỉnh sửa màu
   const handleEdit = (color) => {
     setIsEditing(true);
     setCurrentColor(color);
@@ -131,266 +125,174 @@ function ColorManagement() {
     setIsModalVisible(true);
   };
 
-  // Xử lý submit form (tạo mới hoặc cập nhật)
-  const handleSubmit = async (values) => {
-    setLoading(true);
-    try {
-      console.log("=== SUBMITTING COLOR FORM ===");
-      console.log("Is editing:", isEditing);
-      console.log("Form values:", values);
-
-      // Validate dữ liệu
-      if (!validateColorName(values.colorName)) {
-        message.error(
-          "Tên màu không hợp lệ! Chỉ được chứa chữ cái, số, khoảng trắng và một số ký tự đặc biệt."
-        );
-        setLoading(false);
-        return;
-      }
-
-      if (!validateColorCode(values.colorCode)) {
-        message.error(
-          "Mã màu không hợp lệ! Vui lòng nhập mã HEX đúng định dạng (#RRGGBB)."
-        );
-        setLoading(false);
-        return;
-      }
-
-      // Prepare data theo API schema
-      const colorData = {
-        colorName: values.colorName.trim(),
-        colorCode: values.colorCode.toUpperCase(), // Uppercase cho consistency
-        extraCost: values.extraCost || 0,
-      };
-
-      let result;
-
-      if (isEditing && currentColor) {
-        // Cập nhật màu
-        console.log("Updating color with ID:", currentColor.id);
-        result = await vehicleApi.updateColor(currentColor.id, colorData);
-      } else {
-        // Tạo màu mới
-        console.log("Creating new color with data:", colorData);
-        result = await vehicleApi.createColor(colorData);
-      }
-
-      console.log("Submit result:", result);
-
-      if (result.success) {
-        message.success(
-          isEditing
-            ? "Cập nhật màu sắc thành công!"
-            : "Tạo màu sắc mới thành công!"
-        );
-
-        // Hiển thị thông tin màu vừa tạo/cập nhật
-        Modal.success({
-          title: (
-            <Space>
-              <CheckCircleOutlined style={{ color: "#52c41a" }} />
-              {isEditing
-                ? "Cập nhật Màu sắc thành công!"
-                : "Tạo Màu sắc thành công!"}
-            </Space>
-          ),
-          content: (
-            <div style={{ marginTop: 16 }}>
-              <Alert
-                message="Thông tin Màu sắc"
-                description={
-                  <div>
-                    <p>
-                      <strong>Tên màu:</strong> {colorData.colorName}
-                    </p>
-                    <p>
-                      <strong>Mã màu:</strong>
-                      <span
-                        style={{
-                          marginLeft: 8,
-                          padding: "4px 12px",
-                          backgroundColor: colorData.colorCode,
-                          color:
-                            colorData.colorCode === "#FFFFFF" ||
-                            colorData.colorCode === "#F8F8FF"
-                              ? "#000"
-                              : "#fff",
-                          borderRadius: 4,
-                          border: "1px solid #d9d9d9",
-                        }}
-                      >
-                        {colorData.colorCode}
-                      </span>
-                    </p>
-                    <p>
-                      <strong>Phụ thu:</strong>{" "}
-                      {colorData.extraCost.toLocaleString("vi-VN")} ₫
-                    </p>
-                    {result.data?.id && (
-                      <p>
-                        <strong>ID (Database):</strong>
-                        <Text code copyable style={{ marginLeft: 8 }}>
-                          {result.data.id}
-                        </Text>
-                      </p>
-                    )}
-                  </div>
-                }
-                type="success"
-                showIcon
-              />
-            </div>
-          ),
-        });
-
-        setIsModalVisible(false);
-        form.resetFields();
-        await loadColors(); // Reload danh sách
-      } else {
-        console.error("❌ Submit failed:", result.error);
-        message.error(result.error || "Không thể thực hiện thao tác");
-      }
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      message.error("Lỗi khi thực hiện thao tác");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Xóa màu
   const handleDelete = async (colorId) => {
     setLoading(true);
     try {
-      console.log("=== DELETING COLOR ===");
-      console.log("Color ID:", colorId);
-
       const result = await vehicleApi.deleteColor(colorId);
-      console.log("Delete result:", result);
-
       if (result.success) {
         message.success("Xóa màu sắc thành công!");
-        await loadColors(); // Reload danh sách
+        await loadColors();
       } else {
-        console.error("❌ Delete failed:", result.error);
         message.error(result.error || "Không thể xóa màu sắc");
       }
-    } catch (error) {
-      console.error("Error deleting color:", error);
+    } catch (err) {
       message.error("Lỗi khi xóa màu sắc");
     } finally {
       setLoading(false);
     }
   };
 
-  // Chọn màu từ danh sách có sẵn
-  const handleSelectPopularColor = (color) => {
-    form.setFieldsValue({
-      colorName: color.name,
-      colorCode: color.code,
-    });
-    message.success(`Đã chọn màu ${color.name}`);
+  const handleSubmit = async (values) => {
+    setLoading(true);
+    try {
+      // Validate nhanh
+      const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+      if (!hexRegex.test(values.colorCode)) {
+        message.error("Mã màu phải theo định dạng #RRGGBB (6 ký tự hex)!");
+        setLoading(false);
+        return;
+      }
+      const payload = {
+        colorName: values.colorName.trim(),
+        colorCode: values.colorCode.toUpperCase(),
+        extraCost: Number(values.extraCost) || 0,
+      };
+
+      let result;
+      if (isEditing && currentColor?.id) {
+        result = await vehicleApi.updateColor(currentColor.id, payload);
+      } else {
+        result = await vehicleApi.createColor(payload);
+      }
+
+      if (result.success) {
+        Modal.success({
+          title: (
+            <Space>
+              <CheckCircleOutlined style={{ color: "#52c41a" }} />
+              {isEditing ? "Cập nhật Màu sắc thành công!" : "Tạo Màu sắc thành công!"}
+            </Space>
+          ),
+          content: (
+            <div style={{ marginTop: 12 }}>
+              <p>
+                <strong>Tên màu:</strong> {payload.colorName}
+              </p>
+              <p style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <strong>Mã màu:</strong>
+                <span
+                  style={{
+                    padding: "4px 10px",
+                    background: payload.colorCode,
+                    color: getContrastText(payload.colorCode),
+                    border: "1px solid #d9d9d9",
+                    borderRadius: 6,
+                    fontFamily: "monospace",
+                  }}
+                >
+                  {payload.colorCode}
+                </span>
+              </p>
+              <p>
+                <strong>Phụ thu:</strong>{" "}
+                {payload.extraCost.toLocaleString("vi-VN")} ₫
+              </p>
+              {result.data?.id && (
+                <p>
+                  <strong>ID:</strong>{" "}
+                  <Text code copyable>
+                    {result.data.id}
+                  </Text>
+                </p>
+              )}
+            </div>
+          ),
+        });
+        setIsModalVisible(false);
+        form.resetFields();
+        await loadColors();
+      } else {
+        message.error(result.error || "Không thể lưu màu sắc");
+      }
+    } catch (err) {
+      message.error("Lỗi khi lưu màu sắc");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Columns cho table
   const columns = [
     {
       title: "STT",
-      dataIndex: "index",
-      key: "index",
-      width: 60,
+      width: 80,
+      align: "center",
       render: (_, __, index) => index + 1,
     },
     {
       title: "Màu sắc",
-      dataIndex: "colorCode",
-      key: "colorPreview",
-      width: 120,
-      render: (colorCode, record) => (
+      dataIndex: "colorName",
+      width: 280,
+      render: (_, record) => (
         <Space>
-          <Avatar
+          <span
             style={{
-              backgroundColor: colorCode,
-              border: "2px solid #d9d9d9",
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
+              borderRadius: 999,
+              border: "2px solid #e5e7eb",
+              background: record.colorCode,
+              display: "inline-block",
+              boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.05)",
             }}
-            size="large"
+            title={record.colorCode}
           />
           <div>
             <Text strong>{record.colorName}</Text>
             <br />
-            <Text code style={{ fontSize: 11 }}>
-              {colorCode}
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.colorCode}
             </Text>
           </div>
         </Space>
       ),
     },
     {
-      title: "Tên màu",
-      dataIndex: "colorName",
-      key: "colorName",
-      width: 150,
-      render: (text) => <Text strong>{text}</Text>,
-    },
-    {
       title: "Mã màu",
       dataIndex: "colorCode",
-      key: "colorCode",
-      width: 100,
-      render: (colorCode) => (
-        <Text code copyable style={{ fontSize: 12 }}>
-          {colorCode}
+      width: 140,
+      render: (hex) => (
+        <Text code copyable>
+          {hex}
         </Text>
       ),
     },
     {
       title: "Phụ thu",
       dataIndex: "extraCost",
-      key: "extraCost",
-      width: 120,
-      render: (price) => (
-        <Tag color={price > 0 ? "orange" : "default"}>
-          {price ? price.toLocaleString("vi-VN") + " ₫" : "Miễn phí"}
+      width: 160,
+      render: (v) => (
+        <Tag color={v > 0 ? "orange" : "default"}>
+          {v ? `${v.toLocaleString("vi-VN")} ₫` : "Miễn phí"}
         </Tag>
       ),
     },
     {
-      title: "Ngày tạo",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      width: 120,
-      render: (date) =>
-        date ? new Date(date).toLocaleDateString("vi-VN") : "N/A",
-    },
-    {
       title: "Thao tác",
-      key: "actions",
-      width: 150,
+      fixed: "right",
+      width: 170,
       render: (_, record) => (
         <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
+          <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             Sửa
           </Button>
           <Popconfirm
             title="Xác nhận xóa"
-            description="Bạn có chắc chắn muốn xóa màu sắc này?"
+            description="Bạn chắc chắn muốn xóa màu này?"
             onConfirm={() => handleDelete(record.id)}
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-            >
+            <Button size="small" danger icon={<DeleteOutlined />}>
               Xóa
             </Button>
           </Popconfirm>
@@ -401,58 +303,61 @@ function ColorManagement() {
 
   return (
     <PageContainer
-      title="Quản lý Màu sắc Xe Điện"
-      subTitle="Tạo và quản lý các màu sắc cho xe điện một cách đơn giản"
-      extra={[
-        <Button
-          key="reload"
-          icon={<ReloadOutlined />}
-          onClick={loadColors}
-          loading={loading}
-        >
-          Tải lại
-        </Button>,
-        <Button
-          key="create"
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreate}
-        >
-          Tạo Màu mới
-        </Button>,
-      ]}
+      className="!p-0"
+      childrenContentStyle={{ padding: 0, margin: 0, maxWidth: "100%" }}
+      header={{
+        title: "Quản lý Màu sắc Xe Điện",
+        subTitle: "Tạo và quản lý các màu sắc cho xe điện",
+        extra: [
+          <Input
+            key="search"
+            allowClear
+            prefix={<SearchOutlined />}
+            placeholder="Tìm theo tên/mã màu..."
+            onChange={(e) => setQuery(e.target.value)}
+            style={{ width: 260 }}
+          />,
+          <Button key="reload" icon={<ReloadOutlined />} onClick={loadColors} loading={loading}>
+            Tải lại
+          </Button>,
+          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+            Tạo Màu mới
+          </Button>,
+        ],
+      }}
     >
-      <Card>
-        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={24}>
-            <Title level={4}>
-              <BgColorsOutlined style={{ color: "#1890ff", marginRight: 8 }} />
-              Danh sách Màu sắc
-            </Title>
-            <Text type="secondary">
-              Quản lý màu sắc xe điện đơn giản. Tổng cộng: {colors.length} màu
-            </Text>
-          </Col>
-        </Row>
-
-        <Divider />
-
-        <Table
-          columns={columns}
-          dataSource={colors}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            total: colors.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} của ${total} màu`,
-          }}
-          scroll={{ x: 1000 }}
-        />
-      </Card>
+      <div className="w-full px-4 md:px-6 lg:px-8 pb-6">
+        <Card className="shadow-sm">
+          <Row gutter={[16, 8]} style={{ marginBottom: 8 }}>
+            <Col span={24}>
+              <Title level={4} className="!mb-1">
+                <BgColorsOutlined style={{ color: "#1890ff", marginRight: 8 }} />
+                Danh sách Màu sắc
+              </Title>
+              <Text type="secondary">
+                Tổng cộng: {colors.length} màu &nbsp;•&nbsp; Hiển thị: {filtered.length}
+              </Text>
+            </Col>
+          </Row>
+          <Divider className="!mt-2" />
+          <Table
+            size="middle"
+            columns={columns}
+            dataSource={filtered}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              total: filtered.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (t, r) => `${r[0]}-${r[1]} của ${t} màu`,
+            }}
+            scroll={{ x: "max-content" }}
+            sticky
+          />
+        </Card>
+      </div>
 
       {/* Modal tạo/sửa màu */}
       <Modal
@@ -468,40 +373,36 @@ function ColorManagement() {
           form.resetFields();
         }}
         footer={null}
-        width={800}
+        width={840}
       >
         <Divider />
 
-        {/* Danh sách màu phổ biến */}
-        <div style={{ marginBottom: 24 }}>
-          <Title level={5}>
-            <BgColorsOutlined style={{ marginRight: 8 }} />
-            Màu phổ biến (Click để chọn nhanh)
+        {/* Quick pick phổ biến */}
+        <div className="mb-4">
+          <Title level={5} className="!mb-3">
+            Màu phổ biến (bấm để chọn)
           </Title>
-          <Row gutter={[8, 8]}>
-            {popularColors.map((color, index) => (
-              <Col key={index}>
-                <Button
-                  size="small"
-                  style={{
-                    backgroundColor: color.code,
-                    color:
-                      color.code === "#FFFFFF" || color.code === "#F8F8FF"
-                        ? "#000"
-                        : "#fff",
-                    border: "1px solid #d9d9d9",
-                    height: 40,
-                    minWidth: 80,
-                    fontSize: 11,
-                  }}
-                  onClick={() => handleSelectPopularColor(color)}
-                  title={`${color.name} - ${color.code}`}
-                >
-                  {color.name}
-                </Button>
-              </Col>
+          <div className="flex flex-wrap gap-2">
+            {popularColors.map((c) => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => {
+                  form.setFieldsValue({ colorName: c.name, colorCode: c.code });
+                  message.success(`Đã chọn: ${c.name}`);
+                }}
+                className="rounded-md border border-gray-200 px-3 py-2 text-xs font-medium"
+                style={{
+                  background: c.code,
+                  color: getContrastText(c.code),
+                  boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.06)",
+                }}
+                title={`${c.name} - ${c.code}`}
+              >
+                {c.name}
+              </button>
             ))}
-          </Row>
+          </div>
         </div>
 
         <Divider />
@@ -511,10 +412,7 @@ function ColorManagement() {
           layout="vertical"
           onFinish={handleSubmit}
           requiredMark={false}
-          initialValues={{
-            extraCost: 0,
-            colorCode: "#FF0000",
-          }}
+          initialValues={{ colorCode: "#FF0000", extraCost: 0 }}
         >
           <Row gutter={16}>
             <Col span={12}>
@@ -523,19 +421,11 @@ function ColorManagement() {
                 name="colorName"
                 rules={[
                   { required: true, message: "Vui lòng nhập tên màu!" },
-                  { min: 2, message: "Tên màu phải có ít nhất 2 ký tự!" },
-                  { max: 50, message: "Tên màu không được quá 50 ký tự!" },
-                  {
-                    pattern: /^[a-zA-ZÀ-ỹ0-9\s\-_()]+$/,
-                    message:
-                      "Tên màu chỉ được chứa chữ cái, số, khoảng trắng và ký tự đặc biệt cơ bản!",
-                  },
+                  { min: 2, message: "Tối thiểu 2 ký tự!" },
+                  { max: 50, message: "Tối đa 50 ký tự!" },
                 ]}
               >
-                <Input
-                  placeholder="Ví dụ: Đỏ Cherry, Xanh Ocean, Bạc Metallic..."
-                  size="large"
-                />
+                <Input placeholder="VD: Trắng Ngọc Trai, Đen Obsidian..." size="large" />
               </Form.Item>
             </Col>
 
@@ -545,38 +435,34 @@ function ColorManagement() {
                 name="colorCode"
                 rules={[
                   { required: true, message: "Vui lòng nhập mã màu!" },
-                  {
-                    pattern: /^#[0-9A-Fa-f]{6}$/,
-                    message: "Mã màu phải có định dạng #RRGGBB (6 ký tự hex)!",
-                  },
+                  { pattern: /^#[0-9A-Fa-f]{6}$/, message: "Định dạng #RRGGBB" },
                 ]}
               >
                 <Input
-                  placeholder="#FF0000"
+                  placeholder="#FFFFFF"
                   size="large"
                   maxLength={7}
                   addonAfter={
                     <Form.Item
                       noStyle
-                      shouldUpdate={(prevValues, curValues) =>
-                        prevValues.colorCode !== curValues.colorCode
-                      }
+                      shouldUpdate={(prev, cur) => prev.colorCode !== cur.colorCode}
                     >
-                      {({ getFieldValue }) => (
-                        <div
-                          style={{
-                            width: 30,
-                            height: 30,
-                            backgroundColor:
-                              getFieldValue("colorCode") || "#FF0000",
-                            border: "1px solid #d9d9d9",
-                            borderRadius: 4,
-                          }}
-                          title={`Preview: ${
-                            getFieldValue("colorCode") || "#FF0000"
-                          }`}
-                        />
-                      )}
+                      {({ getFieldValue }) => {
+                        const hex = getFieldValue("colorCode") || "#FF0000";
+                        return (
+                          <span
+                            style={{
+                              width: 28,
+                              height: 28,
+                              display: "inline-block",
+                              background: hex,
+                              border: "1px solid #d9d9d9",
+                              borderRadius: 6,
+                            }}
+                            title={`Preview: ${hex}`}
+                          />
+                        );
+                      }}
                     </Form.Item>
                   }
                 />
@@ -592,45 +478,18 @@ function ColorManagement() {
                 rules={[{ required: true, message: "Vui lòng nhập phụ thu!" }]}
               >
                 <InputNumber
-                  placeholder="0"
-                  size="large"
-                  style={{ width: "100%" }}
                   min={0}
-                  max={1000000000}
-                  formatter={(value) =>
-                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                  }
-                  parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                  style={{ width: "100%" }}
+                  size="large"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                  parser={(v) => v.replace(/\$\s?|(,*)/g, "")}
                   addonAfter="₫"
                 />
               </Form.Item>
             </Col>
           </Row>
 
-          <Alert
-            message="Hướng dẫn đặt tên và mã màu"
-            description={
-              <ul style={{ marginBottom: 0 }}>
-                <li>
-                  <strong>Tên màu:</strong> Có thể đặt tự do, ví dụ: "Đỏ
-                  Cherry", "Xanh Ocean", "Bạc Metallic"
-                </li>
-                <li>
-                  <strong>Mã màu:</strong> Định dạng HEX (#RRGGBB), ví dụ:
-                  #FF0000 (đỏ), #0000FF (xanh), #FFFFFF (trắng)
-                </li>
-                <li>
-                  <strong>Phụ thu:</strong> Số tiền thêm cho màu đặc biệt (có
-                  thể để 0 nếu không tính phụ thu)
-                </li>
-              </ul>
-            }
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
-
-          <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
+          <div className="text-right">
             <Space>
               <Button
                 onClick={() => {
@@ -644,7 +503,7 @@ function ColorManagement() {
                 {isEditing ? "Cập nhật" : "Tạo Màu sắc"}
               </Button>
             </Space>
-          </Form.Item>
+          </div>
         </Form>
       </Modal>
     </PageContainer>

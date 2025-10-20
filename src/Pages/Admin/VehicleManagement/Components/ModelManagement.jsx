@@ -14,8 +14,6 @@ import {
   Col,
   Typography,
   Divider,
-  Alert,
-  Image,
 } from "antd";
 import {
   PlusOutlined,
@@ -24,7 +22,6 @@ import {
   CarOutlined,
   ReloadOutlined,
   CheckCircleOutlined,
-  WarningOutlined,
 } from "@ant-design/icons";
 import { PageContainer } from "@ant-design/pro-components";
 import { vehicleApi } from "../../../../App/EVMAdmin/VehiclesManagement/Vehicles";
@@ -33,8 +30,6 @@ const { TextArea } = Input;
 const { Title, Text } = Typography;
 
 function ManageModel() {
-  console.log("🚗 ManageModel component rendering...");
-
   const [loading, setLoading] = useState(false);
   const [models, setModels] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -42,28 +37,21 @@ function ManageModel() {
   const [currentModel, setCurrentModel] = useState(null);
   const [form] = Form.useForm();
 
-  // Load models khi component mount
   useEffect(() => {
     loadModels();
   }, []);
 
-  // Tải danh sách models
   const loadModels = async () => {
     setLoading(true);
     try {
-      console.log("=== LOADING MODELS ===");
       const result = await vehicleApi.getAllModels();
-
       if (result.success) {
-        console.log("✅ Models loaded successfully:", result.data);
         setModels(result.data || []);
       } else {
-        console.error("❌ Failed to load models:", result.error);
-        message.error("Không thể tải danh sách model: " + result.error);
+        message.error("Không thể tải danh sách model");
         setModels([]);
       }
-    } catch (error) {
-      console.error("Error loading models:", error);
+    } catch (e) {
       message.error("Lỗi khi tải danh sách model");
       setModels([]);
     } finally {
@@ -71,7 +59,6 @@ function ManageModel() {
     }
   };
 
-  // Mở modal tạo model mới
   const handleCreate = () => {
     setIsEditing(false);
     setCurrentModel(null);
@@ -79,157 +66,101 @@ function ManageModel() {
     setIsModalVisible(true);
   };
 
-  // Mở modal chỉnh sửa model
   const handleEdit = (model) => {
     setIsEditing(true);
     setCurrentModel(model);
     form.setFieldsValue({
       modelName: model.modelName,
       description: model.description,
-      imageUrl: model.imageUrl,
     });
     setIsModalVisible(true);
   };
 
-  // Xử lý submit form (tạo mới hoặc cập nhật)
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      console.log("=== SUBMITTING MODEL FORM ===");
-      console.log("Is editing:", isEditing);
-      console.log("Form values:", values);
-      console.log("Current model:", currentModel);
-
-      let result;
-
-      if (isEditing && currentModel) {
-        // Cập nhật model
-        console.log("Updating model with ID:", currentModel.id);
-        result = await vehicleApi.updateModel(currentModel.id, values);
+      let res;
+      if (isEditing && currentModel?.id) {
+        // BE chỉ nhận field có trong spec -> gửi đúng 2 field
+        res = await vehicleApi.updateModel(currentModel.id, {
+          modelName: values.modelName,
+          description: values.description || "",
+        });
       } else {
-        // Tạo model mới
-        console.log("Creating new model");
-        result = await vehicleApi.createModel(values);
+        res = await vehicleApi.createModel({
+          modelName: values.modelName,
+          description: values.description || "",
+        });
       }
 
-      console.log("Submit result:", result);
-
-      if (result.success) {
-        message.success(
-          isEditing ? "Cập nhật model thành công!" : "Tạo model mới thành công!"
-        );
-
-        // Hiển thị thông tin model vừa tạo/cập nhật
-        if (result.data) {
-          console.log("✅ Model data:", result.data);
-
-          Modal.success({
-            title: (
-              <Space>
-                <CheckCircleOutlined style={{ color: "#52c41a" }} />
-                {isEditing
-                  ? "Cập nhật Model thành công!"
-                  : "Tạo Model thành công!"}
-              </Space>
-            ),
-            content: (
-              <div style={{ marginTop: 16 }}>
-                <Alert
-                  message="Thông tin Model"
-                  description={
-                    <div>
-                      <p>
-                        <strong>Tên model:</strong>{" "}
-                        {result.data.modelName || values.modelName}
-                      </p>
-                      <p>
-                        <strong>Mô tả:</strong>{" "}
-                        {result.data.description || values.description}
-                      </p>
-                      {(result.data.imageUrl || values.imageUrl) && (
-                        <p>
-                          <strong>Hình ảnh:</strong>{" "}
-                          <a
-                            href={result.data.imageUrl || values.imageUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Xem hình
-                          </a>
-                        </p>
-                      )}
-                      {result.data.id && (
-                        <p>
-                          <strong>Model ID (Database):</strong>
-                          <Text code copyable style={{ marginLeft: 8 }}>
-                            {result.data.id}
-                          </Text>
-                        </p>
-                      )}
-                    </div>
-                  }
-                  type="success"
-                  showIcon
-                />
-              </div>
-            ),
-          });
-        }
-
+      if (res.success) {
+        Modal.success({
+          title: (
+            <Space>
+              <CheckCircleOutlined style={{ color: "#52c41a" }} />
+              {isEditing ? "Cập nhật Model thành công!" : "Tạo Model thành công!"}
+            </Space>
+          ),
+          content: (
+            <div style={{ marginTop: 12 }}>
+              <p>
+                <strong>Tên model:</strong> {res.data?.modelName || values.modelName}
+              </p>
+              <p>
+                <strong>Mô tả:</strong> {res.data?.description ?? values.description ?? "—"}
+              </p>
+              {res.data?.id && (
+                <p>
+                  <strong>Model ID:</strong>{" "}
+                  <Text code copyable>
+                    {res.data.id}
+                  </Text>
+                </p>
+              )}
+            </div>
+          ),
+        });
         setIsModalVisible(false);
         form.resetFields();
-        await loadModels(); // Reload danh sách
+        loadModels();
       } else {
-        console.error("❌ Submit failed:", result.error);
-        message.error(result.error || "Không thể thực hiện thao tác");
+        message.error(res.error || "Thao tác thất bại");
       }
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      message.error("Lỗi khi thực hiện thao tác");
+    } catch (e) {
+      message.error("Lỗi khi gửi dữ liệu");
     } finally {
       setLoading(false);
     }
   };
 
-  // Xóa model
-  const handleDelete = async (modelId) => {
+  const handleDelete = async (id) => {
     setLoading(true);
     try {
-      console.log("=== DELETING MODEL ===");
-      console.log("Model ID:", modelId);
-
-      const result = await vehicleApi.deleteModel(modelId);
-      console.log("Delete result:", result);
-
-      if (result.success) {
+      const res = await vehicleApi.deleteModel(id);
+      if (res.success) {
         message.success("Xóa model thành công!");
-        await loadModels(); // Reload danh sách
+        loadModels();
       } else {
-        console.error("❌ Delete failed:", result.error);
-        message.error(result.error || "Không thể xóa model");
+        message.error(res.error || "Không thể xóa model");
       }
-    } catch (error) {
-      console.error("Error deleting model:", error);
+    } catch (e) {
       message.error("Lỗi khi xóa model");
     } finally {
       setLoading(false);
     }
   };
 
-  // Columns cho table
   const columns = [
     {
       title: "STT",
-      dataIndex: "index",
-      key: "index",
-      width: 60,
+      width: 70,
+      align: "center",
       render: (_, __, index) => index + 1,
     },
     {
       title: "Tên Model",
       dataIndex: "modelName",
-      key: "modelName",
-      width: 200,
+      width: 260,
       render: (text) => (
         <Space>
           <CarOutlined style={{ color: "#1890ff" }} />
@@ -240,67 +171,40 @@ function ManageModel() {
     {
       title: "Mô tả",
       dataIndex: "description",
-      key: "description",
       ellipsis: true,
-      render: (text) => (
-        <Text type="secondary" ellipsis>
-          {text || "Chưa có mô tả"}
-        </Text>
-      ),
-    },
-    {
-      title: "Hình ảnh",
-      dataIndex: "imageUrl",
-      key: "imageUrl",
-      width: 120,
-      render: (imageUrl) =>
-        imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt="Model"
-            width={80}
-            height={50}
-            style={{ objectFit: "cover", borderRadius: 4 }}
-          />
-        ) : (
-          <Tag color="default">Chưa có</Tag>
-        ),
+      render: (text) => <Text type="secondary">{text || "Chưa có mô tả"}</Text>,
     },
     {
       title: "Ngày tạo",
       dataIndex: "createdAt",
-      key: "createdAt",
-      width: 150,
-      render: (date) =>
-        date ? new Date(date).toLocaleDateString("vi-VN") : "N/A",
+      width: 160,
+      render: (date) => (date ? new Date(date).toLocaleDateString("vi-VN") : "N/A"),
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "isActive",
+      width: 140,
+      render: (val) => (
+        <Tag color={val ? "success" : "default"}>{val ? "Đang hoạt động" : "Ngừng"}</Tag>
+      ),
     },
     {
       title: "Thao tác",
-      key: "actions",
-      width: 150,
+      width: 170,
+      fixed: "right",
       render: (_, record) => (
         <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
+          <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             Sửa
           </Button>
           <Popconfirm
             title="Xác nhận xóa"
-            description="Bạn có chắc chắn muốn xóa model này? Điều này sẽ xóa tất cả versions và colors liên quan."
+            description="Xóa model này?"
             onConfirm={() => handleDelete(record.id)}
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-            >
+            <Button size="small" danger icon={<DeleteOutlined />}>
               Xóa
             </Button>
           </Popconfirm>
@@ -311,60 +215,53 @@ function ManageModel() {
 
   return (
     <PageContainer
-      title="Quản lý Model Xe Điện"
-      subTitle="Tạo và quản lý các model xe điện trong hệ thống"
-      extra={[
-        <Button
-          key="reload"
-          icon={<ReloadOutlined />}
-          onClick={loadModels}
-          loading={loading}
-        >
-          Tải lại
-        </Button>,
-        <Button
-          key="create"
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreate}
-        >
-          Tạo Model mới
-        </Button>,
-      ]}
+      className="!p-0"
+      childrenContentStyle={{ padding: 0, margin: 0 }}
+      header={{
+        title: "Quản lý Model Xe Điện",
+        subTitle: "Tạo và quản lý các model xe điện",
+        extra: [
+          <Button key="reload" icon={<ReloadOutlined />} onClick={loadModels} loading={loading}>
+            Tải lại
+          </Button>,
+          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+            Tạo Model mới
+          </Button>,
+        ],
+      }}
     >
-      <Card>
-        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={24}>
-            <Title level={4}>
-              <CarOutlined style={{ color: "#1890ff", marginRight: 8 }} />
-              Danh sách Models
-            </Title>
-            <Text type="secondary">
-              Quản lý các model xe điện. Tổng cộng: {models.length} model
-            </Text>
-          </Col>
-        </Row>
+      <div className="w-full px-4 md:px-6 lg:px-8 pb-6">
+        <Card className="shadow-sm">
+          <Row gutter={[16, 8]} style={{ marginBottom: 8 }}>
+            <Col span={24}>
+              <Title level={4} className="!mb-1">
+                <CarOutlined style={{ color: "#1890ff", marginRight: 8 }} />
+                Danh sách Models
+              </Title>
+              <Text type="secondary">Tổng cộng: {models.length} model</Text>
+            </Col>
+          </Row>
+          <Divider className="!mt-2" />
+          <Table
+            size="middle"
+            columns={columns}
+            dataSource={models}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              total: models.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} model`,
+            }}
+            scroll={{ x: "max-content" }}
+            sticky
+          />
+        </Card>
+      </div>
 
-        <Divider />
-
-        <Table
-          columns={columns}
-          dataSource={models}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            total: models.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} của ${total} model`,
-          }}
-          scroll={{ x: 1000 }}
-        />
-      </Card>
-
-      {/* Modal tạo/sửa model */}
+      {/* Modal tạo/sửa */}
       <Modal
         title={isEditing ? "Chỉnh sửa Model" : "Tạo Model mới"}
         open={isModalVisible}
@@ -373,14 +270,9 @@ function ManageModel() {
           form.resetFields();
         }}
         footer={null}
-        width={600}
+        width={560}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          requiredMark={false}
-        >
+        <Form form={form} layout="vertical" onFinish={handleSubmit} requiredMark={false}>
           <Form.Item
             label="Tên Model"
             name="modelName"
@@ -390,10 +282,7 @@ function ManageModel() {
               { max: 100, message: "Tên model không được quá 100 ký tự!" },
             ]}
           >
-            <Input
-              placeholder="Ví dụ: Tesla Model 3, VinFast VF8..."
-              size="large"
-            />
+            <Input placeholder="VD: E-Scooter Pro Max" size="large" />
           </Form.Item>
 
           <Form.Item
@@ -401,23 +290,10 @@ function ManageModel() {
             name="description"
             rules={[{ max: 1000, message: "Mô tả không được quá 1000 ký tự!" }]}
           >
-            <TextArea
-              placeholder="Mô tả chi tiết về model xe..."
-              rows={4}
-              showCount
-              maxLength={1000}
-            />
+            <TextArea placeholder="Mô tả chi tiết về model..." rows={4} showCount maxLength={1000} />
           </Form.Item>
 
-          <Form.Item
-            label="URL hình ảnh"
-            name="imageUrl"
-            rules={[{ type: "url", message: "URL không hợp lệ!" }]}
-          >
-            <Input placeholder="https://example.com/image.jpg" size="large" />
-          </Form.Item>
-
-          <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
+          <div style={{ textAlign: "right" }}>
             <Space>
               <Button
                 onClick={() => {
@@ -431,7 +307,7 @@ function ManageModel() {
                 {isEditing ? "Cập nhật" : "Tạo Model"}
               </Button>
             </Space>
-          </Form.Item>
+          </div>
         </Form>
       </Modal>
     </PageContainer>

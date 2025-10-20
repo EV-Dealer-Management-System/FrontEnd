@@ -6,15 +6,13 @@ import {
   Card,
   Row,
   Col,
-  message,
-  notification,
   Select,
   Space,
   Typography,
   Divider,
   Spin,
-  Modal,
-  Layout
+  Layout,
+  App
 } from 'antd';
 import { 
   UserAddOutlined, 
@@ -30,11 +28,11 @@ import {
   EditOutlined,
   CheckCircleOutlined 
 } from '@ant-design/icons';
-import { locationApi } from '../../../api/api';
+import { locationApi } from '../../../App/APIComponent/Address';
 import api from '../../../api/api';
 import ContractViewer from '../SignContract/Components/ContractViewer';
-import PDFEdit from '../SignContract/Components/PDF/PDFEdit';
-import { createAccountApi } from '../../../App/EVMAdmin/CreateDealerAccount/CreateAccount';
+import PDFEdit from '../SignContract/Components/PDF/PDFEdit/PDFEditMain';
+import { createAccountApi } from '../../../App/EVMAdmin/DealerContract/CreateDealerContract';
 import { PDFUpdateService } from '../../../App/Home/PDFconfig/PDFUpdate';
 import AdminLayout from '../../../Components/Admin/AdminLayout';
 
@@ -71,6 +69,7 @@ const FormField = ({
 );
 
 const CreateContract = () => {
+  const { modal, message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [provinces, setProvinces] = useState([]);
@@ -85,9 +84,9 @@ const CreateContract = () => {
   const [waitingProcessData, setWaitingProcessData] = useState(null);
 
   // Workflow states - mới thêm
-  const [contractConfirmed, setContractConfirmed] = useState(false);
-  const [showConfirmButton, setShowConfirmButton] = useState(false);
   const [updatingContract, setUpdatingContract] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [contractConfirmed, setContractConfirmed] = useState(false);
 
   // Lưu thông tin vị trí ký từ API response
   const [positionA, setPositionA] = useState(null);
@@ -198,7 +197,6 @@ const CreateContract = () => {
 
       if (Array.isArray(wardsList)) {
         setWards(wardsList);
-        console.log(`Loaded ${wardsList.length} wards/districts for province ${provinceCode}`);
       } else {
         console.warn('Wards/districts data is not an array:', wardsList);
         setWards([]);
@@ -259,30 +257,10 @@ const CreateContract = () => {
         return;
       }
 
-      console.log('Dữ liệu gửi đi:', dealerData);
-
-      // ✅ Sử dụng endpoint mới /EContract/draft-dealer-contracts
       const response = await api.post('/EContract/draft-dealer-contracts', dealerData);
-      
-      // Log full response để debug
-      console.log('=== DRAFT DEALER CONTRACT API RESPONSE ===');
-      console.log('Full response:', JSON.stringify(response.data, null, 2));
-      console.log('Status:', response.status);
-      console.log('Headers:', response.headers);
 
       if (response.data?.isSuccess) {
         const contractData = response.data.result?.data;
-        
-        // Log contract data chi tiết
-        console.log('=== CONTRACT DATA ===');
-        console.log('Contract ID:', contractData?.id);
-        console.log('Contract No:', contractData?.no);
-        console.log('Download URL:', contractData?.downloadUrl);
-        console.log('Positions:', {
-          positionA: contractData?.positionA,
-          positionB: contractData?.positionB,
-          pageSign: contractData?.pageSign
-        });
         
         if (contractData) {
           setContractId(contractData.id);
@@ -299,16 +277,9 @@ const CreateContract = () => {
           setPositionB(contractData.positionB);
           setPageSign(contractData.pageSign);
           
-          console.log('Signing positions:', {
-            positionA: contractData.positionA,
-            positionB: contractData.positionB,
-            pageSign: contractData.pageSign
-          });
-          
           await loadPdfPreview(contractData.downloadUrl);
-          setShowConfirmButton(true); // Hiển thị nút xác nhận
           
-          message.success('Hợp đồng đã được tạo thành công! Vui lòng xem xét và xác nhận.');
+          message.success('Hợp đồng đã được tạo thành công!');
         }
       } else {
         message.error(response.data?.message || 'Có lỗi khi tạo hợp đồng');
@@ -329,7 +300,6 @@ const CreateContract = () => {
   };
 
   const onFinishFailed = (errorInfo) => {
-    console.log('Failed:', errorInfo);
     message.error('Vui lòng kiểm tra lại thông tin đã nhập');
   };
 
@@ -339,36 +309,25 @@ const CreateContract = () => {
     
     setUpdatingContract(true);
     try {
-      console.log('=== HANDLE UPDATE CONTRACT ===');
-      console.log('Update info received:', updateInfo);
-      
       // ✅ Cập nhật positions mới từ API response
       if (updateInfo.positionA) {
         setPositionA(updateInfo.positionA);
-        console.log('Updated positionA:', updateInfo.positionA);
       }
       if (updateInfo.positionB) {
         setPositionB(updateInfo.positionB);
-        console.log('Updated positionB:', updateInfo.positionB);
       }
       if (updateInfo.pageSign) {
         setPageSign(updateInfo.pageSign);
-        console.log('Updated pageSign:', updateInfo.pageSign);
       }
       
       // ✅ Cập nhật downloadUrl mới và gọi lại preview
       if (updateInfo.downloadUrl) {
-        console.log('New downloadUrl:', updateInfo.downloadUrl);
         setContractLink(updateInfo.downloadUrl);
-        
-        // Gọi lại preview với URL mới
         await loadPdfPreview(updateInfo.downloadUrl);
-        console.log('PDF preview reloaded with new URL');
       }
       
       message.success('Hợp đồng đã được cập nhật thành công');
       setShowTemplateEdit(false);
-      setShowConfirmButton(true);
       
     } catch (error) {
       console.error('Update contract error:', error);
@@ -378,102 +337,58 @@ const CreateContract = () => {
     }
   };
 
+  // Xác nhận hợp đồng
   const handleConfirmContract = async () => {
-    // ✅ Validation trước khi gửi
     if (!contractId) {
       message.error('Không tìm thấy ID hợp đồng');
       return;
     }
 
-    const finalPositionA = positionA || originalPositionA;
-    const finalPositionB = positionB || originalPositionB;
-    const finalPageSign = pageSign || originalPageSign;
+    const finalPositionA = positionA || originalPositionA || "18,577,188,667";
+    const finalPositionB = positionB || originalPositionB || "406,577,576,667";
+    const finalPageSign = pageSign || originalPageSign || 9;
 
-    if (!finalPositionA || !finalPositionB) {
-      message.warning('Thiếu vị trí ký. Vui lòng lưu template trước khi xác nhận.');
-      return;
-    }
-
-    console.log('=== CONFIRM CONTRACT VALIDATION ===');
-    console.log('Contract ID:', contractId);
-    console.log('Final Position A:', finalPositionA);
-    console.log('Final Position B:', finalPositionB);
-    console.log('Final Page Sign:', finalPageSign);
-
-    Modal.confirm({
+    modal.confirm({
       title: 'Xác nhận hợp đồng',
       content: 'Bạn có chắc chắn muốn xác nhận hợp đồng này? Sau khi xác nhận, hợp đồng sẽ được gửi đi xét duyệt.',
       okText: 'Xác nhận',
       cancelText: 'Hủy',
+      centered: true,
       onOk: async () => {
         try {
-          console.log('=== HANDLE CONFIRM CONTRACT START ===');
-          setUpdatingContract(true);
-          
-          // Ready contract với positions hiện tại
-          const result = await pdfUpdateService.readyDealerContract(
-            contractId,
-            finalPositionA,
-            finalPositionB,
-            finalPageSign
-          );
-          
-          console.log('=== CONFIRM CONTRACT SUCCESS ===');
-          console.log('Result:', JSON.stringify(result, null, 2));
-          
-          // ✅ Cập nhật trạng thái và thông tin mới từ API
-          setContractConfirmed(true);
-          setShowConfirmButton(false);
-          
-          // Cập nhật downloadUrl mới nếu có
-          if (result.downloadUrl) {
-            setContractLink(result.downloadUrl);
-            console.log('Updated contract download URL:', result.downloadUrl);
-          }
-          
-          // ✅ Hiển thị thông báo thành công rõ ràng với delay để tránh bị che bởi Modal confirm
-          setTimeout(() => {
-            message.success({
-              content: `🎉 Xác nhận hợp đồng thành công! Hợp đồng ${result.contractNo || contractNo} đã sẵn sàng ký số.`,
-              duration: 10,
-              style: { 
-                marginTop: '60px', // Tránh bị che bởi modal
-                zIndex: 9999 
-              }
-            });
-            
-            // ✅ Thêm notification bổ sung để đảm bảo user thấy được
-            notification.success({
-              message: '🎉 Xác nhận thành công',
-              description: `Hợp đồng ${result.contractNo || contractNo} đã được xác nhận và sẵn sàng cho việc ký số. Các bên liên quan sẽ nhận được thông báo.`,
-              duration: 12,
-              placement: 'topRight',
-              style: { marginTop: '50px' }
-            });
-          }, 300);
-          
-        } catch (error) {
-          console.error('=== CONFIRM CONTRACT ERROR ===');
-          console.error('Error Type:', error.constructor.name);
-          console.error('Error Message:', error.message);
-          console.error('Error Stack:', error.stack);
-          console.error('Full Error Object:', error);
-          
-          message.error({
-            content: `❌ Xác nhận hợp đồng thất bại: ${error.message || 'Lỗi không xác định'}`,
-            duration: 8
+          setConfirming(true);
+
+          const payload = {
+            eContractId: String(contractId),
+            positionA: String(finalPositionA),
+            positionB: String(finalPositionB),
+            pageSign: Number(finalPageSign)
+          };
+
+          const response = await api.post('/EContract/ready-dealer-contracts', payload, {
+            headers: { 'Content-Type': 'application/json' }
           });
+
+          if (response.data?.isSuccess) {
+            setContractConfirmed(true);
+            message.success(`Xác nhận hợp đồng thành công! Hợp đồng ${response.data.result?.data?.no || contractNo} đã sẵn sàng ký số.`);
+            
+            // Sau 3 giây tự động chuyển về tạo hợp đồng mới
+            setTimeout(() => {
+              resetFormDirect();
+            }, 3000);
+          } else {
+            message.error(response.data?.message || 'Xác nhận hợp đồng thất bại');
+          }
+        } catch (error) {
+          console.error('Confirm contract error:', error);
+          message.error(error.response?.data?.message || error.message || 'Không thể xác nhận hợp đồng');
         } finally {
-          console.log('=== CONFIRM CONTRACT FINALLY ===');
-          setUpdatingContract(false);
+          setConfirming(false);
         }
       }
     });
   };
-
-
-
-
 
   // Download PDF - sử dụng blob data nếu có, không thì dùng contractLink
   const handleDownload = () => {
@@ -502,42 +417,46 @@ const CreateContract = () => {
     }
   };
 
-  // Reset form and related state
+  // Reset form trực tiếp (không confirm)  
+  const resetFormDirect = () => {
+    form.resetFields();
+    setContractLink(null);
+    setContractNo(null);
+    setContractId(null);
+    setWaitingProcessData(null);
+    setWards([]);
+    
+    // Reset PDF states
+    setPdfBlob(null);
+    setPdfBlobUrl(null);
+    setLoadingPdf(false);
+    
+    // Reset workflow states
+    setUpdatingContract(false);
+    setShowTemplateEdit(false);
+    setConfirming(false);
+    setContractConfirmed(false);
+    
+    // Reset signing position states
+    setPositionA(null);
+    setPositionB(null);
+    setPageSign(null);
+    setOriginalPositionA(null);
+    setOriginalPositionB(null);
+    setOriginalPageSign(null);
+    
+    message.success('Đã tạo hợp đồng mới');
+  };
+
+  // Reset form with confirmation
   const resetForm = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Làm mới biểu mẫu?',
       content: 'Thao tác này sẽ xóa dữ liệu đã nhập và bắt đầu hợp đồng mới.',
       okText: 'Xác nhận',
       cancelText: 'Hủy',
-      onOk: () => {
-        form.resetFields();
-        setContractLink(null);
-        setContractNo(null);
-        setContractId(null);
-        setWaitingProcessData(null);
-        setWards([]);
-        
-        // Reset PDF states
-        setPdfBlob(null);
-        setPdfBlobUrl(null);
-        setLoadingPdf(false);
-        
-        // Reset workflow states
-        setContractConfirmed(false);
-        setShowConfirmButton(false);
-        setUpdatingContract(false);
-        setShowTemplateEdit(false);
-        
-        // Reset signing position states
-        setPositionA(null);
-        setPositionB(null);
-        setPageSign(null);
-        setOriginalPositionA(null);
-        setOriginalPositionB(null);
-        setOriginalPageSign(null);
-        
-        message.success('Đã làm mới biểu mẫu');
-      }
+      centered: true,
+      onOk: resetFormDirect
     });
   };
 
@@ -574,28 +493,22 @@ const CreateContract = () => {
             </div>
 
 
-            {/* Contract Display - Workflow mới */}
+            {/* Contract Display */}
             {contractLink && !contractConfirmed && (
               <>
-                {/* Contract Viewer */}
                 <ContractViewer
                   contractLink={contractLink}
                   contractNo={contractNo}
                   contractSigned={false}
-                  onSign={null} // Bỏ chức năng ký
+                  onSign={null}
                   onDownload={handleDownload}
-                  onNewContract={resetForm}
+                  onNewContract={resetFormDirect}
                   viewerLink={getPdfDisplayUrl()}
                   loading={loadingPdf}
                 />
 
-                {/* Workflow Actions */}
-                <Card className="mb-6 mt-6 shadow-md rounded-xl border border-gray-200">
-                  <Title level={4} className="flex items-center text-gray-800 mb-4">
-                    <EditOutlined className="mr-2 text-blue-500 text-xl" />
-                    Xem xét và xác nhận hợp đồng
-                  </Title>
-                  
+                {/* Nút xác nhận hợp đồng */}
+                <Card className="mb-6 mt-6 shadow-md rounded-xl border border-blue-200">
                   <div className="text-center">
                     <div className="rounded-lg p-4 mb-4 border border-blue-200 bg-blue-50">
                       <div className="font-semibold text-lg text-blue-700">Hợp đồng đã sẵn sàng</div>
@@ -610,30 +523,29 @@ const CreateContract = () => {
                         icon={<EditOutlined />}
                         onClick={() => setShowTemplateEdit(true)}
                         size="large"
-                        disabled={contractConfirmed} // ✅ Vô hiệu hóa khi đã xác nhận
+                        disabled={confirming}
                         className="px-6 py-2 h-auto font-semibold rounded-lg"
                       >
                         Chỉnh sửa nội dung
                       </Button>
                       
-                      {showConfirmButton && (
-                        <Button 
-                          type="primary"
-                          size="large"
-                          onClick={handleConfirmContract}
-                          loading={updatingContract}
-                          disabled={contractConfirmed} // ✅ Vô hiệu hóa khi đã xác nhận
-                          className="px-8 py-2 h-auto font-semibold rounded-lg bg-green-500 hover:bg-green-600 border-green-500"
-                        >
-                          Xác nhận hợp đồng
-                        </Button>
-                      )}
+                      <Button 
+                        type="primary"
+                        size="large"
+                        onClick={handleConfirmContract}
+                        loading={confirming}
+                        disabled={confirming}
+                        className="px-8 py-2 h-auto font-semibold rounded-lg bg-green-500 hover:bg-green-600 border-green-500"
+                      >
+                        Xác nhận hợp đồng
+                      </Button>
                     </Space>
                   </div>
                 </Card>
               </>
             )}
 
+            {/* Hiển thị thành công */}
             {contractConfirmed && (
               <Card className="mb-6 shadow-md rounded-xl border border-green-200">
                 <div className="text-center p-6">
@@ -651,13 +563,16 @@ const CreateContract = () => {
                       🔗 <strong>Mã hợp đồng:</strong> {contractNo}<br/>
                       ⏰ <strong>Thời gian:</strong> {new Date().toLocaleString('vi-VN')}
                     </div>
+                    <div className="text-sm text-gray-600 mb-4">
+                      Tự động chuyển về tạo hợp đồng mới sau 3 giây...
+                    </div>
                     <Button 
                       type="primary"
                       size="large" 
-                      onClick={resetForm}
+                      onClick={resetFormDirect}
                       className="px-8 py-3 h-auto font-semibold rounded-lg bg-blue-500 hover:bg-blue-600 border-blue-500"
                     >
-                      Tạo hợp đồng mới
+                      Tạo hợp đồng mới ngay
                     </Button>
                   </div>
                 </div>
@@ -883,7 +798,7 @@ const CreateContract = () => {
                     <Button
                       size="large"
                       onClick={resetForm}
-                      disabled={contractLink !== null && !contractConfirmed} // ✅ Chỉ disable khi có contract nhưng chưa confirmed
+                      disabled={contractLink !== null}
                       className="px-8 py-3 h-auto text-base font-semibold rounded-xl border-2 border-gray-300 hover:border-gray-400 hover:shadow-md transition-all duration-200"
                     >
                       Làm Mới
@@ -956,14 +871,16 @@ const CreateContract = () => {
         )}
 
         {/* Template Edit Modal - FIX: Thêm key để force re-render */}
-        <PDFEdit
-          key={showTemplateEdit ? contractId : 'hidden'} // ✅ Force re-render mỗi lần mở
-          visible={showTemplateEdit}
-          onCancel={() => setShowTemplateEdit(false)}
-          onSave={handleUpdateContract} // ✅ Sử dụng function mới
-          contractId={contractId}
-          contractNo={contractNo}
-        />
+        <App>
+          <PDFEdit
+            key={showTemplateEdit ? contractId : 'hidden'} // ✅ Force re-render mỗi lần mở
+            visible={showTemplateEdit}
+            onCancel={() => setShowTemplateEdit(false)}
+            onSave={handleUpdateContract} // ✅ Sử dụng function mới
+            contractId={contractId}
+            contractNo={contractNo}
+          />
+        </App>
       </div>
     </AdminLayout>
   );

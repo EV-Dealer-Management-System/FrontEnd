@@ -89,8 +89,8 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
                 icon: <ShopOutlined />,
                 routes: [
                     {
-                        path: "/evm-staff/dealers/list",
-                        name: "Danh sách đại lý",
+                        path: "/evm-staff/ev/get-all-ev-booking",
+                        name: "Danh sách Booking",
                         icon: <BankOutlined />,
                         component: "./DealersList",
                     },
@@ -100,12 +100,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
                         icon: <BarChartOutlined />,
                         component: "./DealerPerformance",
                     },
-                    {
-                        path: "/evm-staff/dealers/audit",
-                        name: "Kiểm tra tuân thủ",
-                        icon: <AuditOutlined />,
-                        component: "./DealerAudit",
-                    },
+                    // {
+                    //     path: "/evm-staff/dealers/audit",
+                    //     name: "Kiểm tra tuân thủ",
+                    //     icon: <AuditOutlined />,
+                    //     component: "./DealerAudit",
+                    // },
                 ],
             },
             {
@@ -113,6 +113,14 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
                 name: "Cài đặt",
                 icon: <SettingOutlined />,
                 component: "./Settings",
+                routes: [
+                    {
+                        path: "/evm-staff/settings/change-password",
+                        name: "Đổi mật khẩu",
+                        icon: <CarOutlined />,
+                        component: "./ChangePassword",
+                    },
+                ],
             },
             {
                 path: "/",

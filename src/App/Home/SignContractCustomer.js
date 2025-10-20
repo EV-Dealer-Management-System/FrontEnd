@@ -9,12 +9,31 @@ export const ContractService = () => {
         params: { processCode }
       });
       
-      // Parse response data đúng cách
-      const contractData = response.data?.data || response.data;
+      // Parse response data mới với position và pageSign
+      const contractData = response.data;
+      
+      console.log('Contract info response:', contractData);
+      
+      // Validate required fields including new position and pageSign
+      if (!contractData.processId || !contractData.accessToken) {
+        throw new Error('Response thiếu thông tin processId hoặc accessToken');
+      }
+      
+      // Validate position và pageSign fields
+      if (!contractData.position || !contractData.pageSign) {
+        console.warn('Response thiếu position hoặc pageSign, sử dụng giá trị mặc định');
+      }
+      
+      // Ensure position and pageSign are included in the returned data
+      const enhancedData = {
+        ...contractData,
+        position: contractData.position || "406,396,576,486", // Default position theo format mới
+        pageSign: contractData.pageSign || 3 // Default page theo response mẫu
+      };
       
       return {
         success: true,
-        data: contractData
+        data: enhancedData
       };
     } catch (error) {
       console.error('Error fetching contract info:', error);
@@ -101,28 +120,34 @@ export const ContractService = () => {
     }
   };
 
-  // Ký hợp đồng điện tử - sử dụng position từ waitingProcess
-  const handleDigitalSignature = async ({ processId, reason, signatureImage, signatureDisplayMode, waitingProcess, accessToken, contractDetail }) => {
+  // Ký hợp đồng điện tử - sử dụng position và pageSign từ contract info
+  const handleDigitalSignature = async ({ processId, reason, signatureImage, signatureDisplayMode, accessToken, contractInfo }) => {
     try {
       if (!signatureImage) {
         throw new Error("Vui lòng tạo chữ ký trước khi ký hợp đồng");
       }
 
-      // Lấy pageSign từ waitingProcess (chính là bước hiện tại cần ký)
-      const pageSign = waitingProcess?.pageSign || 2; // Default page 2 như trong response
+      // Lấy pageSign và position từ contract info (response mới)
+      // Lấy position và pageSign từ contractInfo response
+      const signingPosition = contractInfo?.position || "406,396,576,486"; // Default position từ API mới
+      const signingPage = contractInfo?.pageSign || pageSign || 3; // Ưu tiên từ contractInfo, default page 3
+      
+      console.log('Signing parameters from contractInfo:', {
+        position: signingPosition,
+        pageSign: signingPage,
+        contractInfoPosition: contractInfo?.position,
+        contractInfoPageSign: contractInfo?.pageSign
+      });
 
-      // Lấy position từ waitingProcess (chính là vị trí cần ký)
-      const signingPosition = waitingProcess?.position || "406,139,576,229"; // Default position
-
-      // Request body theo schema API
+      // Request body theo schema API với position và pageSign từ get-info-to-sign-process-by-code
       const requestBody = {
-        processId: processId || waitingProcess?.id || "",
+        processId: processId,
         reason: reason || "Ký hợp đồng điện tử - Khách hàng",
         reject: false,
         otp: "",
         signatureDisplayMode: signatureDisplayMode || 2,
         signatureImage: signatureImage,
-        signingPage: pageSign,
+        signingPage: signingPage,
         signingPosition: signingPosition,
         signatureText: "Đại Diện Đại Lý",
         fontSize: 14,
@@ -130,12 +155,15 @@ export const ContractService = () => {
         confirmTermsConditions: true
       };
 
-      console.log("Customer signing contract with data:", {
-        pageSign: pageSign,
+      console.log("Customer signing contract with updated data:", {
+        pageSign: signingPage,
         signingPosition: signingPosition,
         processId: requestBody.processId,
-        orderNo: waitingProcess?.orderNo,
-        waitingProcessData: waitingProcess
+        fromContractInfo: {
+          position: contractInfo?.position,
+          pageSign: contractInfo?.pageSign
+        },
+        requestBody: requestBody
       });
 
       // Gọi API với access token
@@ -182,8 +210,7 @@ export const ContractService = () => {
     }
   };
 
-  // Ký hợp đồng với OTP (Step 2 - Xác thực ứng dụng)
- 
+
 
   // Lấy preview PDF từ token hoặc downloadUrl
   const handleGetPreviewPDF = async (tokenOrUrl) => {
@@ -335,11 +362,58 @@ export const ContractService = () => {
     };
   };
 
+  // Cập nhật SmartCA được chọn - API mới  
+  const handleUpdateSmartCA = async (smartCAId, userId, smartCAOwnerName = null) => {
+    try {
+      console.log('=== UPDATE SMARTCA API CALL - Customer ===');
+      
+      const requestPayload = {
+        id: String(smartCAId),            // Đảm bảo ID là string
+        userId: String(userId),           // ID người dùng hiện tại
+        isSetDefault: true,               // Mặc định true
+        name: smartCAOwnerName || null    // Tên chủ SmartCA hoặc null
+      };
+      
+      console.log('Request payload with types:', {
+        id: requestPayload.id + ' (' + typeof requestPayload.id + ')',
+        userId: requestPayload.userId + ' (' + typeof requestPayload.userId + ')',
+        isSetDefault: requestPayload.isSetDefault + ' (' + typeof requestPayload.isSetDefault + ')',
+        name: requestPayload.name + ' (' + typeof requestPayload.name + ')'
+      });
+      console.log('Full payload:', requestPayload);
+      
+      const response = await api.post('/EContract/update-smartca', requestPayload);
+      
+      console.log('Update SmartCA response:', response.data);
+      
+      if (response.status === 200) {
+        return {
+          success: true,
+          data: response.data,
+          message: 'Cập nhật SmartCA thành công'
+        };
+      }
+      
+      return {
+        success: false,
+        error: 'Phản hồi không hợp lệ từ server'
+      };
+      
+    } catch (error) {
+      console.error('Error updating SmartCA:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message || 'Không thể cập nhật SmartCA.'
+      };
+    }
+  };
+
   return {
     // Main API handlers
     handleGetContractInfo,
     handleCheckSmartCA,
     handleAddSmartCA,
+    handleUpdateSmartCA,
     handleDigitalSignature,
     handleGetPreviewPDF,
     // Utility functions

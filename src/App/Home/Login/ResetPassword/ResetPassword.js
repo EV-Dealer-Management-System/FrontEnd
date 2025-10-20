@@ -1,5 +1,5 @@
 
-import api from '../../../../Api/api';
+import api from '../../../../api/api';
 
 export const handleResetPassword = async (email) => {
   try {

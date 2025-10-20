@@ -1,11 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Card, Button, Tag, Row, Col, Typography, Space, Divider, Alert } from 'antd';
-import { SafetyOutlined, CheckCircleOutlined, ClockCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Modal, Card, Button, Tag, Typography, Space, Divider, Alert, message, Radio } from 'antd';
+import { SafetyOutlined, CheckCircleOutlined, ClockCircleOutlined, InfoCircleOutlined, CrownOutlined } from '@ant-design/icons';
+import { SmartCAService } from '../../../../App/EVMAdmin/SignContractEVM/SmartCA';
 
 const { Text, Title } = Typography;
 
-const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, isExistingSmartCA = false, currentSelectedId = null }) => {
+const SmartCASelector = ({ 
+  visible, 
+  onCancel, 
+  onSelect, 
+  smartCAData, 
+  loading, 
+  isExistingSmartCA = false, 
+  currentSelectedId = null,
+  contractService = null,  // For Customer use case
+  userId = null           // For Customer use case
+}) => {
   const [selectedCertificate, setSelectedCertificate] = useState(null);
+  const [updating, setUpdating] = useState(false);
+  
+  const smartCAService = SmartCAService();
+  const FIXED_USER_ID = "18858"; // ID cứng của hãng
 
   // Tự động chọn certificate hiện tại khi mở modal
   useEffect(() => {
@@ -70,10 +85,50 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
     return new Date(validTo) < new Date();
   }
 
-  // Xử lý chọn chứng chỉ
-  function handleSelect() {
-    if (!selectedCertificate) return;
-    onSelect(selectedCertificate);
+  // Xử lý chọn chứng chỉ với API call
+  async function handleSelect() {
+    if (!selectedCertificate) {
+      message.warning('Vui lòng chọn một chứng thư số');
+      return;
+    }
+    
+    setUpdating(true);
+    try {
+      console.log('=== SELECTING SMARTCA ===');
+      console.log('Selected certificate:', selectedCertificate);
+      console.log('ContractService available:', !!contractService);
+      console.log('UserId:', userId);
+      
+      let result;
+      
+      // Determine which service to use based on available props
+      if (contractService && userId) {
+        // Customer case: use contractService with userId
+        result = await contractService.handleUpdateSmartCA(
+          selectedCertificate.id,
+          userId,
+          selectedCertificate.commonName || selectedCertificate.name
+        );
+      } else {
+        // Admin case: use smartCAService with fixed admin ID
+        const smartCAId = String(selectedCertificate.id);
+        const smartCAOwnerName = selectedCertificate.commonName || selectedCertificate.name || null;
+        
+        result = await smartCAService.handleUpdateSmartCA(smartCAId, smartCAOwnerName);
+      }
+      
+      if (result.success) {
+        message.success('Đã cập nhật SmartCA thành công');
+        onSelect(selectedCertificate);
+      } else {
+        message.error(result.error || 'Có lỗi khi cập nhật SmartCA');
+      }
+    } catch (error) {
+      console.error('Error selecting SmartCA:', error);
+      message.error('Có lỗi khi cập nhật SmartCA');
+    } finally {
+      setUpdating(false);
+    }
   }
 
   return (
@@ -95,14 +150,42 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
           type="primary" 
           onClick={handleSelect}
           disabled={!selectedCertificate}
-          loading={loading}
+          loading={updating || loading}
         >
-          {currentSelectedId ? 'Đổi Chứng Thư' : 'Chọn để ký'}
+          {updating ? 'Đang cập nhật...' : (currentSelectedId ? 'Đổi Chứng Thư' : 'Chọn để ký')}
         </Button>
       ]}
       width={800}
       destroyOnClose
     >
+      {/* Custom CSS cho animations */}
+      <style jsx>{`
+        @keyframes glow {
+          0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+          50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.4); }
+        }
+        .selected-glow {
+          animation: glow 2s ease-in-out infinite;
+        }
+        .border-3 {
+          border-width: 3px;
+        }
+        .bg-blue-25 {
+          background-color: rgba(59, 130, 246, 0.025);
+        }
+        .hover-scale {
+          transition: transform 0.2s ease-in-out;
+        }
+        .hover-scale:hover {
+          transform: scale(1.02);
+        }
+        .ant-radio-group {
+          width: 100% !important;
+        }
+        .ant-card {
+          width: 100% !important;
+        }
+      `}</style>
       {/* Thông báo */}
       {isExistingSmartCA && (
         <Alert
@@ -128,124 +211,173 @@ const SmartCASelector = ({ visible, onCancel, onSelect, smartCAData, loading, is
       </div>
 
       <div className="max-h-96 overflow-y-auto">
-        <Row gutter={[16, 16]}>
-          {certificates.length === 0 ? (
-            <Col span={24}>
-              <div className="text-center py-8 text-gray-500">
-                <InfoCircleOutlined className="text-3xl mb-2" />
-                <div>Không có chứng thư số nào</div>
-                <div className="text-sm mt-1">Vui lòng thêm SmartCA trước khi ký</div>
-              </div>
-            </Col>
-          ) : (
-            certificates.map((cert) => {
-              const expired = isExpired(cert.validTo);
-              const canSelect = cert.isValid && !expired;
-              const isSelected = selectedCertificate?.id === cert.id;
-              const isCurrent = cert.id === currentSelectedId;
+        {certificates.length === 0 ? (
+          <Alert
+            message="Không có chứng thư số hợp lệ"
+            description="Vui lòng thêm SmartCA hoặc kiểm tra lại thông tin chứng thư số."
+            type="warning"
+            showIcon
+          />
+        ) : (
+          <div>
+            <Alert
+              message="Chọn chứng thư số để ký hợp đồng"
+              description={`Tìm thấy ${certificates.length} chứng thư số hợp lệ. Chọn một chứng thư để tiếp tục.`}
+              type="info"
+              showIcon
+              className="mb-4"
+            />
+            
+            <Radio.Group 
+              value={selectedCertificate?.id} 
+              onChange={(e) => {
+                const cert = certificates.find(c => c.id === e.target.value);
+                setSelectedCertificate(cert);
+              }}
+              className="w-full"
+              style={{ width: '100%' }}
+            >
+              <div className="space-y-4 w-full" style={{ width: '100%' }}>
+                {certificates.map((cert) => {
+                  const expired = isExpired(cert.validTo);
+                  const canSelect = cert.isValid && !expired;
+                  const isSelected = selectedCertificate?.id === cert.id;
+                  const isCurrent = cert.id === currentSelectedId;
 
-              return (
-                <Col span={24} key={cert.id}>
-                  <Card
-                    className={`cursor-pointer transition-all duration-200 ${
-                      isSelected 
-                        ? 'border-blue-500 shadow-md bg-blue-50' 
-                        : canSelect 
-                          ? 'border-gray-200 hover:border-blue-300 hover:shadow-sm' 
-                          : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
-                    }`}
-                    onClick={() => canSelect && setSelectedCertificate(cert)}
-                    size="small"
-                  >
-                    <div className="flex justify-between items-start">
-                      {/* Thông tin chính */}
-                      <div className="flex-1">
-                        <div className="flex items-center mb-2">
-                          <Text strong className="text-lg mr-2">
-                            {cert.commonName || cert.name}
-                          </Text>
-                          {cert.isDefault && (
-                            <Tag color="blue" className="text-xs">
-                              Mặc định
-                            </Tag>
-                          )}
-                          {isCurrent && (
-                            <Tag color="green" className="text-xs">
-                              Đang sử dụng
-                            </Tag>
-                          )}
-                        </div>
+                  return (
+                    <div key={cert.id} className="w-full" style={{ width: '100%' }}>
+                      <Card
+                        className={`
+                          hover-scale cursor-pointer transition-all duration-300 relative w-full
+                          ${isSelected 
+                            ? 'border-3 border-blue-500 shadow-xl bg-gradient-to-br from-blue-25 to-blue-50 selected-glow' 
+                            : canSelect
+                              ? 'border border-gray-200 hover:border-blue-300 hover:shadow-lg'
+                              : 'border border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                          }
+                          ${isCurrent ? 'bg-green-50' : ''}
+                        `}
+                        onClick={() => canSelect && setSelectedCertificate(cert)}
+                        size="small"
+                        style={{ width: '100%' }}
+                      >
+                        <div className="w-full" style={{ width: '100%' }}>
+                          <div className="flex items-start space-x-3 w-full" style={{ width: '100%' }}>
+                            <Radio 
+                              value={cert.id} 
+                              disabled={!canSelect}
+                              className={`
+                                mt-1 transition-all duration-200
+                                ${isSelected ? 'scale-110' : 'scale-100'}
+                              `}
+                            />
+                            
+                            <div className="flex-1 min-w-0">
+                              {/* Header với badges */}
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                  <Text strong className="text-base truncate">
+                                    {cert.commonName || cert.name || 'Không rõ tên'}
+                                  </Text>
+                                  
+                                  {/* Badges */}
+                                  <div className="flex space-x-1">
+                                    {cert.isDefault && (
+                                      <Tag 
+                                        icon={<CheckCircleOutlined />} 
+                                        color="gold" 
+                                        className="animate-pulse"
+                                      >
+                                        Mặc định
+                                      </Tag>
+                                    )}
+                                    
+                                    {isCurrent && (
+                                      <Tag 
+                                        icon={<CheckCircleOutlined />} 
+                                        color="green"
+                                        className="animate-bounce"
+                                      >
+                                        Đang sử dụng
+                                      </Tag>
+                                    )}
+                                    
+                                    {isSelected && !isCurrent && (
+                                      <Tag 
+                                        icon={<CheckCircleOutlined />} 
+                                        color="blue"
+                                        className="animate-pulse"
+                                      >
+                                        Đã chọn
+                                      </Tag>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Status badge */}
+                                <Tag 
+                                  color={canSelect ? "green" : expired ? "red" : "orange"} 
+                                  icon={canSelect ? <CheckCircleOutlined /> : <ClockCircleOutlined />}
+                                  className={isSelected ? 'animate-pulse' : ''}
+                                >
+                                  {canSelect ? 'Hợp lệ' : expired ? 'Hết hạn' : 'Không khả dụng'}
+                                </Tag>
+                              </div>
 
-                        <Space direction="vertical" size={4} className="w-full">
-                          <div className="flex justify-between">
-                            <Text className="text-gray-600">CCCD/HC/MST:</Text>
-                            <Text strong>{cert.uid || 'N/A'}</Text>
-                          </div>
+                              {/* Chi tiết certificate */}
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <Text className="text-gray-600">ID:</Text>
+                                  <Text code className="font-mono text-xs">{cert.id}</Text>
+                                </div>
+                                
+                                <div className="flex justify-between">
+                                  <Text className="text-gray-600">CCCD/HC/MST:</Text>
+                                  <Text className="font-mono text-xs">{cert.uid || 'N/A'}</Text>
+                                </div>
+                                
+                                <div className="flex justify-between">
+                                  <Text className="text-gray-600">Ngày hết hạn:</Text>
+                                  <Text className="text-xs">
+                                    {formatDate(cert.validTo)}
+                                  </Text>
+                                </div>
+                                
+                                <div className="flex justify-between">
+                                  <Text className="text-gray-600">Số serial:</Text>
+                                  <Text className="text-xs text-right ml-2 truncate max-w-xs font-mono" title={cert.serialNumber}>
+                                    {cert.serialNumber ? 
+                                      `${cert.serialNumber.substring(0, 20)}...` : 
+                                      'N/A'
+                                    }
+                                  </Text>
+                                </div>
 
-                          <div className="flex justify-between">
-                            <Text className="text-gray-600">Trạng thái:</Text>
-                            <div>
-                              {canSelect ? (
-                                <Tag color="green" icon={<CheckCircleOutlined />}>
-                                  Đang hoạt động
-                                </Tag>
-                              ) : expired ? (
-                                <Tag color="red" icon={<ClockCircleOutlined />}>
-                                  Hết hạn
-                                </Tag>
-                              ) : (
-                                <Tag color="orange">
-                                  Không khả dụng
-                                </Tag>
-                              )}
+                                <div className="flex justify-between">
+                                  <Text className="text-gray-600">Gói:</Text>
+                                  <Text className="text-xs">
+                                    {cert.smartCaServiceName || 'SMARTCA CÁ NHÂN CƠ BẢN'}
+                                  </Text>
+                                </div>
+                              </div>
                             </div>
                           </div>
-
-                          <div className="flex justify-between">
-                            <Text className="text-gray-600">Hiệu lực:</Text>
-                            <Text>
-                              {formatDate(cert.validFrom)} - {formatDate(cert.validTo)}
-                            </Text>
-                          </div>
-
-                          <div className="flex justify-between">
-                            <Text className="text-gray-600">Số serial:</Text>
-                            <Text className="font-mono text-sm">
-                              {cert.serialNumber ? 
-                                `${cert.serialNumber.substring(0, 20)}...` : 
-                                'N/A'
-                              }
-                            </Text>
-                          </div>
-
-                          <div className="flex justify-between">
-                            <Text className="text-gray-600">Gói:</Text>
-                            <Text className="text-sm">
-                              {cert.smartCaServiceName || 'SMARTCA CÁ NHÂN CƠ BẢN'}
-                            </Text>
-                          </div>
-                        </Space>
-                      </div>
-
-                      {/* Radio selection indicator */}
-                      <div className="ml-4 flex items-center">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          isSelected 
-                            ? 'border-blue-500 bg-blue-500' 
-                            : 'border-gray-300'
-                        }`}>
-                          {isSelected && (
-                            <div className="w-2 h-2 rounded-full bg-white"></div>
-                          )}
                         </div>
-                      </div>
+                        
+                        {/* Selection indicator */}
+                        {isSelected && (
+                          <div className="absolute top-2 right-2">
+                            <CheckCircleOutlined className="text-xl text-blue-500 animate-bounce" />
+                          </div>
+                        )}
+                      </Card>
                     </div>
-                  </Card>
-                </Col>
-              );
-            })
-          )}
-        </Row>
+                  );
+                })}
+              </div>
+            </Radio.Group>
+          </div>
+        )}
       </div>
 
       {certificates.length > 0 && (
