@@ -88,9 +88,10 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <FileTextOutlined />,
             component: "./DealerContracts",
           },
+          
           // {
-          //   path: "/admin/dealer/performance",
-          //   name: "Hiệu suất đại lý",
+          //   path: "/admin/dealer/promotions",
+          //   name: "Quản lý khuyến Mãi ",
           //   icon: <LineChartOutlined />,
           //   component: "./DealerPerformance",
           // },
@@ -138,6 +139,32 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <UserAddOutlined />,
             component: "./CreateEVMStaff",
           },
+        ],
+      },
+       {
+        path: "/admin/promotions",
+        name: "Quản lý khuyến mãi",
+        icon: <ShopOutlined />,
+        routes: [
+          {
+            path: "/admin/promotions/all-promotions",
+            name: "Danh sách khuyến mãi",
+            icon: <TeamOutlined />,
+            component: "./PromotionList",
+          },
+          {
+            path: '/admin/promotions/create-promotion',
+            name: 'Tạo khuyến mãi',
+            icon: <FileTextOutlined />,
+            component: './CreatePromotion',
+          },
+          
+          // {
+          //   path: "/admin/dealer/promotions",
+          //   name: "Quản lý khuyến Mãi ",
+          //   icon: <LineChartOutlined />,
+          //   component: "./DealerPerformance",
+          // },
         ],
       },
       {

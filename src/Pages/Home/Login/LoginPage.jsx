@@ -150,9 +150,6 @@ function LoginPage() {
     }
   };
 
-  const handleSocialLogin = (type) => {
-    message.info(`Đăng nhập với ${type} đang được phát triển!`);
-  };
 
   return (
     <PageContainer>
@@ -175,7 +172,7 @@ function LoginPage() {
               icon={<UserOutlined style={{ color: "#fff", fontSize: 28 }} />}
             />
             <Title level={3} style={{ margin: 0 }}>
-              Chào mừng trở lại
+              EV Dealer Management System
             </Title>
             <Text type="secondary">Đăng nhập để tiếp tục sử dụng hệ thống</Text>
           </div>
@@ -223,64 +220,6 @@ function LoginPage() {
               </Link>
             </div>
           </LoginForm>
-
-          <div style={{ marginTop: "24px" }}>
-            <Space direction="vertical" style={{ width: "100%" }}>
-              <div style={{ textAlign: "center", color: "#8c8c8c" }}>
-                Hoặc tiếp tục với
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  gap: "24px",
-                  marginTop: "16px",
-                }}
-              >
-                <Avatar
-                  className="social-button"
-                  style={{
-                    backgroundColor: "#fff",
-                    cursor: "pointer",
-                    border: "1px solid #d9d9d9",
-                  }}
-                  icon={
-                    <img
-                      src="https://www.google.com/images/branding/googleg/1x/googleg_standard_color_128dp.png"
-                      alt="Google"
-                      style={{ width: "18px", height: "18px" }}
-                    />
-                  }
-                  onClick={() => handleSocialLogin("Google")}
-                />
-                <Avatar
-                  className="social-button"
-                  style={{
-                    backgroundColor: "#1877f2",
-                    cursor: "pointer",
-                  }}
-                  icon={
-                    <FacebookOutlined style={{ fontSize: 20, color: "#fff" }} />
-                  }
-                  onClick={() => handleSocialLogin("Facebook")}
-                />
-              </div>
-            </Space>
-          </div>
-
-          <div
-            style={{
-              textAlign: "center",
-              marginTop: "24px",
-              fontSize: "14px",
-              color: "#8c8c8c",
-            }}
-          >
-            Chưa có tài khoản?{" "}
-            <Link to="/register" style={{ color: "#1677ff", fontWeight: 500 }}>
-              Đăng ký ngay
-            </Link>
-          </div>
         </ProCard>
       </div>
     </PageContainer>
