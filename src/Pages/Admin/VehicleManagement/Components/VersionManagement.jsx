@@ -17,8 +17,6 @@ import {
   Col,
   Typography,
   Divider,
-  Alert,
-  Empty,
 } from "antd";
 import {
   PlusOutlined,
@@ -27,7 +25,6 @@ import {
   SettingOutlined,
   ReloadOutlined,
   CheckCircleOutlined,
-  WarningOutlined,
 } from "@ant-design/icons";
 import { PageContainer } from "@ant-design/pro-components";
 import { vehicleApi } from "../../../../App/EVMAdmin/VehiclesManagement/Vehicles";
@@ -36,9 +33,13 @@ const { TextArea } = Input;
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-function ManageVersion() {
-  console.log("🔧 ManageVersion component rendering...");
+const SUPPLY_STATUS_MAP = {
+  0: { text: "Có sẵn", color: "green" },
+  1: { text: "Hết hàng", color: "red" },
+  2: { text: "Sắp ra mắt", color: "blue" },
+};
 
+function ManageVersion() {
   const [loading, setLoading] = useState(false);
   const [versions, setVersions] = useState([]);
   const [models, setModels] = useState([]);
@@ -47,69 +48,53 @@ function ManageVersion() {
   const [currentVersion, setCurrentVersion] = useState(null);
   const [form] = Form.useForm();
 
-  // Load versions và models khi component mount
   useEffect(() => {
     loadVersions();
     loadModels();
   }, []);
 
-  // Tải danh sách versions
   const loadVersions = async () => {
     setLoading(true);
     try {
-      console.log("=== LOADING VERSIONS ===");
-      const result = await vehicleApi.getAllVersions();
-
-      if (result.success) {
-        console.log("✅ Versions loaded successfully:", result.data);
-        setVersions(result.data || []);
+      const res = await vehicleApi.getAllVersions();
+      if (res.success) {
+        setVersions(res.data || []);
       } else {
-        console.error("❌ Failed to load versions:", result.error);
-        message.error("Không thể tải danh sách version: " + result.error);
+        message.error(res.error || "Không thể tải versions");
         setVersions([]);
       }
-    } catch (error) {
-      console.error("Error loading versions:", error);
-      message.error("Lỗi khi tải danh sách version");
+    } catch (e) {
+      message.error("Lỗi khi tải versions");
       setVersions([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Tải danh sách models
   const loadModels = async () => {
     try {
-      console.log("=== LOADING MODELS FOR DROPDOWN ===");
-      const result = await vehicleApi.getAllModels();
-
-      if (result.success) {
-        console.log("✅ Models loaded successfully:", result.data);
-        setModels(result.data || []);
+      const res = await vehicleApi.getAllModels();
+      if (res.success) {
+        setModels(res.data || []);
       } else {
-        console.error("❌ Failed to load models:", result.error);
         setModels([]);
       }
-    } catch (error) {
-      console.error("Error loading models:", error);
+    } catch (e) {
       setModels([]);
     }
   };
 
-  // Mở modal tạo version mới
   const handleCreate = () => {
-    if (models.length === 0) {
+    if (!models.length) {
       message.warning("Cần tạo Model trước khi tạo Version!");
       return;
     }
-
     setIsEditing(false);
     setCurrentVersion(null);
     form.resetFields();
     setIsModalVisible(true);
   };
 
-  // Mở modal chỉnh sửa version
   const handleEdit = (version) => {
     setIsEditing(true);
     setCurrentVersion(version);
@@ -118,7 +103,7 @@ function ManageVersion() {
       versionName: version.versionName,
       motorPower: version.motorPower,
       batteryCapacity: version.batteryCapacity,
-      rangePerkCharge: version.rangePerkCharge,
+      rangePerCharge: version.rangePerCharge,
       supplyStatus: version.supplyStatus,
       topSpeed: version.topSpeed,
       weight: version.weight,
@@ -130,253 +115,197 @@ function ManageVersion() {
     setIsModalVisible(true);
   };
 
-  // Xử lý submit form (tạo mới hoặc cập nhật)
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      console.log("=== SUBMITTING VERSION FORM ===");
-      console.log("Is editing:", isEditing);
-      console.log("Form values:", values);
-      console.log("Current version:", currentVersion);
+      const payload = {
+        modelId: values.modelId,
+        versionName: values.versionName,
+        motorPower: Number(values.motorPower),
+        batteryCapacity: Number(values.batteryCapacity),
+        rangePerCharge: Number(values.rangePerCharge),
+        supplyStatus: Number(values.supplyStatus),
+        topSpeed: Number(values.topSpeed),
+        weight: Number(values.weight),
+        height: Number(values.height),
+        productionYear: Number(values.productionYear),
+        description: values.description || "",
+        isActive: !!values.isActive,
+      };
 
-      // Validate modelId tồn tại
-      if (!values.modelId) {
-        message.error("Vui lòng chọn Model!");
-        return;
-      }
-
-      // Debug: Log current models state và selected modelId
-      console.log("=== VERSION SUBMIT DEBUG ===");
-      console.log("Selected modelId:", values.modelId);
-      console.log(
-        "Available models in state:",
-        models.map((m) => ({ id: m.id, name: m.modelName }))
-      );
-      console.log(
-        "Model exists in state?",
-        models.some((m) => m.id === values.modelId)
-      );
-
-      let result;
-
-      if (isEditing && currentVersion) {
-        // Cập nhật version
-        console.log("Updating version with ID:", currentVersion.id);
-        result = await vehicleApi.updateVersion(currentVersion.id, values);
+      let res;
+      if (isEditing && currentVersion?.id) {
+        res = await vehicleApi.updateVersion(currentVersion.id, payload);
       } else {
-        // Tạo version mới
-        console.log("Creating new version");
-        result = await vehicleApi.createVersion(values);
+        res = await vehicleApi.createVersion(payload);
       }
 
-      console.log("Submit result:", result);
-
-      if (result.success) {
-        message.success(
-          isEditing
-            ? "Cập nhật version thành công!"
-            : "Tạo version mới thành công!"
-        );
-
-        // Hiển thị thông tin version vừa tạo/cập nhật
-        if (result.data) {
-          console.log("✅ Version data:", result.data);
-
-          // Tìm model name để hiển thị
-          const selectedModel = models.find((m) => m.id === values.modelId);
-
-          Modal.success({
-            title: (
-              <Space>
-                <CheckCircleOutlined style={{ color: "#52c41a" }} />
-                {isEditing
-                  ? "Cập nhật Version thành công!"
-                  : "Tạo Version thành công!"}
-              </Space>
-            ),
-            content: (
-              <div style={{ marginTop: 16 }}>
-                <Alert
-                  message="Thông tin Version"
-                  description={
-                    <div>
-                      <p>
-                        <strong>Model:</strong>{" "}
-                        {selectedModel?.modelName || "N/A"}
-                      </p>
-                      <p>
-                        <strong>Tên Version:</strong>{" "}
-                        {result.data.versionName || values.versionName}
-                      </p>
-                      <p>
-                        <strong>Công suất:</strong> {values.motorPower} W
-                      </p>
-                      <p>
-                        <strong>Dung lượng pin:</strong>{" "}
-                        {values.batteryCapacity} V
-                      </p>
-                      <p>
-                        <strong>Tầm hoạt động:</strong> {values.rangePerkCharge}{" "}
-                        km
-                      </p>
-                      {result.data.id && (
-                        <p>
-                          <strong>Version ID (Database):</strong>
-                          <Text code copyable style={{ marginLeft: 8 }}>
-                            {result.data.id}
-                          </Text>
-                        </p>
-                      )}
-                    </div>
-                  }
-                  type="success"
-                  showIcon
-                />
-              </div>
-            ),
-          });
-        }
-
+      if (res.success) {
+        const modelName =
+          models.find((m) => m.id === payload.modelId)?.modelName || "N/A";
+        Modal.success({
+          title: (
+            <Space>
+              <CheckCircleOutlined style={{ color: "#52c41a" }} />
+              {isEditing ? "Cập nhật Version thành công!" : "Tạo Version thành công!"}
+            </Space>
+          ),
+          content: (
+            <div style={{ marginTop: 12 }}>
+              <p>
+                <strong>Model:</strong> {modelName}
+              </p>
+              <p>
+                <strong>Tên Version:</strong> {res.data?.versionName || payload.versionName}
+              </p>
+              <p>
+                <strong>Công suất:</strong> {payload.motorPower} W
+              </p>
+              <p>
+                <strong>Pin:</strong> {payload.batteryCapacity} V
+              </p>
+              <p>
+                <strong>Tầm hoạt động:</strong> {payload.rangePerCharge} km
+              </p>
+              {res.data?.id && (
+                <p>
+                  <strong>Version ID:</strong>{" "}
+                  <Text code copyable>
+                    {res.data.id}
+                  </Text>
+                </p>
+              )}
+            </div>
+          ),
+        });
         setIsModalVisible(false);
         form.resetFields();
-        await loadVersions(); // Reload danh sách
+        loadVersions();
       } else {
-        console.error("❌ Submit failed:", result.error);
-        message.error(result.error || "Không thể thực hiện thao tác");
+        message.error(res.error || "Không thể lưu version");
       }
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      message.error("Lỗi khi thực hiện thao tác");
+    } catch (e) {
+      message.error("Lỗi khi gửi dữ liệu");
     } finally {
       setLoading(false);
     }
   };
 
-  // Xóa version
-  const handleDelete = async (versionId) => {
+  const handleDelete = async (id) => {
     setLoading(true);
     try {
-      console.log("=== DELETING VERSION ===");
-      console.log("Version ID:", versionId);
-
-      const result = await vehicleApi.deleteVersion(versionId);
-      console.log("Delete result:", result);
-
-      if (result.success) {
+      const res = await vehicleApi.deleteVersion(id);
+      if (res.success) {
         message.success("Xóa version thành công!");
-        await loadVersions(); // Reload danh sách
+        loadVersions();
       } else {
-        console.error("❌ Delete failed:", result.error);
-        message.error(result.error || "Không thể xóa version");
+        message.error(res.error || "Không thể xóa version");
       }
-    } catch (error) {
-      console.error("Error deleting version:", error);
+    } catch (e) {
       message.error("Lỗi khi xóa version");
     } finally {
       setLoading(false);
     }
   };
 
-  // Columns cho table
   const columns = [
     {
       title: "STT",
-      dataIndex: "index",
-      key: "index",
-      width: 60,
-      render: (_, __, index) => index + 1,
+      width: 70,
+      align: "center",
+      render: (_, __, i) => i + 1,
     },
     {
       title: "Model",
       dataIndex: "modelId",
-      key: "modelId",
-      width: 150,
+      width: 220,
       render: (modelId) => {
-        const model = models.find((m) => m.id === modelId);
-        return (
-          <Tag color="blue">
-            {model?.modelName || `ID: ${modelId?.slice(0, 8)}...`}
-          </Tag>
-        );
+        const m = models.find((x) => x.id === modelId);
+        return <Tag color="blue">{m?.modelName || (modelId ? modelId.slice(0, 8) : "N/A")}</Tag>;
       },
     },
     {
-      title: "Tên Version",
+      title: "Version",
       dataIndex: "versionName",
-      key: "versionName",
-      render: (name) => (
+      width: 240,
+      render: (t) => (
         <Space>
           <SettingOutlined style={{ color: "#1890ff" }} />
-          <Text strong>{name}</Text>
+          <Text strong>{t}</Text>
         </Space>
       ),
     },
     {
-      title: "Công suất",
+      title: "Công suất (W)",
       dataIndex: "motorPower",
-      key: "motorPower",
-      width: 100,
-      render: (power) => <Tag color="orange">{power} W</Tag>,
+      width: 140,
+      render: (v) => <Tag color="orange">{v}</Tag>,
     },
     {
-      title: "Pin",
+      title: "Pin (V)",
       dataIndex: "batteryCapacity",
-      key: "batteryCapacity",
-      width: 100,
-      render: (capacity) => <Tag color="green">{capacity} V</Tag>,
+      width: 110,
+      render: (v) => <Tag color="green">{v}</Tag>,
     },
     {
-      title: "Tầm hoạt động",
-      dataIndex: "rangePerkCharge",
-      key: "rangePerkCharge",
+      title: "Tầm (km)",
+      dataIndex: "rangePerCharge",
       width: 120,
-      render: (range) => <Tag color="blue">{range} km</Tag>,
+      render: (v) => <Tag color="blue">{v}</Tag>,
     },
     {
-      title: "Tốc độ tối đa",
+      title: "Tốc độ (km/h)",
       dataIndex: "topSpeed",
-      key: "topSpeed",
-      width: 120,
-      render: (speed) => <Tag color="red">{speed} km/h</Tag>,
+      width: 140,
+      render: (v) => <Tag color="red">{v}</Tag>,
     },
     {
-      title: "Trạng thái",
-      dataIndex: "isActive",
-      key: "isActive",
-      width: 100,
-      render: (isActive) => (
-        <Tag color={isActive ? "success" : "default"}>
-          {isActive ? "Hoạt động" : "Ngừng"}
-        </Tag>
-      ),
+      title: "Nặng (kg)",
+      dataIndex: "weight",
+      width: 110,
+    },
+    {
+      title: "Cao (mm)",
+      dataIndex: "height",
+      width: 110,
+    },
+    {
+      title: "Năm SX",
+      dataIndex: "productionYear",
+      width: 110,
+    },
+    {
+      title: "Cung cấp",
+      dataIndex: "supplyStatus",
+      width: 130,
+      render: (s) => {
+        const cfg = SUPPLY_STATUS_MAP[s] || { text: `Mã ${s}`, color: "default" };
+        return <Tag color={cfg.color}>{cfg.text}</Tag>;
+      },
+    },
+    {
+      title: "Mô tả",
+      dataIndex: "description",
+      ellipsis: true,
+      render: (t) => <Text type="secondary">{t || "—"}</Text>,
     },
     {
       title: "Thao tác",
-      key: "actions",
-      width: 150,
-      render: (_, record) => (
+      width: 160,
+      fixed: "right",
+      render: (_, r) => (
         <Space>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
+          <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>
             Sửa
           </Button>
           <Popconfirm
             title="Xác nhận xóa"
-            description="Bạn có chắc chắn muốn xóa version này?"
-            onConfirm={() => handleDelete(record.id)}
+            description="Bạn chắc chắn muốn xóa version này?"
+            onConfirm={() => handleDelete(r.id)}
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-            >
+            <Button size="small" danger icon={<DeleteOutlined />}>
               Xóa
             </Button>
           </Popconfirm>
@@ -387,82 +316,61 @@ function ManageVersion() {
 
   return (
     <PageContainer
-      title="Quản lý Version Xe Điện"
-      subTitle="Tạo và quản lý các phiên bản xe điện"
-      extra={[
-        <Button
-          key="reload"
-          icon={<ReloadOutlined />}
-          onClick={() => {
-            loadVersions();
-            loadModels();
-          }}
-          loading={loading}
-        >
-          Tải lại
-        </Button>,
-        <Button
-          key="create"
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreate}
-        >
-          Tạo Version mới
-        </Button>,
-      ]}
+      className="!p-0"
+      childrenContentStyle={{ padding: 0, margin: 0 }}
+      header={{
+        title: "Quản lý Version Xe Điện",
+        subTitle: "Tạo và quản lý các phiên bản xe điện",
+        extra: [
+          <Button
+            key="reload"
+            icon={<ReloadOutlined />}
+            onClick={() => {
+              loadVersions();
+              loadModels();
+            }}
+            loading={loading}
+          >
+            Tải lại
+          </Button>,
+          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+            Tạo Version mới
+          </Button>,
+        ],
+      }}
     >
-      {/* Cảnh báo nếu chưa có Model */}
-      {models.length === 0 && (
-        <Card style={{ marginBottom: 16 }}>
-          <Alert
-            message="Chưa có Model trong hệ thống"
-            description="Bạn cần tạo ít nhất một Model trước khi tạo Version. Vui lòng vào trang Quản lý Model để tạo Model mới."
-            type="warning"
-            showIcon
-            icon={<WarningOutlined />}
-            action={
-              <Button size="small" danger>
-                Đi đến Quản lý Model
-              </Button>
-            }
+      <div className="w-full px-4 md:px-6 lg:px-8 pb-6">
+        <Card className="shadow-sm">
+          <Row gutter={[16, 8]} style={{ marginBottom: 8 }}>
+            <Col span={24}>
+              <Title level={4} className="!mb-1">
+                <SettingOutlined style={{ color: "#1890ff", marginRight: 8 }} />
+                Danh sách Version
+              </Title>
+              <Text type="secondary">Tổng cộng: {versions.length} phiên bản</Text>
+            </Col>
+          </Row>
+          <Divider className="!mt-2" />
+          <Table
+            size="middle"
+            columns={columns}
+            dataSource={versions}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              total: versions.length,
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (t, r) => `${r[0]}-${r[1]} của ${t} phiên bản`,
+            }}
+            scroll={{ x: "max-content" }}
+            sticky
           />
         </Card>
-      )}
+      </div>
 
-      <Card>
-        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={24}>
-            <Title level={4}>
-              <SettingOutlined style={{ color: "#1890ff", marginRight: 8 }} />
-              Danh sách Version
-            </Title>
-            <Text type="secondary">
-              Quản lý các phiên bản xe điện. Tổng cộng: {versions.length}{" "}
-              version
-            </Text>
-          </Col>
-        </Row>
-
-        <Divider />
-
-        <Table
-          columns={columns}
-          dataSource={versions}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            total: versions.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} của ${total} version`,
-          }}
-          scroll={{ x: 1200 }}
-        />
-      </Card>
-
-      {/* Modal tạo/sửa version */}
+      {/* Modal tạo/sửa */}
       <Modal
         title={isEditing ? "Chỉnh sửa Version" : "Tạo Version mới"}
         open={isModalVisible}
@@ -471,7 +379,7 @@ function ManageVersion() {
           form.resetFields();
         }}
         footer={null}
-        width={800}
+        width={840}
       >
         <Form
           form={form}
@@ -496,14 +404,15 @@ function ManageVersion() {
                   size="large"
                   showSearch
                   filterOption={(input, option) =>
-                    option.children
+                    (option?.children ?? "")
+                      .toString()
                       .toLowerCase()
-                      .indexOf(input.toLowerCase()) >= 0
+                      .includes(input.toLowerCase())
                   }
                 >
-                  {models.map((model) => (
-                    <Option key={model.id} value={model.id}>
-                      {model.modelName}
+                  {models.map((m) => (
+                    <Option key={m.id} value={m.id}>
+                      {m.modelName}
                     </Option>
                   ))}
                 </Select>
@@ -516,17 +425,11 @@ function ManageVersion() {
                 name="versionName"
                 rules={[
                   { required: true, message: "Vui lòng nhập tên version!" },
-                  { min: 2, message: "Tên version phải có ít nhất 2 ký tự!" },
-                  {
-                    max: 100,
-                    message: "Tên version không được quá 100 ký tự!",
-                  },
+                  { min: 2, message: "Tối thiểu 2 ký tự" },
+                  { max: 100, message: "Tối đa 100 ký tự" },
                 ]}
               >
-                <Input
-                  placeholder="Ví dụ: Standard, Plus, Pro..."
-                  size="large"
-                />
+                <Input placeholder="VD: E-Scooter Pro Max 2025" size="large" />
               </Form.Item>
             </Col>
           </Row>
@@ -536,53 +439,27 @@ function ManageVersion() {
               <Form.Item
                 label="Công suất (W)"
                 name="motorPower"
-                rules={[
-                  { required: true, message: "Vui lòng nhập công suất!" },
-                ]}
+                rules={[{ required: true, message: "Nhập công suất!" }]}
               >
-                <InputNumber
-                  placeholder="100"
-                  size="large"
-                  style={{ width: "100%" }}
-                  min={1}
-                  max={1000000}
-                />
+                <InputNumber min={1} max={100000} style={{ width: "100%" }} size="large" />
               </Form.Item>
             </Col>
-
             <Col span={8}>
               <Form.Item
                 label="Dung lượng pin (V)"
                 name="batteryCapacity"
-                rules={[
-                  { required: true, message: "Vui lòng nhập dung lượng pin!" },
-                ]}
+                rules={[{ required: true, message: "Nhập dung lượng pin!" }]}
               >
-                <InputNumber
-                  placeholder="50"
-                  size="large"
-                  style={{ width: "100%" }}
-                  min={1}
-                  max={1000}
-                />
+                <InputNumber min={1} max={1000} style={{ width: "100%" }} size="large" />
               </Form.Item>
             </Col>
-
             <Col span={8}>
               <Form.Item
                 label="Tầm hoạt động (km)"
-                name="rangePerkCharge"
-                rules={[
-                  { required: true, message: "Vui lòng nhập tầm hoạt động!" },
-                ]}
+                name="rangePerCharge"
+                rules={[{ required: true, message: "Nhập tầm hoạt động!" }]}
               >
-                <InputNumber
-                  placeholder="300"
-                  size="large"
-                  style={{ width: "100%" }}
-                  min={1}
-                  max={10000}
-                />
+                <InputNumber min={1} max={2000} style={{ width: "100%" }} size="large" />
               </Form.Item>
             </Col>
           </Row>
@@ -592,53 +469,27 @@ function ManageVersion() {
               <Form.Item
                 label="Tốc độ tối đa (km/h)"
                 name="topSpeed"
-                rules={[
-                  { required: true, message: "Vui lòng nhập tốc độ tối đa!" },
-                ]}
+                rules={[{ required: true, message: "Nhập tốc độ tối đa!" }]}
               >
-                <InputNumber
-                  placeholder="120"
-                  size="large"
-                  style={{ width: "100%" }}
-                  min={1}
-                  max={500}
-                />
+                <InputNumber min={1} max={400} style={{ width: "100%" }} size="large" />
               </Form.Item>
             </Col>
-
             <Col span={8}>
               <Form.Item
                 label="Trọng lượng (kg)"
                 name="weight"
-                rules={[
-                  { required: true, message: "Vui lòng nhập trọng lượng!" },
-                ]}
+                rules={[{ required: true, message: "Nhập trọng lượng!" }]}
               >
-                <InputNumber
-                  placeholder="1500"
-                  size="large"
-                  style={{ width: "100%" }}
-                  min={1}
-                  max={10000}
-                />
+                <InputNumber min={1} max={1000} style={{ width: "100%" }} size="large" />
               </Form.Item>
             </Col>
-
             <Col span={8}>
               <Form.Item
-                label="Chiều cao (cm)"
+                label="Chiều cao (mm)"
                 name="height"
-                rules={[
-                  { required: true, message: "Vui lòng nhập chiều cao!" },
-                ]}
+                rules={[{ required: true, message: "Nhập chiều cao!" }]}
               >
-                <InputNumber
-                  placeholder="1600"
-                  size="large"
-                  style={{ width: "100%" }}
-                  min={1}
-                  max={1000}
-                />
+                <InputNumber min={100} max={2500} style={{ width: "100%" }} size="large" />
               </Form.Item>
             </Col>
           </Row>
@@ -648,41 +499,22 @@ function ManageVersion() {
               <Form.Item
                 label="Năm sản xuất"
                 name="productionYear"
-                rules={[
-                  { required: true, message: "Vui lòng nhập năm sản xuất!" },
-                ]}
+                rules={[{ required: true, message: "Nhập năm sản xuất!" }]}
               >
-                <InputNumber
-                  size="large"
-                  style={{ width: "100%" }}
-                  min={2020}
-                  max={2030}
-                />
+                <InputNumber min={2020} max={2035} style={{ width: "100%" }} size="large" />
               </Form.Item>
             </Col>
-
             <Col span={8}>
               <Form.Item
                 label="Trạng thái cung cấp"
                 name="supplyStatus"
-                rules={[
-                  { required: true, message: "Vui lòng chọn trạng thái!" },
-                ]}
+                rules={[{ required: true, message: "Chọn trạng thái!" }]}
               >
                 <Select size="large">
-                  <Option value={1}>Có sẵn</Option>
-                  <Option value={0}>Hết hàng</Option>
+                  <Option value={0}>Có sẵn</Option>
+                  <Option value={1}>Hết hàng</Option>
+                  <Option value={2}>Sắp ra mắt</Option>
                 </Select>
-              </Form.Item>
-            </Col>
-
-            <Col span={8}>
-              <Form.Item
-                label="Hoạt động"
-                name="isActive"
-                valuePropName="checked"
-              >
-                <Switch />
               </Form.Item>
             </Col>
           </Row>
@@ -691,19 +523,15 @@ function ManageVersion() {
             label="Mô tả"
             name="description"
             rules={[
-              { required: true, message: "Vui lòng nhập mô tả!" },
-              { min: 10, message: "Mô tả phải có ít nhất 10 ký tự!" },
-              { max: 500, message: "Mô tả không được quá 500 ký tự!" },
+              { required: true, message: "Nhập mô tả!" },
+              { min: 10, message: "Tối thiểu 10 ký tự" },
+              { max: 500, message: "Tối đa 500 ký tự" },
             ]}
           >
-            <TextArea
-              rows={4}
-              placeholder="Mô tả chi tiết về phiên bản này..."
-              size="large"
-            />
+            <TextArea rows={4} placeholder="Mô tả chi tiết về phiên bản..." />
           </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
+          <div style={{ textAlign: "right" }}>
             <Space>
               <Button
                 onClick={() => {
@@ -717,7 +545,7 @@ function ManageVersion() {
                 {isEditing ? "Cập nhật" : "Tạo Version"}
               </Button>
             </Space>
-          </Form.Item>
+          </div>
         </Form>
       </Modal>
     </PageContainer>

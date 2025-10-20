@@ -6,12 +6,9 @@ import {
   Space,
   Modal,
   Form,
-  Input,
   InputNumber,
   Select,
-  DatePicker,
   message,
-  Popconfirm,
   Tag,
   Row,
   Col,
@@ -20,886 +17,416 @@ import {
   Alert,
   Steps,
   Upload,
+  Image,
 } from "antd";
 import {
   PlusOutlined,
   DeleteOutlined,
   CarOutlined,
   ReloadOutlined,
-  CheckCircleOutlined,
-  InfoCircleOutlined,
   EyeOutlined,
+  ZoomInOutlined,
 } from "@ant-design/icons";
 import { PageContainer } from "@ant-design/pro-components";
 import { vehicleApi } from "../../../../App/EVMAdmin/VehiclesManagement/Vehicles";
-import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// Helper function cho VIN
-const generateSampleVIN = () => {
-  const chars = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789";
-  let vin = "";
-  for (let i = 0; i < 17; i++) {
-    vin += chars[Math.floor(Math.random() * chars.length)];
+/** ---- Helpers: normalize API & extract error ---- */
+const normalizeApi = (res) => ({
+  success: res?.success ?? res?.isSuccess ?? false,
+  data: res?.data ?? res?.result,
+  message: res?.message ?? res?.error ?? "",
+});
+const extractErrorMessage = (err) => {
+  // Axios error shape
+  const status = err?.response?.status;
+  const serverMsg =
+    err?.response?.data?.message ||
+    err?.response?.data?.error ||
+    err?.message;
+
+  // Validation errors array/object
+  const errorsObj = err?.response?.data?.errors;
+  if (errorsObj && typeof errorsObj === "object") {
+    try {
+      const parts = [];
+      Object.keys(errorsObj).forEach((k) => {
+        const v = errorsObj[k];
+        if (Array.isArray(v)) parts.push(...v);
+        else if (typeof v === "string") parts.push(v);
+      });
+      if (parts.length) return parts.join("\n");
+    } catch {}
   }
-  return vin;
+
+  if (err?.code === "ECONNABORTED") return "Yêu cầu bị timeout. Vui lòng thử lại.";
+  if (status === 400) return serverMsg || "Yêu cầu không hợp lệ (400).";
+  if (status === 401) return "Chưa được xác thực (401).";
+  if (status === 403) return "Không có quyền thực hiện (403).";
+  if (status === 404) return "Không tìm thấy tài nguyên (404).";
+  if (status === 500) return serverMsg || "Lỗi máy chủ (500).";
+  return serverMsg || "Đã xảy ra lỗi không xác định.";
 };
 
 function CreateElectricVehicle() {
-  // State chính
   const [loading, setLoading] = useState(false);
   const [vehicles, setVehicles] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
+  const [models, setModels] = useState([]);
   const [versions, setVersions] = useState([]);
   const [colors, setColors] = useState([]);
+  const [filteredVersions, setFilteredVersions] = useState([]);
 
-  // Modal states
+  const [form] = Form.useForm();
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-
-  // Form states
-  const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({});
 
-  // Upload states
+  // Upload state
   const [uploadedImages, setUploadedImages] = useState([]);
-  const [attachmentKeys, setAttachmentKeys] = useState([]);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState("");
-  const [previewTitle, setPreviewTitle] = useState("");
 
-  // Load data khi component mount
   useEffect(() => {
-    loadAllData();
+    loadAll();
   }, []);
 
-  // Load tất cả dữ liệu cần thiết
-  const loadAllData = async () => {
+  const loadAll = async () => {
     setLoading(true);
     try {
-      await Promise.all([
-        loadVehicles(),
-        loadWarehouses(),
-        loadVersions(),
-        loadColors(),
+      const [v, m, ver, c] = await Promise.all([
+        vehicleApi.getAllVehicles(),
+        vehicleApi.getAllModels(),
+        vehicleApi.getAllVersions(),
+        vehicleApi.getAllColors(),
       ]);
-    } catch (error) {
-      console.error("Error loading data:", error);
+      const nv = normalizeApi(v);
+      const nm = normalizeApi(m);
+      const nver = normalizeApi(ver);
+      const nc = normalizeApi(c);
+
+      if (!nv.success) message.warning(nv.message || "Không thể tải xe.");
+      if (!nm.success) message.warning(nm.message || "Không thể tải model.");
+      if (!nver.success) message.warning(nver.message || "Không thể tải version.");
+      if (!nc.success) message.warning(nc.message || "Không thể tải màu.");
+
+      setVehicles(nv.data || []);
+      setModels(nm.data || []);
+      setVersions(nver.data || []);
+      setColors(nc.data || []);
+    } catch (err) {
+      message.error(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
-  // Load danh sách xe điện
-  const loadVehicles = async () => {
-    try {
-      const result = await vehicleApi.getAllVehicles();
-      if (result.success) {
-        setVehicles(result.data || []);
-      } else {
-        setVehicles([]);
-      }
-    } catch (error) {
-      console.error("Error loading vehicles:", error);
-      setVehicles([]);
-    }
-  };
-
-  // Load danh sách kho
-  const loadWarehouses = async () => {
-    try {
-      const result = await vehicleApi.getAllWarehouses();
-      if (result && result.success && result.data) {
-        const formattedWarehouses = result.data.map((warehouse, index) => ({
-          id: warehouse.id,
-          name: warehouse.dealerId || `Warehouse #${index + 1}`,
-          displayName: `${
-            warehouse.dealerId || `Warehouse #${index + 1}`
-          } (Type: ${warehouse.warehouseType || 2})`,
-        }));
-        setWarehouses(formattedWarehouses);
-      } else {
-        // Mock data khi API chưa sẵn sàng
-        const mockWarehouses = [
-          {
-            id: "0199d3ef-5fd1-7f77-84f7-89140441fc52",
-            name: "Test Warehouse 1",
-            displayName: "Test Warehouse 1 (Type: 2)",
-          },
-          {
-            id: "0199d3ef-ddd1-789f-a4eb-26f47fee63a8",
-            name: "Test Warehouse 2",
-            displayName: "Test Warehouse 2 (Type: 2)",
-          },
-        ];
-        setWarehouses(mockWarehouses);
-        message.warning(
-          "Đang dùng dữ liệu test. API warehouses có thể chưa sẵn sàng."
-        );
-      }
-    } catch (error) {
-      console.error("Error loading warehouses:", error);
-      const mockWarehouses = [
-        {
-          id: "0199d3ef-5fd1-7f77-84f7-89140441fc52",
-          name: "Test Warehouse 1",
-          displayName: "Test Warehouse 1 (Type: 2)",
-        },
-        {
-          id: "0199d3ef-ddd1-789f-a4eb-26f47fee63a8",
-          name: "Test Warehouse 2",
-          displayName: "Test Warehouse 2 (Type: 2)",
-        },
-      ];
-      setWarehouses(mockWarehouses);
-      message.warning("Lỗi API. Đang dùng dữ liệu test để tiếp tục.");
-    }
-  };
-
-  // Load danh sách versions
-  const loadVersions = async () => {
-    try {
-      const result = await vehicleApi.getAllVersions();
-      if (result.success && result.data) {
-        setVersions(result.data);
-      } else {
-        setVersions([]);
-      }
-    } catch (error) {
-      console.error("Error loading versions:", error);
-      setVersions([]);
-    }
-  };
-
-  // Load danh sách màu sắc
-  const loadColors = async () => {
-    try {
-      const result = await vehicleApi.getAllColors();
-      if (result.success && result.data) {
-        setColors(result.data);
-      } else {
-        setColors([]);
-      }
-    } catch (error) {
-      console.error("Error loading colors:", error);
-      setColors([]);
-    }
-  };
-
-  // Xem chi tiết xe
-  const handleViewVehicle = (vehicle) => {
-    setSelectedVehicle(vehicle);
-    setIsViewModalVisible(true);
-  };
-
-  // Xóa xe
-  const handleDeleteVehicle = async (vehicleId) => {
-    setLoading(true);
-    try {
-      const result = await vehicleApi.deleteVehicle(vehicleId);
-      if (result.success) {
-        message.success("Xóa xe điện thành công!");
-        await loadVehicles();
-      } else {
-        message.error(result.error || "Không thể xóa xe điện");
-      }
-    } catch (error) {
-      console.error("Error deleting vehicle:", error);
-      message.error("Lỗi khi xóa xe điện");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Submit form tạo xe
-  const handleSubmit = async (values) => {
-    setLoading(true);
-    try {
-      const finalFormData = { ...formData, ...values };
-
-      // Chuẩn bị dữ liệu xe
-      const vehicleData = {
-        warehouseId: finalFormData.warehouseId,
-        versionId: finalFormData.versionId,
-        colorId: finalFormData.colorId,
-        vin: finalFormData.vin,
-        status: finalFormData.status || 1,
-        manufactureDate: finalFormData.manufactureDate?.format
-          ? finalFormData.manufactureDate.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]")
-          : finalFormData.manufactureDate,
-        importDate: finalFormData.importDate?.format
-          ? finalFormData.importDate.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]")
-          : finalFormData.importDate,
-        warrantyExpiryDate: finalFormData.warrantyExpiryDate?.format
-          ? finalFormData.warrantyExpiryDate.format(
-              "YYYY-MM-DDTHH:mm:ss.SSS[Z]"
-            )
-          : finalFormData.warrantyExpiryDate,
-        costPrice: Number(finalFormData.costPrice) || 0,
-        attachmentKeys: attachmentKeys || [], // Lấy từ state, fallback về array rỗng
-      };
-
-      // 🔍 DEBUG: Log chi tiết data trước khi gửi
-      console.log("=== FE DATA VALIDATION ===");
-      console.log(
-        "Vehicle data to send:",
-        JSON.stringify(vehicleData, null, 2)
-      );
-      console.log("Field types check:");
-      console.log(
-        "- warehouseId:",
-        typeof vehicleData.warehouseId,
-        vehicleData.warehouseId
-      );
-      console.log(
-        "- versionId:",
-        typeof vehicleData.versionId,
-        vehicleData.versionId
-      );
-      console.log(
-        "- colorId:",
-        typeof vehicleData.colorId,
-        vehicleData.colorId
-      );
-      console.log("- vin:", typeof vehicleData.vin, vehicleData.vin);
-      console.log("- status:", typeof vehicleData.status, vehicleData.status);
-      console.log(
-        "- costPrice:",
-        typeof vehicleData.costPrice,
-        vehicleData.costPrice
-      );
-      console.log(
-        "- attachmentKeys:",
-        Array.isArray(vehicleData.attachmentKeys),
-        vehicleData.attachmentKeys
-      );
-      console.log("📎 AttachmentKeys from state:", attachmentKeys);
-      console.log("📎 AttachmentKeys in payload:", vehicleData.attachmentKeys);
-
-      // Validation cơ bản
-      if (!vehicleData.warehouseId) {
-        message.error("Vui lòng chọn kho!");
-        setLoading(false);
-        return;
-      }
-      if (!vehicleData.versionId) {
-        message.error("Vui lòng chọn phiên bản xe!");
-        setLoading(false);
-        return;
-      }
-      if (!vehicleData.colorId) {
-        message.error("Vui lòng chọn màu sắc!");
-        setLoading(false);
-        return;
-      }
-      if (!vehicleData.vin) {
-        message.error("Vui lòng nhập VIN!");
-        setLoading(false);
-        return;
-      }
-
-      const result = await vehicleApi.createVehicle(vehicleData);
-      if (result.success) {
-        message.success(result.message || "Tạo xe điện mới thành công!");
-
-        const selectedVersion = versions.find(
-          (v) => v.id === finalFormData.versionId
-        );
-        const selectedColor = colors.find(
-          (c) => c.id === finalFormData.colorId
-        );
-        const selectedWarehouse = warehouses.find(
-          (w) => w.id === finalFormData.warehouseId
-        );
-
-        Modal.success({
-          title: (
-            <Space>
-              <CheckCircleOutlined style={{ color: "#52c41a" }} />
-              Tạo Xe Điện thành công!
-            </Space>
-          ),
-          content: (
-            <div style={{ marginTop: 16 }}>
-              <Alert
-                message="Thông tin Xe Điện"
-                description={
-                  <div>
-                    <p>
-                      <strong>VIN:</strong> {vehicleData.vin}
-                    </p>
-                    <p>
-                      <strong>Version:</strong>{" "}
-                      {selectedVersion?.versionName || "N/A"}
-                    </p>
-                    <p>
-                      <strong>Màu sắc:</strong>{" "}
-                      {selectedColor?.colorName || "N/A"}
-                    </p>
-                    <p>
-                      <strong>Kho:</strong> {selectedWarehouse?.name || "N/A"}
-                    </p>
-                    <p>
-                      <strong>Giá cost:</strong>{" "}
-                      {vehicleData.costPrice?.toLocaleString("vi-VN")} ₫
-                    </p>
-                    {result.data?.id && (
-                      <p>
-                        <strong>Vehicle ID:</strong>
-                        <Text code copyable style={{ marginLeft: 8 }}>
-                          {result.data.id}
-                        </Text>
-                      </p>
-                    )}
-                  </div>
-                }
-                type="success"
-                showIcon
-              />
-            </div>
-          ),
-          width: 600,
-        });
-
-        // Reset form
-        setIsCreateModalVisible(false);
-        form.resetFields();
-        setFormData({});
-        setUploadedImages([]);
-        setAttachmentKeys([]);
-        await loadVehicles();
-      } else {
-        message.error(result.error || "Không thể tạo xe điện");
-      }
-    } catch (error) {
-      console.error("Error creating vehicle:", error);
-      message.error("Lỗi khi tạo xe điện");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Chuyển step với validation
-  const handleNextStep = async () => {
-    try {
-      const fieldsToValidate = getRequiredFieldsForStep(currentStep);
-      await form.validateFields(fieldsToValidate);
-
-      const currentFormValues = form.getFieldsValue();
-      const updatedFormData = { ...formData, ...currentFormValues };
-      setFormData(updatedFormData);
-      setCurrentStep(currentStep + 1);
-    } catch (error) {
-      message.error(
-        "Vui lòng điền đầy đủ thông tin bắt buộc trước khi tiếp tục!"
-      );
-    }
-  };
-
-  // Upload nhiều ảnh
-  const handleBatchImageUpload = async (files) => {
-    const validFiles = files.filter((file) => {
-      const isImage = file.type.startsWith("image/");
-      const isLt10M = file.size / 1024 / 1024 < 10;
-      if (!isImage) message.error(`${file.name} không phải file hình ảnh!`);
-      if (!isLt10M) message.error(`${file.name} quá lớn (>10MB)!`);
-      return isImage && isLt10M;
-    });
-
-    if (validFiles.length === 0) {
-      message.error("Không có file hợp lệ để upload!");
-      return;
-    }
-
-    try {
-      console.log(
-        "🔄 Starting upload process for files:",
-        validFiles.map((f) => f.name)
-      );
-
-      const attachmentKeys =
-        await vehicleApi.ElectricVehicleImageService.uploadMultipleImages(
-          validFiles
-        );
-
-      console.log("📦 Upload result - attachmentKeys:", attachmentKeys);
-
-      if (attachmentKeys && attachmentKeys.length > 0) {
-        setAttachmentKeys(attachmentKeys);
-        console.log("✅ AttachmentKeys set to state:", attachmentKeys);
-        message.success(`Upload thành công ${attachmentKeys.length} ảnh!`);
-      } else {
-        console.warn("⚠️ No attachment keys returned from upload");
-        // Tạo mock keys để test workflow
-        const mockKeys = validFiles.map(
-          (file, index) => `mock-key-${Date.now()}-${index}-${file.name}`
-        );
-        setAttachmentKeys(mockKeys);
-        console.log("🔄 Using mock keys for testing:", mockKeys);
-        message.warning(
-          `Upload API có vấn đề, sử dụng mock keys để test: ${mockKeys.length} keys`
-        );
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      // Tạo mock keys khi upload fail
-      const mockKeys = validFiles.map(
-        (file, index) => `error-fallback-${Date.now()}-${index}`
-      );
-      setAttachmentKeys(mockKeys);
-      console.log("🔄 Upload failed, using fallback keys:", mockKeys);
-      message.warning(
-        `Upload lỗi, sử dụng fallback keys để test: ${mockKeys.length} keys`
-      );
-    }
-  };
-
-  // Xử lý thay đổi file list
-  const handleImageUpload = ({ fileList }) => {
-    setUploadedImages(fileList);
-    const newFiles = fileList
-      .filter((file) => file.originFileObj && file.status !== "done")
-      .map((file) => file.originFileObj);
-
-    if (newFiles.length > 0) {
-      handleBatchImageUpload(newFiles);
-    }
-  };
-
-  // Custom upload - chỉ để UI hoạt động
-  const customUpload = ({ file, onSuccess }) => {
-    setTimeout(() => onSuccess("ok"), 100);
-  };
-
-  // Preview ảnh
-  const handlePreview = async (file) => {
-    if (!file.url && !file.preview) {
-      file.preview = await getBase64(file.originFileObj || file);
-    }
-    setPreviewImage(file.url || file.preview);
-    setPreviewVisible(true);
-    setPreviewTitle(
-      file.name || file.url.substring(file.url.lastIndexOf("/") + 1)
-    );
-  };
-
-  // Convert file to base64
-  const getBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
+  const handleDelete = async (id) => {
+    Modal.confirm({
+      title: "Xác nhận xóa xe",
+      content: "Bạn có chắc chắn muốn xóa xe này?",
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        setLoading(true);
+        try {
+          const res = await vehicleApi.deleteVehicle(id);
+          const n = normalizeApi(res);
+          if (n.success) {
+            message.success(n.message || "Đã xóa xe thành công");
+            await loadAll();
+          } else {
+            message.error(n.message || "Xóa xe thất bại");
+          }
+        } catch (err) {
+          message.error(extractErrorMessage(err));
+        } finally {
+          setLoading(false);
+        }
+      },
     });
   };
 
-  // Xóa ảnh
-  const handleRemove = (file) => {
-    const fileIndex = uploadedImages.findIndex((img) => img.uid === file.uid);
-    if (fileIndex !== -1 && attachmentKeys[fileIndex]) {
-      const newKeys = [...attachmentKeys];
-      newKeys.splice(fileIndex, 1);
-      setAttachmentKeys(newKeys);
-    }
-    return true;
-  };
-
-  // Reset form khi mở modal tạo
-  const handleCreateVehicle = () => {
-    setCurrentStep(0);
-    setFormData({});
-    setUploadedImages([]);
-    setAttachmentKeys([]);
-    setPreviewVisible(false);
-    setPreviewImage("");
-    setPreviewTitle("");
-    form.resetFields();
-    form.setFieldsValue({
-      status: 1,
-      costPrice: 0,
-      manufactureDate: dayjs(),
-      importDate: dayjs(),
-      warrantyExpiryDate: dayjs().add(2, "year"),
-    });
-    setIsCreateModalVisible(true);
-  };
-
-  // Fields cần validate cho mỗi step
-  const getRequiredFieldsForStep = (step) => {
-    switch (step) {
-      case 0:
-        return ["vin", "versionId", "colorId", "warehouseId"];
-      case 1:
-        return [
-          "costPrice",
-          "manufactureDate",
-          "importDate",
-          "warrantyExpiryDate",
-        ];
-      default:
-        return [];
-    }
-  };
-
-  // Steps cho wizard
-  const steps = [
-    { title: "Thông tin cơ bản", content: "basic-info" },
-    { title: "Thông tin kỹ thuật", content: "technical-info" },
-    { title: "Xác nhận", content: "confirm" },
-  ];
-
-  // Columns cho table
   const columns = [
     {
       title: "STT",
-      width: 60,
-      render: (_, __, index) => index + 1,
+      width: 80,
+      fixed: "left",
+      align: "center",
+      render: (_, __, i) => i + 1,
     },
     {
-      title: "VIN",
-      dataIndex: "vin",
-      width: 150,
-      render: (text) => (
-        <Text code strong style={{ fontSize: 12 }}>
-          {text}
-        </Text>
-      ),
+      title: "Model",
+      dataIndex: ["version", "modelName"],
+      width: 220,
+      render: (text) => <Text ellipsis={{ tooltip: text }}>{text || "N/A"}</Text>,
     },
     {
       title: "Version",
-      dataIndex: "versionId",
-      width: 120,
-      render: (versionId) => {
-        const version = versions.find((v) => v.id === versionId);
-        return version ? (
-          <Tag color="blue">{version.versionName}</Tag>
-        ) : (
-          <Tag color="default">N/A</Tag>
-        );
-      },
-    },
-    {
-      title: "Màu sắc",
-      dataIndex: "colorId",
-      width: 120,
-      render: (colorId) => {
-        const color = colors.find((c) => c.id === colorId);
-        return color ? (
-          <Space>
-            <div
-              style={{
-                width: 20,
-                height: 20,
-                backgroundColor: color.colorCode,
-                borderRadius: "50%",
-                border: "1px solid #d9d9d9",
-              }}
-            />
-            <span>{color.colorName}</span>
-          </Space>
-        ) : (
-          <Tag color="default">N/A</Tag>
-        );
-      },
-    },
-    {
-      title: "Kho",
-      dataIndex: "warehouseId",
-      width: 100,
-      render: (warehouseId) => {
-        const warehouse = warehouses.find((w) => w.id === warehouseId);
-        return warehouse ? (
-          <Tag color="green">{warehouse.name}</Tag>
-        ) : (
-          <Tag color="default">N/A</Tag>
-        );
-      },
-    },
-    {
-      title: "Giá cost",
-      dataIndex: "costPrice",
-      width: 120,
-      render: (price) => (
-        <Text strong>
-          {price ? price.toLocaleString("vi-VN") + " ₫" : "N/A"}
-        </Text>
-      ),
-    },
-    {
-      title: "Trạng thái",
-      dataIndex: "status",
-      width: 100,
-      render: (status) => (
-        <Tag color={status === 1 ? "success" : "error"}>
-          {status === 1 ? "Hoạt động" : "Không hoạt động"}
+      dataIndex: ["version", "versionName"],
+      width: 220,
+      render: (v) => (
+        <Tag color="blue" style={{ maxWidth: 200 }} ellipsis={{ tooltip: v }}>
+          {v || "N/A"}
         </Tag>
       ),
     },
     {
-      title: "Ngày sản xuất",
-      dataIndex: "manufactureDate",
-      width: 120,
-      render: (date) => (date ? dayjs(date).format("DD/MM/YYYY") : "N/A"),
+      title: "Màu sắc",
+      dataIndex: "color",
+      width: 220,
+      render: (c) => (
+        <Space>
+          <span
+            style={{
+              width: 18,
+              height: 18,
+              background: c?.colorCode || "#eee",
+              borderRadius: "50%",
+              border: "1px solid #d9d9d9",
+              display: "inline-block",
+            }}
+          />
+          <span>{c?.colorName || "N/A"}</span>
+        </Space>
+      ),
     },
     {
-      title: "Thao tác",
-      width: 150,
-      render: (_, record) => (
+      title: "Giá (VND)",
+      dataIndex: "price",
+      width: 160,
+      render: (p) =>
+        typeof p === "number" ? (
+          <Text strong>{p.toLocaleString("vi-VN")} ₫</Text>
+        ) : (
+          <Text type="secondary">N/A</Text>
+        ),
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      width: 160,
+      render: (s) => (
+        <Tag color={s === 1 ? "success" : "error"}>
+          {s === 1 ? "Hoạt động" : "Không hoạt động"}
+        </Tag>
+      ),
+    },
+    {
+      title: "Hành động",
+      width: 180,
+      fixed: "right",
+      render: (_, r) => (
         <Space>
           <Button
-            type="primary"
             size="small"
             icon={<EyeOutlined />}
-            onClick={() => handleViewVehicle(record)}
+            onClick={() => {
+              setSelectedVehicle(r);
+              setIsViewModalVisible(true);
+            }}
           >
             Xem
           </Button>
-          <Popconfirm
-            title="Xác nhận xóa"
-            description="Bạn có chắc chắn muốn xóa xe điện này?"
-            onConfirm={() => handleDeleteVehicle(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
+          <Button
+            size="small"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(r.id)}
           >
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-            >
-              Xóa
-            </Button>
-          </Popconfirm>
+            Xóa
+          </Button>
         </Space>
       ),
     },
   ];
 
+  const handleCreateModal = () => {
+    form.resetFields();
+    setUploadedImages([]);
+    setCurrentStep(0);
+    setIsCreateModalVisible(true);
+  };
+
+  const customUpload = ({ onSuccess }) => setTimeout(() => onSuccess("ok"), 100);
+
+  const handleImageChange = ({ fileList }) => {
+    let list = [...fileList];
+    if (list.length > 8) {
+      message.warning("Chỉ được upload tối đa 8 hình ảnh!");
+      list = list.slice(0, 8);
+    }
+    setUploadedImages(list);
+  };
+
+  const handlePreview = async (file) => {
+    setPreviewImage(file.thumbUrl || file.url);
+    setPreviewVisible(true);
+  };
+
+  const steps = [{ title: "Thông tin xe & hình ảnh" }, { title: "Xác nhận thông tin" }];
+
+  const next = () => {
+    form
+      .validateFields()
+      .then(() => setCurrentStep((s) => s + 1))
+      .catch(() => message.warning("Vui lòng nhập đủ thông tin"));
+  };
+
+  const prev = () => setCurrentStep((s) => s - 1);
+
+  const handleSubmit = async () => {
+    if (loading) return; // tránh double submit
+    setLoading(true);
+    try {
+      await form.validateFields();
+      const values = form.getFieldsValue(true);
+
+      // 1) Upload ảnh
+      message.loading({ content: "Đang upload ảnh lên S3...", key: "uploading", duration: 0 });
+      let attachmentKeys = [];
+      try {
+        const uploadPromises = uploadedImages.map((f) =>
+          vehicleApi.uploadImageAndGetKey(f.originFileObj)
+        );
+        attachmentKeys = (await Promise.all(uploadPromises)).filter(Boolean);
+        message.success({
+          content: `Upload thành công ${attachmentKeys.length} ảnh!`,
+          key: "uploading",
+          duration: 1.2,
+        });
+      } catch (err) {
+        message.destroy("uploading");
+        throw err; // đẩy lên catch ngoài
+      }
+
+      // 2) Tạo template vehicle
+      const payload = {
+        versionId: values.versionId,
+        colorId: values.colorId,
+        price: Number(values.costPrice),
+        description: values.description || "New EV Template from FE",
+        attachmentKeys,
+      };
+
+      console.log("📤 FINAL PAYLOAD:", JSON.stringify(payload, null, 2));
+
+      message.loading({ content: "Đang tạo xe mẫu...", key: "creatingVehicle", duration: 0 });
+      const res = await vehicleApi.createVehicle(payload);
+      message.destroy("creatingVehicle");
+
+      const n = normalizeApi(res);
+      if (n.success) {
+        message.success(n.message || "🎉 Tạo xe mẫu thành công!");
+        setIsCreateModalVisible(false);
+        setCurrentStep(0);
+        await loadAll();
+      } else {
+        message.error(n.message || "Không thể tạo xe");
+      }
+    } catch (err) {
+      message.destroy("uploading");
+      message.destroy("creatingVehicle");
+      message.error(extractErrorMessage(err));
+      console.error("CREATE VEHICLE ERROR:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <PageContainer
-      title="Tạo & Quản lý Xe Điện"
-      subTitle="Tạo mới và quản lý toàn bộ xe điện trong hệ thống"
-      extra={[
-        <Button
-          key="reload"
-          icon={<ReloadOutlined />}
-          onClick={loadAllData}
-          loading={loading}
-        >
-          Tải lại
-        </Button>,
-        <Button
-          key="create"
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreateVehicle}
-          size="large"
-        >
-          Tạo Xe Điện
-        </Button>,
-      ]}
+      className="!p-0"
+      childrenContentStyle={{ padding: 0, margin: 0 }}
+      header={{
+        title: "Tạo & Quản lý Xe Điện",
+        subTitle: "Quản lý xe điện, model, version và màu sắc",
+        breadcrumb: undefined,
+        extra: [
+          <Button key="reload" icon={<ReloadOutlined />} onClick={loadAll} loading={loading}>
+            Tải lại
+          </Button>,
+          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={handleCreateModal}>
+            Tạo Xe Điện
+          </Button>,
+        ],
+      }}
     >
-      <Card>
-        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={24}>
-            <Space direction="vertical" style={{ width: "100%" }}>
-              <Title level={4}>
-                <CarOutlined style={{ color: "#1890ff", marginRight: 8 }} />
-                Danh sách Xe Điện
-              </Title>
-              <Text type="secondary">
-                Quản lý toàn bộ xe điện trong hệ thống. Tổng cộng:{" "}
-                {vehicles.length} xe
-              </Text>
-            </Space>
-          </Col>
-        </Row>
+      <div className="w-full px-4 md:px-6 lg:px-8 pb-6">
+        <Card className="!px-0 shadow-sm">
+          <div className="px-4 md:px-6 pt-4">
+            <Title level={4} className="!mb-2">
+              <CarOutlined style={{ color: "#1890ff", marginRight: 8 }} />
+              Danh sách Xe Điện
+            </Title>
+            <Divider className="!mt-3" />
+          </div>
 
-        <Divider />
+          <div className="px-2 md:px-4">
+            <Table
+              size="middle"
+              columns={columns}
+              dataSource={vehicles}
+              rowKey="id"
+              loading={loading}
+              pagination={{ pageSize: 10, showTotal: (t) => `${t} xe` }}
+              scroll={{ x: "max-content" }}
+              sticky
+            />
+          </div>
+        </Card>
+      </div>
 
-        <Table
-          columns={columns}
-          dataSource={vehicles}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            total: vehicles.length,
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} của ${total} xe`,
-          }}
-          scroll={{ x: 1200 }}
-        />
-      </Card>
-
-      {/* Modal tạo xe điện */}
+      {/* Modal tạo xe */}
       <Modal
-        title={
-          <Space>
-            <CarOutlined style={{ color: "#1890ff" }} />
-            Tạo Xe Điện Mới
-          </Space>
-        }
         open={isCreateModalVisible}
-        onCancel={() => {
-          setIsCreateModalVisible(false);
-          form.resetFields();
-          setCurrentStep(0);
-        }}
+        title="Tạo xe điện mới"
+        onCancel={() => setIsCreateModalVisible(false)}
         footer={null}
-        width={900}
+        width={980}
+        destroyOnClose
       >
-        <Divider />
-
-        <Steps current={currentStep} style={{ marginBottom: 24 }}>
-          {steps.map((item) => (
-            <Steps.Step key={item.title} title={item.title} />
-          ))}
-        </Steps>
-
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          requiredMark={false}
-          preserve={false}
-        >
-          {/* Step 1: Thông tin cơ bản */}
+        <Steps current={currentStep} items={steps} style={{ marginBottom: 24 }} />
+        <Form form={form} layout="vertical" onFinish={handleSubmit} preserve>
           {currentStep === 0 && (
-            <div>
-              <Title level={5}>
-                <InfoCircleOutlined style={{ marginRight: 8 }} />
-                Thông tin cơ bản
-              </Title>
-
+            <>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col span={8}>
                   <Form.Item
-                    label="VIN (Vehicle Identification Number)"
-                    name="vin"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập VIN!" },
-                      {
-                        min: 17,
-                        max: 17,
-                        message: "VIN phải có đúng 17 ký tự!",
-                      },
-                      {
-                        pattern: /^[A-HJ-NPR-Z0-9]{17}$/,
-                        message:
-                          "VIN không đúng định dạng! Chỉ được sử dụng A-H, J-N, P-R, T-Z, 0-9 (không có I, O, Q)",
-                      },
-                    ]}
-                    extra={
-                      <div style={{ fontSize: 12, color: "#666" }}>
-                        <strong>Quy tắc VIN:</strong>
-                        <br />• Đúng 17 ký tự
-                        <br />• Chỉ sử dụng: A-H, J-N, P-R, T-Z, 0-9
-                        <br />• Không được dùng: I, O, Q (để tránh nhầm lẫn)
-                        <br />• Ví dụ hợp lệ: 1HGBH41JXMN109186,
-                        WVWZZZ1JZ3W386752
-                      </div>
-                    }
+                    label="Model"
+                    name="modelId"
+                    rules={[{ required: true, message: "Chọn model" }]}
                   >
-                    <Input.Group compact>
-                      <Input
-                        placeholder="Nhập 17 ký tự VIN (tự động viết hoa)"
-                        size="large"
-                        maxLength={17}
-                        style={{
-                          width: "calc(100% - 120px)",
-                          textTransform: "uppercase",
-                          fontFamily: "monospace",
-                          letterSpacing: "1px",
-                        }}
-                        onChange={(e) => {
-                          // Auto uppercase và chỉ giữ ký tự hợp lệ
-                          const value = e.target.value
-                            .toUpperCase()
-                            .replace(/[^A-HJ-NPR-Z0-9]/g, "");
-                          form.setFieldsValue({ vin: value });
-                        }}
-                      />
-                      <Button
-                        size="large"
-                        style={{ width: 120 }}
-                        onClick={() => {
-                          const sampleVIN = generateSampleVIN();
-                          form.setFieldsValue({ vin: sampleVIN });
-                          message.success(`Đã tạo VIN mẫu: ${sampleVIN}`);
-                        }}
-                      >
-                        Tạo VIN mẫu
-                      </Button>
-                    </Input.Group>
-                  </Form.Item>
-                </Col>
-
-                <Col span={12}>
-                  <Form.Item label="Upload hình ảnh xe">
-                    <Upload
-                      multiple
-                      listType="picture-card"
-                      fileList={uploadedImages}
-                      onChange={handleImageUpload}
-                      onPreview={handlePreview}
-                      onRemove={handleRemove}
-                      customRequest={customUpload}
-                      accept="image/*"
-                      beforeUpload={(file) => {
-                        const isImage = file.type.startsWith("image/");
-                        if (!isImage) {
-                          message.error("Chỉ được upload file hình ảnh!");
-                        }
-                        const isLt5M = file.size / 1024 / 1024 < 5;
-                        if (!isLt5M) {
-                          message.error("Hình ảnh phải nhỏ hơn 5MB!");
-                        }
-                        return isImage && isLt5M;
+                    <Select
+                      placeholder="Chọn model"
+                      onChange={(id) => {
+                        const list = versions.filter((v) => v.modelId === id);
+                        setFilteredVersions(list);
+                        form.setFieldValue("versionId", null);
                       }}
+                      showSearch
+                      optionFilterProp="children"
                     >
-                      {uploadedImages.length >= 8 ? null : (
-                        <div>
-                          <PlusOutlined />
-                          <div style={{ marginTop: 8 }}>Upload</div>
-                        </div>
-                      )}
-                    </Upload>
-                    <div style={{ fontSize: 12, color: "#666", marginTop: 8 }}>
-                      Có thể upload tối đa 8 hình ảnh, mỗi ảnh &lt; 5MB
-                    </div>
+                      {models.map((m) => (
+                        <Option key={m.id} value={m.id}>
+                          {m.modelName}
+                        </Option>
+                      ))}
+                    </Select>
                   </Form.Item>
                 </Col>
-              </Row>
 
-              <Row gutter={16}>
                 <Col span={8}>
                   <Form.Item
                     label="Version"
                     name="versionId"
-                    rules={[
-                      { required: true, message: "Vui lòng chọn Version!" },
-                    ]}
+                    rules={[{ required: true, message: "Chọn version" }]}
                   >
-                    <Select
-                      size="large"
-                      placeholder="Chọn Version"
-                      showSearch
-                      filterOption={(input, option) =>
-                        option.children
-                          .toLowerCase()
-                          .indexOf(input.toLowerCase()) >= 0
-                      }
-                    >
-                      {versions.map((version) => (
-                        <Option key={version.id} value={version.id}>
-                          {version.versionName}
+                    <Select placeholder="Chọn version" showSearch optionFilterProp="children">
+                      {filteredVersions.map((v) => (
+                        <Option key={v.id} value={v.id}>
+                          {v.versionName}
                         </Option>
                       ))}
                     </Select>
@@ -910,404 +437,186 @@ function CreateElectricVehicle() {
                   <Form.Item
                     label="Màu sắc"
                     name="colorId"
-                    rules={[
-                      { required: true, message: "Vui lòng chọn màu sắc!" },
-                    ]}
+                    rules={[{ required: true, message: "Chọn màu sắc" }]}
                   >
-                    <Select
-                      size="large"
-                      placeholder="Chọn màu sắc"
-                      showSearch
-                      filterOption={(input, option) =>
-                        option.children
-                          .toLowerCase()
-                          .indexOf(input.toLowerCase()) >= 0
-                      }
-                    >
-                      {colors.map((color) => (
-                        <Option key={color.id} value={color.id}>
+                    <Select placeholder="Chọn màu" showSearch optionFilterProp="children">
+                      {colors.map((c) => (
+                        <Option key={c.id} value={c.id}>
                           <Space>
-                            <div
+                            <span
                               style={{
                                 width: 16,
                                 height: 16,
-                                backgroundColor: color.colorCode,
+                                background: c.colorCode,
                                 borderRadius: "50%",
                                 border: "1px solid #d9d9d9",
+                                display: "inline-block",
                               }}
                             />
-                            {color.colorName}
+                            {c.colorName}
                           </Space>
                         </Option>
                       ))}
                     </Select>
                   </Form.Item>
                 </Col>
-
-                <Col span={8}>
-                  <Form.Item
-                    label="Kho"
-                    name="warehouseId"
-                    rules={[{ required: true, message: "Vui lòng chọn kho!" }]}
-                  >
-                    <Select
-                      size="large"
-                      placeholder="Chọn kho"
-                      loading={loading}
-                    >
-                      {warehouses.map((warehouse) => (
-                        <Option key={warehouse.id} value={warehouse.id}>
-                          {warehouse.displayName}
-                          <div
-                            style={{
-                              fontSize: "12px",
-                              color: "#666",
-                              marginTop: "2px",
-                            }}
-                          >
-                            ID: {warehouse.id.substring(0, 8)}...
-                          </div>
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </Col>
               </Row>
 
               <Row gutter={16}>
                 <Col span={8}>
-                  <Form.Item label="Trạng thái" name="status" initialValue={1}>
-                    <Select size="large" disabled>
-                      <Option value={1}>Hoạt động</Option>
-                      <Option value={0}>Không hoạt động</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-              </Row>
-            </div>
-          )}
-
-          {/* Step 2: Thông tin kỹ thuật */}
-          {currentStep === 1 && (
-            <div>
-              <Title level={5}>
-                <CarOutlined style={{ marginRight: 8 }} />
-                Thông tin kỹ thuật và thời gian
-              </Title>
-
-              <Row gutter={16}>
-                <Col span={12}>
                   <Form.Item
-                    label="Giá cost (VND)"
+                    label="Giá (VND)"
                     name="costPrice"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập giá cost!" },
-                    ]}
+                    rules={[{ required: true, message: "Nhập giá xe" }]}
                   >
                     <InputNumber
-                      placeholder="0"
-                      size="large"
-                      style={{ width: "100%" }}
                       min={0}
-                      max={10000000000}
-                      formatter={(value) =>
-                        `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                      }
-                      parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-                      addonAfter="₫"
+                      style={{ width: "100%" }}
+                      formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                      parser={(v) => v.replace(/\$\s?|(,*)/g, "")}
                     />
                   </Form.Item>
                 </Col>
-
-                <Col span={12}>
-                  <Form.Item
-                    label="Ngày sản xuất"
-                    name="manufactureDate"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn ngày sản xuất!",
-                      },
-                    ]}
-                  >
-                    <DatePicker
-                      size="large"
-                      style={{ width: "100%" }}
-                      format="DD/MM/YYYY"
-                      placeholder="Chọn ngày sản xuất"
+                <Col span={16}>
+                  <Form.Item label="Mô tả" name="description">
+                    <textarea
+                      rows={3}
+                      className="w-full rounded-md border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Mô tả về xe / template..."
                     />
                   </Form.Item>
                 </Col>
               </Row>
 
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    label="Ngày nhập khẩu"
-                    name="importDate"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn ngày nhập khẩu!",
-                      },
-                    ]}
-                  >
-                    <DatePicker
-                      size="large"
-                      style={{ width: "100%" }}
-                      format="DD/MM/YYYY"
-                      placeholder="Chọn ngày nhập khẩu"
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col span={12}>
-                  <Form.Item
-                    label="Ngày hết hạn bảo hành"
-                    name="warrantyExpiryDate"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng chọn ngày hết hạn bảo hành!",
-                      },
-                    ]}
-                  >
-                    <DatePicker
-                      size="large"
-                      style={{ width: "100%" }}
-                      format="DD/MM/YYYY"
-                      placeholder="Chọn ngày hết hạn bảo hành"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </div>
+              <Form.Item
+                label={
+                  <div className="flex items-center justify-between">
+                    <span>Hình ảnh xe (tối đa 8)</span>
+                    <span className="text-gray-500 text-sm">
+                      Đã chọn: <b>{uploadedImages.length}</b>/8
+                    </span>
+                  </div>
+                }
+              >
+                <Upload
+                  listType="picture-card"
+                  fileList={uploadedImages}
+                  onChange={handleImageChange}
+                  onPreview={handlePreview}
+                  customRequest={customUpload}
+                  accept="image/*"
+                >
+                  {uploadedImages.length >= 8 ? null : (
+                    <div>
+                      <PlusOutlined />
+                      <div style={{ marginTop: 8 }}>Upload</div>
+                    </div>
+                  )}
+                </Upload>
+                <div className="text-xs text-gray-500">Mỗi ảnh &lt; 5MB. Tối đa 8 ảnh.</div>
+              </Form.Item>
+            </>
           )}
 
-          {/* Step 3: Xác nhận */}
-          {currentStep === 2 && (
-            <div>
-              <Title level={5}>
-                <CheckCircleOutlined style={{ marginRight: 8 }} />
-                Xác nhận thông tin
-              </Title>
-
+          {currentStep === 1 && (
+            <Card>
               <Alert
-                message="Vui lòng kiểm tra lại thông tin trước khi tạo xe điện"
-                type="warning"
+                type="info"
                 showIcon
+                message="Xác nhận thông tin trước khi tạo xe"
                 style={{ marginBottom: 16 }}
               />
-
-              {(() => {
-                const currentFormValues = form.getFieldsValue();
-                const values = { ...formData, ...currentFormValues };
-                const selectedVersion = versions.find(
-                  (v) => v.id === values.versionId
-                );
-                const selectedColor = colors.find(
-                  (c) => c.id === values.colorId
-                );
-                const selectedWarehouse = warehouses.find(
-                  (w) => w.id === values.warehouseId
-                );
-
-                return (
-                  <Card title="Xác nhận thông tin xe điện">
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <p>
-                          <strong>VIN:</strong> {values.vin || "N/A"}
-                        </p>
-                        <p>
-                          <strong>Version:</strong>{" "}
-                          {selectedVersion?.versionName || "N/A"}
-                        </p>
-                        <p>
-                          <strong>Màu sắc:</strong>{" "}
-                          {selectedColor?.colorName || "N/A"}
-                        </p>
-                        <p>
-                          <strong>Kho:</strong>{" "}
-                          {selectedWarehouse?.name || "Chưa chọn kho"}
-                        </p>
-                      </Col>
-                      <Col span={12}>
-                        <p>
-                          <strong>Giá cost:</strong>{" "}
-                          {values.costPrice?.toLocaleString
-                            ? values.costPrice.toLocaleString("vi-VN") + " ₫"
-                            : values.costPrice || "N/A"}
-                        </p>
-                        <p>
-                          <strong>Ngày sản xuất:</strong>{" "}
-                          {values.manufactureDate?.format("DD/MM/YYYY") ||
-                            "N/A"}
-                        </p>
-                        <p>
-                          <strong>Ngày nhập khẩu:</strong>{" "}
-                          {values.importDate?.format("DD/MM/YYYY") || "N/A"}
-                        </p>
-                      </Col>
-                    </Row>
-
-                    {/* Hiển thị uploaded images và attachment keys */}
-                    {uploadedImages.length > 0 && (
-                      <div style={{ marginTop: 16 }}>
-                        <strong>
-                          Hình ảnh đã tải lên ({uploadedImages.length}):
-                        </strong>
-
-                        {/* Hiển thị attachment keys nếu có */}
-                        {attachmentKeys.length > 0 && (
+              <Row gutter={16}>
+                <Col span={12}>
+                  <p>
+                    <strong>Model:</strong>{" "}
+                    {models.find((m) => m.id === form.getFieldValue("modelId"))?.modelName || "—"}
+                  </p>
+                  <p>
+                    <strong>Version:</strong>{" "}
+                    {versions.find((v) => v.id === form.getFieldValue("versionId"))?.versionName}
+                  </p>
+                  <p>
+                    <strong>Màu sắc:</strong>{" "}
+                    {colors.find((c) => c.id === form.getFieldValue("colorId"))?.colorName || "—"}
+                  </p>
+                  <p>
+                    <strong>Giá:</strong>{" "}
+                    {(form.getFieldValue("costPrice") || 0).toLocaleString("vi-VN")} ₫
+                  </p>
+                  <p>
+                    <strong>Mô tả:</strong>{" "}
+                    {form.getFieldValue("description") || <span className="text-gray-400">—</span>}
+                  </p>
+                </Col>
+                <Col span={12}>
+                  {uploadedImages.length > 0 && (
+                    <>
+                      <strong>Ảnh đã chọn:</strong>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 8,
+                          marginTop: 8,
+                        }}
+                      >
+                        {uploadedImages.map((f, i) => (
                           <div
-                            style={{
-                              marginTop: 8,
-                              padding: "8px 12px",
-                              backgroundColor: "#f6ffed",
-                              border: "1px solid #b7eb8f",
-                              borderRadius: 6,
+                            key={i}
+                            style={{ position: "relative", cursor: "pointer" }}
+                            onClick={() => {
+                              setPreviewImage(f.thumbUrl || f.url);
+                              setPreviewVisible(true);
                             }}
                           >
-                            <p
+                            <img
+                              src={f.thumbUrl || f.url}
+                              alt={`img-${i}`}
                               style={{
-                                margin: 0,
-                                color: "#389e0d",
-                                fontSize: "14px",
+                                width: 90,
+                                height: 90,
+                                borderRadius: 8,
+                                objectFit: "cover",
+                                border: "1px solid #d9d9d9",
                               }}
-                            >
-                              ✅ Đã upload thành công {attachmentKeys.length}{" "}
-                              ảnh và nhận được keys từ server
-                            </p>
-                            <details style={{ marginTop: 4 }}>
-                              <summary
-                                style={{ cursor: "pointer", color: "#595959" }}
-                              >
-                                Xem chi tiết keys
-                              </summary>
-                              <div
-                                style={{
-                                  marginTop: 4,
-                                  fontSize: "12px",
-                                  fontFamily: "monospace",
-                                }}
-                              >
-                                {attachmentKeys.map((key, index) => (
-                                  <div key={index}>
-                                    Ảnh {index + 1}: {key}
-                                  </div>
-                                ))}
-                              </div>
-                            </details>
+                            />
+                            <ZoomInOutlined
+                              style={{
+                                position: "absolute",
+                                bottom: 6,
+                                right: 6,
+                                color: "#fff",
+                                fontSize: 14,
+                                textShadow: "0 0 4px rgba(0,0,0,0.5)",
+                              }}
+                            />
                           </div>
-                        )}
-
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: 8,
-                            marginTop: 8,
-                          }}
-                        >
-                          {uploadedImages.map((file, index) => {
-                            let previewUrl = "";
-                            try {
-                              if (file instanceof File) {
-                                previewUrl = URL.createObjectURL(file);
-                              } else if (file.url) {
-                                previewUrl = file.url;
-                              } else if (file.thumbUrl) {
-                                previewUrl = file.thumbUrl;
-                              }
-                            } catch (error) {
-                              console.warn(
-                                "Cannot create preview URL for file:",
-                                file
-                              );
-                            }
-
-                            return previewUrl ? (
-                              <div key={index} style={{ position: "relative" }}>
-                                <img
-                                  src={previewUrl}
-                                  alt={`Hình ${index + 1}`}
-                                  style={{
-                                    width: 100,
-                                    height: 100,
-                                    objectFit: "cover",
-                                    borderRadius: 8,
-                                    border: "1px solid #d9d9d9",
-                                  }}
-                                />
-                                {attachmentKeys[index] && (
-                                  <div
-                                    style={{
-                                      position: "absolute",
-                                      bottom: 0,
-                                      left: 0,
-                                      right: 0,
-                                      background: "rgba(0,0,0,0.7)",
-                                      color: "white",
-                                      fontSize: "10px",
-                                      padding: "2px 4px",
-                                      borderRadius: "0 0 8px 8px",
-                                      textAlign: "center",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                      whiteSpace: "nowrap",
-                                    }}
-                                    title={attachmentKeys[index] || "No key"}
-                                  >
-                                    Key:{" "}
-                                    {attachmentKeys[index] &&
-                                    typeof attachmentKeys[index] === "string"
-                                      ? attachmentKeys[index].substring(0, 8) +
-                                        "..."
-                                      : "No key"}
-                                  </div>
-                                )}
-                              </div>
-                            ) : null;
-                          })}
-                        </div>
+                        ))}
                       </div>
-                    )}
-                  </Card>
-                );
-              })()}
-            </div>
+                    </>
+                  )}
+                </Col>
+              </Row>
+            </Card>
           )}
 
-          {/* Navigation buttons */}
           <Divider />
-          <div style={{ textAlign: "right" }}>
+          <div className="text-right">
             <Space>
               {currentStep > 0 && (
-                <Button onClick={() => setCurrentStep(currentStep - 1)}>
+                <Button onClick={prev} disabled={loading}>
                   Quay lại
                 </Button>
               )}
-
-              <Button
-                onClick={() => {
-                  setIsCreateModalVisible(false);
-                  form.resetFields();
-                  setCurrentStep(0);
-                }}
-              >
-                Hủy
-              </Button>
-
-              {currentStep < steps.length - 1 && (
-                <Button type="primary" onClick={handleNextStep}>
+              {currentStep < 1 && (
+                <Button type="primary" onClick={next} disabled={loading}>
                   Tiếp theo
                 </Button>
               )}
-
-              {currentStep === steps.length - 1 && (
+              {currentStep === 1 && (
                 <Button type="primary" htmlType="submit" loading={loading}>
-                  Tạo Xe Điện
+                  Tạo Xe
                 </Button>
               )}
             </Space>
@@ -1315,110 +624,89 @@ function CreateElectricVehicle() {
         </Form>
       </Modal>
 
-      {/* Modal xem chi tiết xe */}
-      <Modal
-        title={
-          <Space>
-            <EyeOutlined style={{ color: "#1890ff" }} />
-            Chi tiết Xe Điện
-          </Space>
-        }
-        open={isViewModalVisible}
-        onCancel={() => setIsViewModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setIsViewModalVisible(false)}>
-            Đóng
-          </Button>,
-        ]}
-        width={800}
-      >
-        {selectedVehicle && (
-          <div>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Card title="Thông tin cơ bản" size="small">
-                  <p>
-                    <strong>VIN:</strong>{" "}
-                    <Text code>{selectedVehicle.vin}</Text>
-                  </p>
-                  <p>
-                    <strong>Version:</strong>{" "}
-                    {versions.find((v) => v.id === selectedVehicle.versionId)
-                      ?.versionName || "N/A"}
-                  </p>
-                  <p>
-                    <strong>Màu sắc:</strong>{" "}
-                    {colors.find((c) => c.id === selectedVehicle.colorId)
-                      ?.colorName || "N/A"}
-                  </p>
-                  <p>
-                    <strong>Kho:</strong>{" "}
-                    {warehouses.find(
-                      (w) => w.id === selectedVehicle.warehouseId
-                    )?.name || "N/A"}
-                  </p>
-                  <p>
-                    <strong>Trạng thái:</strong>
-                    <Tag
-                      color={selectedVehicle.status === 1 ? "success" : "error"}
-                    >
-                      {selectedVehicle.status === 1
-                        ? "Hoạt động"
-                        : "Không hoạt động"}
-                    </Tag>
-                  </p>
-                </Card>
-              </Col>
-              <Col span={12}>
-                <Card title="Thông tin kỹ thuật" size="small">
-                  <p>
-                    <strong>Giá cost:</strong>{" "}
-                    {selectedVehicle.costPrice?.toLocaleString("vi-VN")} ₫
-                  </p>
-                  <p>
-                    <strong>Ngày sản xuất:</strong>{" "}
-                    {selectedVehicle.manufactureDate
-                      ? dayjs(selectedVehicle.manufactureDate).format(
-                          "DD/MM/YYYY"
-                        )
-                      : "N/A"}
-                  </p>
-                  <p>
-                    <strong>Ngày nhập khẩu:</strong>{" "}
-                    {selectedVehicle.importDate
-                      ? dayjs(selectedVehicle.importDate).format("DD/MM/YYYY")
-                      : "N/A"}
-                  </p>
-                  <p>
-                    <strong>Hết hạn bảo hành:</strong>{" "}
-                    {selectedVehicle.warrantyExpiryDate
-                      ? dayjs(selectedVehicle.warrantyExpiryDate).format(
-                          "DD/MM/YYYY"
-                        )
-                      : "N/A"}
-                  </p>
-                  <p>
-                    <strong>Vehicle ID:</strong>{" "}
-                    <Text code copyable>
-                      {selectedVehicle.id}
-                    </Text>
-                  </p>
-                </Card>
-              </Col>
-            </Row>
-          </div>
-        )}
+      {/* Modal xem ảnh lớn */}
+      <Modal open={previewVisible} footer={null} onCancel={() => setPreviewVisible(false)} width={800}>
+        <img alt="preview" style={{ width: "100%" }} src={previewImage} />
       </Modal>
 
-      {/* Modal preview ảnh */}
+      {/* Modal xem chi tiết xe */}
       <Modal
-        open={previewVisible}
-        title={previewTitle}
+        open={isViewModalVisible}
+        onCancel={() => setIsViewModalVisible(false)}
+        title="Chi tiết xe điện"
         footer={null}
-        onCancel={() => setPreviewVisible(false)}
-        width={800}
+        width={920}
       >
-        <img alt="preview" style={{ width: "100%" }} src={previewImage} />
+        {selectedVehicle && (
+          <Card>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <p>
+                  <strong>Model:</strong> {selectedVehicle.version?.modelName}
+                </p>
+                <p>
+                  <strong>Version:</strong> {selectedVehicle.version?.versionName}
+                </p>
+                <p>
+                  <strong>Màu sắc:</strong> {selectedVehicle.color?.colorName}
+                </p>
+                <p>
+                  <strong>Giá:</strong>{" "}
+                  {typeof selectedVehicle.price === "number"
+                    ? `${selectedVehicle.price.toLocaleString("vi-VN")} ₫`
+                    : "—"}
+                </p>
+                <p>
+                  <strong>Trạng thái:</strong>{" "}
+                  <Tag color={selectedVehicle.status === 1 ? "success" : "error"}>
+                    {selectedVehicle.status === 1 ? "Hoạt động" : "Không hoạt động"}
+                  </Tag>
+                </p>
+                <p>
+                  <strong>Mô tả:</strong> {selectedVehicle.description || "—"}
+                </p>
+              </Col>
+
+              <Col span={12}>
+                {selectedVehicle.imgUrl?.length > 0 ? (
+                  <>
+                    <strong>Hình ảnh xe ({selectedVehicle.imgUrl.length}):</strong>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))",
+                        gap: 10,
+                        marginTop: 10,
+                      }}
+                    >
+                      <Image.PreviewGroup
+                        items={selectedVehicle.imgUrl.map((url) => ({ src: url, alt: "Xe điện" }))}
+                      >
+                        {selectedVehicle.imgUrl.map((url, i) => (
+                          <Image
+                            key={i}
+                            src={url}
+                            alt={`Xe ${i + 1}`}
+                            style={{
+                              width: "100%",
+                              height: 110,
+                              objectFit: "cover",
+                              borderRadius: 10,
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                              cursor: "pointer",
+                            }}
+                          />
+                        ))}
+                      </Image.PreviewGroup>
+                    </div>
+                  </>
+                ) : (
+                  <Tag color="default">Không có ảnh</Tag>
+                )}
+              </Col>
+            </Row>
+          </Card>
+        )}
       </Modal>
     </PageContainer>
   );
