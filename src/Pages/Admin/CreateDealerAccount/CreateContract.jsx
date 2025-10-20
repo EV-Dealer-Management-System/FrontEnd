@@ -34,7 +34,7 @@ import ContractViewer from '../SignContract/Components/ContractViewer';
 import PDFEdit from '../SignContract/Components/PDF/PDFEdit/PDFEditMain';
 import { createAccountApi } from '../../../App/EVMAdmin/DealerContract/CreateDealerContract';
 import { PDFUpdateService } from '../../../App/Home/PDFconfig/PDFUpdate';
-import AdminLayout from '../../../components/Admin/AdminLayout';
+import AdminLayout from '../../../Components/Admin/AdminLayout';
 
 const FIXED_USER_ID = "18858";
 
