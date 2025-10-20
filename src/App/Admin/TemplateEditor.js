@@ -8,7 +8,7 @@ import api from '../../api/api';
  * @param {number} pageSize - Kích thước trang (default: 10)
  * @returns {Promise} API Response
  */
-export const getAllTemplates = async (pageNumber = 1, pageSize = 10) => {
+export const getAllTemplates = async (pageNumber = 1, pageSize = 1000) => {
   try {
     console.log('🔍 Fetching templates from API...');
     console.log('- Page:', pageNumber, 'Size:', pageSize);

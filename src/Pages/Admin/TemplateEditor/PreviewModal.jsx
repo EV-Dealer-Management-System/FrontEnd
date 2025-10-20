@@ -128,33 +128,41 @@ function PreviewModal({
             
             {/* Preview Panel */}
             <div className="flex flex-col">
-              <div className="flex items-center mb-2">
-                <EyeOutlined className="mr-2 text-blue-500" />
-                <Title level={5} className="mb-0">A4 Preview (Styled)</Title>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center">
+                  <EyeOutlined className="mr-2 text-blue-500" />
+                  <Title level={5} className="mb-0">A4 Preview (Real Size)</Title>
+                </div>
+                <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  Scale: 60% • A4 Portrait
+                </div>
               </div>
               
-              <div className="flex-1 border rounded overflow-hidden bg-gray-100 p-4">
-                <div 
-                  className="bg-white shadow-lg mx-auto"
-                  style={{ 
-                    width: '210mm', 
-                    minHeight: '297mm',
-                    maxWidth: '100%',
-                    transform: 'scale(0.6)',
-                    transformOrigin: 'top center',
-                    marginBottom: '-200px'
-                  }}
-                >
-                  <iframe
-                    srcDoc={getCompleteHtml()}
-                    className="w-full h-full border-0"
+              <div className="flex-1 border rounded overflow-auto bg-gray-100 p-6" style={{ minHeight: '500px' }}>
+                <div className="flex justify-center">
+                  <div 
+                    className="bg-white shadow-2xl mx-auto border border-gray-300"
                     style={{ 
-                      width: '210mm',
-                      height: '297mm',
-                      minHeight: '297mm'
+                      width: '210mm', 
+                      minHeight: '297mm',
+                      maxWidth: '100%',
+                      transform: 'scale(0.6)',
+                      transformOrigin: 'top center',
+                      marginBottom: '-120px',
+                      padding: '10mm'
                     }}
-                    title="Template Preview"
-                  />
+                  >
+                    <iframe
+                      srcDoc={getCompleteHtml()}
+                      className="w-full border-0"
+                      style={{ 
+                        width: '100%',
+                        height: '277mm', // A4 height - padding
+                        minHeight: '277mm'
+                      }}
+                      title="Template Preview"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
