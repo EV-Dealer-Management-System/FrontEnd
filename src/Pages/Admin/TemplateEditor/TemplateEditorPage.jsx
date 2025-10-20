@@ -23,7 +23,7 @@ import {
 import { ConfigProvider } from 'antd';
 import viVN from 'antd/es/locale/vi_VN';
 import { PageContainer } from '@ant-design/pro-components';
-import AdminLayout from '../../../components/Admin/AdminLayout';
+import AdminLayout from '../../../Components/Admin/AdminLayout';
 import { useTemplateEditor } from './useTemplateEditor';
 import PreviewModal from './PreviewModal';
 import TemplateEditorModal from './TemplateEditorModal';
