@@ -31,7 +31,9 @@ import CreateEVMStaffAccount from "./Pages/Admin/CreateEVMStaffAccount/CreateEVM
 import DealerStaffList from "./Pages/DealerManager/DealerStaffAccount/DealerStaffList";
 import EVMGetAllEVBooking from "./Pages/EVMStaff/EVMGetAllEVBooking/EVMGetAllEVBooking";
 import CreateDealerAccount from "./Pages/DealerManager/CreateDealerAccount/CreateDealerAccount";
+import GetAllEVInventory from "./Pages/DealerManager/GetAllEVInventory/GetAllEVInventory";
 import DealerStaff from "./Pages/DealerStaff/Main/DealerStaff";
+import GetAvailableEVInventory from "./Pages/DealerStaff/GetAvailableEVInventory/GetAvailableEVInventory";
 function App() {
   return (
     <BrowserRouter>
@@ -110,7 +112,8 @@ function App() {
                 <Route path="" element={<DealerManager />} />
                 <Route path="ev/ev-booking" element={<EVBooking />} />
                 <Route path="ev/all-ev-booking" element={<GetAllEVBooking />} />
-                <Route path="staff/staff-list" element={<DealerStaffList/>} />
+                <Route path="ev/inventory" element={<GetAllEVInventory />} />
+                <Route path="staff/staff-list" element={<DealerStaffList />} />
                 <Route path="settings/change-password" element={<ChangePasswordDealerManager />} />
                 <Route path="staff/create-dealer-staff-account" element={<CreateDealerAccount />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}
@@ -150,6 +153,7 @@ function App() {
               <Routes>
                 <Route path="" element={<DealerStaff />} />
                 <Route path="settings/change-password" element={<ChangePasswordDealerStaff />} />
+                <Route path="ev/inventory" element={<GetAvailableEVInventory />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ Dealer Staff */}
                 <Route
                   path="*"
