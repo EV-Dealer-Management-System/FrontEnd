@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   Table,
@@ -23,6 +24,7 @@ import {
   Divider,
   Tabs,
   Spin,
+  Alert,
 } from "antd";
 import {
   PageContainer,
@@ -44,6 +46,7 @@ import {
   FilterOutlined,
   BgColorsOutlined,
   BuildOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import NavigationBar from "../../../Components/Admin/Components/NavigationBar";
 import ManageModel from "./Components/ModelManagement";
@@ -94,7 +97,474 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// Component tạo Template Vehicle
+function CreateTemplateVehicleForm() {
+  const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [templateData, setTemplateData] = useState(null);
+  const [fileList, setFileList] = useState([]);
+
+  // State cho dropdown data
+  const [versions, setVersions] = useState([]);
+  const [colors, setColors] = useState([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
+  const [loadingColors, setLoadingColors] = useState(false);
+
+  // Load versions và colors khi component mount
+  useEffect(() => {
+    loadVersions();
+    loadColors();
+  }, []);
+
+  const loadVersions = async () => {
+    try {
+      setLoadingVersions(true);
+      const result = await vehicleApi.getAllVersions();
+      if (result.success) {
+        setVersions(result.data || []);
+      } else {
+        message.error("Không thể tải danh sách version: " + result.error);
+      }
+    } catch (error) {
+      message.error("Lỗi khi tải danh sách version: " + error.message);
+    } finally {
+      setLoadingVersions(false);
+    }
+  };
+
+  const loadColors = async () => {
+    try {
+      setLoadingColors(true);
+      const result = await vehicleApi.getAllColors();
+      if (result.success) {
+        setColors(result.data || []);
+      } else {
+        message.error("Không thể tải danh sách màu: " + result.error);
+      }
+    } catch (error) {
+      message.error("Lỗi khi tải danh sách màu: " + error.message);
+    } finally {
+      setLoadingColors(false);
+    }
+  };
+
+  // Upload configuration
+  const uploadProps = {
+    name: "files",
+    multiple: true,
+    fileList,
+    beforeUpload: (file) => {
+      const isImage = file.type.startsWith("image/");
+      if (!isImage) {
+        message.error(`${file.name} không phải là file hình ảnh!`);
+        return Upload.LIST_IGNORE;
+      }
+      const isLt5M = file.size / 1024 / 1024 < 5;
+      if (!isLt5M) {
+        message.error(`${file.name} phải nhỏ hơn 5MB!`);
+        return Upload.LIST_IGNORE;
+      }
+      return false;
+    },
+    onChange: (info) => {
+      setFileList(info.fileList);
+    },
+    onRemove: (file) => {
+      setFileList((prev) => prev.filter((item) => item.uid !== file.uid));
+    },
+  };
+
+  // Upload attachments function
+  const uploadAttachments = async (files) => {
+    if (!files || files.length === 0) return [];
+
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("files", file.originFileObj || file);
+    });
+
+    try {
+      const response = await vehicleApi.uploadAttachments(formData);
+      if (response.success) {
+        return response.data.attachmentKeys || [];
+      } else {
+        throw new Error(response.message || "Upload failed");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      message.error("Lỗi upload hình ảnh: " + error.message);
+      return [];
+    }
+  };
+
+  // Handle form submission
+  const handleCreateTemplate = async (values) => {
+    try {
+      setLoading(true);
+
+      console.log("=== CREATE TEMPLATE VEHICLE DEBUG ===");
+      console.log("📝 Form values:", values);
+
+      // Upload attachments first
+      let attachmentKeys = [];
+      if (fileList.length > 0) {
+        message.loading("Đang upload hình ảnh...", 0);
+        attachmentKeys = await uploadAttachments(fileList);
+        message.destroy();
+
+        if (attachmentKeys.length === 0) {
+          message.warning("Không có file nào được upload thành công!");
+        } else {
+          message.success(
+            `Upload thành công ${attachmentKeys.length} hình ảnh!`
+          );
+        }
+      }
+
+      // Tìm thông tin version và color để hiển thị
+      const selectedVersion = versions.find((v) => v.id === values.versionId);
+      const selectedColor = colors.find((c) => c.id === values.colorId);
+
+      // Prepare template data
+      const templatePayload = {
+        versionId: values.versionId,
+        colorId: values.colorId,
+        price: Number(values.price),
+        description: values.description,
+        attachmentKeys: attachmentKeys,
+        isActive: true,
+        // Thêm thông tin hiển thị
+        versionName: selectedVersion?.name || "N/A",
+        modelName: selectedVersion?.model?.name || "N/A",
+        colorName: selectedColor?.name || "N/A",
+        colorHex: selectedColor?.hexCode || "#ccc",
+      };
+
+      console.log("📤 Template payload:", templatePayload);
+      setTemplateData(templatePayload);
+      setConfirmModalVisible(true);
+    } catch (error) {
+      console.error("❌ Error preparing template data:", error);
+      message.error("Có lỗi xảy ra khi chuẩn bị dữ liệu!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Confirm and submit template
+  const confirmCreateTemplate = async () => {
+    try {
+      setLoading(true);
+      setConfirmModalVisible(false);
+
+      const result = await vehicleApi.createTemplateVehicle(templateData);
+
+      if (result.success) {
+        message.success(result.message || "Tạo mẫu xe thành công!");
+        form.resetFields();
+        setFileList([]);
+      } else {
+        message.error(result.message || "Có lỗi xảy ra khi tạo mẫu xe!");
+      }
+    } catch (error) {
+      console.error("❌ Error creating template:", error);
+      message.error("Có lỗi xảy ra khi tạo mẫu xe!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Spin spinning={loading} tip="Đang xử lý...">
+      <Card
+        title="Tạo mẫu xe điện"
+        extra={
+          <Alert
+            message="Tạo template cho dòng xe, sau đó có thể tạo nhiều xe cụ thể từ template này"
+            type="info"
+            showIcon
+            style={{ marginBottom: 0 }}
+          />
+        }
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleCreateTemplate}
+          size="large"
+        >
+          <Row gutter={24}>
+            <Col span={12}>
+              <Form.Item
+                label="Chọn Version"
+                name="versionId"
+                rules={[{ required: true, message: "Vui lòng chọn version!" }]}
+                extra="Chọn version từ danh sách có sẵn"
+              >
+                <Select
+                  placeholder="Chọn version..."
+                  loading={loadingVersions}
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option?.children
+                      ?.toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                >
+                  {versions.map((version) => (
+                    <Option key={version.id} value={version.id}>
+                      {version.name} - {version.model?.name || "N/A"}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col span={12}>
+              <Form.Item
+                label="Chọn Màu sắc"
+                name="colorId"
+                rules={[{ required: true, message: "Vui lòng chọn màu sắc!" }]}
+                extra="Chọn màu sắc từ danh sách có sẵn"
+              >
+                <Select
+                  placeholder="Chọn màu sắc..."
+                  loading={loadingColors}
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option?.children
+                      ?.toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                >
+                  {colors.map((color) => (
+                    <Option key={color.id} value={color.id}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <div
+                          style={{
+                            width: 16,
+                            height: 16,
+                            backgroundColor: color.hexCode || "#ccc",
+                            borderRadius: "50%",
+                            marginRight: 8,
+                            border: "1px solid #d9d9d9",
+                          }}
+                        />
+                        {color.name}
+                      </div>
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={24}>
+            <Col span={12}>
+              <Form.Item
+                label="Giá (VNĐ)"
+                name="price"
+                rules={[
+                  { required: true, message: "Vui lòng nhập giá!" },
+                  { type: "number", min: 0, message: "Giá phải lớn hơn 0!" },
+                ]}
+              >
+                <InputNumber
+                  style={{ width: "100%" }}
+                  placeholder="Nhập giá xe"
+                  formatter={(value) =>
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                  }
+                  parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
+                  min={0}
+                  step={1000000}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={24}>
+            <Col span={24}>
+              <Form.Item
+                label="Mô tả"
+                name="description"
+                rules={[
+                  { required: true, message: "Vui lòng nhập mô tả!" },
+                  { max: 1000, message: "Mô tả không được quá 1000 ký tự!" },
+                ]}
+              >
+                <Input.TextArea
+                  rows={4}
+                  placeholder="Nhập mô tả chi tiết về mẫu xe điện này..."
+                  showCount
+                  maxLength={1000}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={24}>
+            <Col span={24}>
+              <Form.Item label="Hình ảnh mẫu xe">
+                <Upload.Dragger {...uploadProps}>
+                  <p className="ant-upload-drag-icon">
+                    <UploadOutlined
+                      style={{ fontSize: 48, color: "#1890ff" }}
+                    />
+                  </p>
+                  <p className="ant-upload-text">
+                    Kéo thả hình ảnh vào đây hoặc click để chọn
+                  </p>
+                  <p className="ant-upload-hint">
+                    Hỗ trợ upload nhiều file. Chỉ chấp nhận file hình ảnh (.jpg,
+                    .png, .gif)
+                    <br />
+                    Kích thước file tối đa: 5MB
+                  </p>
+                </Upload.Dragger>
+
+                {fileList.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <Text strong>Đã chọn {fileList.length} file:</Text>
+                    <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+                      {fileList.map((file) => (
+                        <li key={file.uid} style={{ marginBottom: 4 }}>
+                          <Text>{file.name}</Text>
+                          <Text type="secondary" style={{ marginLeft: 8 }}>
+                            ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                          </Text>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Divider />
+
+          <Row justify="end" gutter={16}>
+            <Col>
+              <Button size="large" onClick={() => form.resetFields()}>
+                Xóa form
+              </Button>
+            </Col>
+            <Col>
+              <Button
+                type="primary"
+                size="large"
+                htmlType="submit"
+                icon={<CarOutlined />}
+                loading={loading}
+              >
+                Tạo mẫu xe điện
+              </Button>
+            </Col>
+          </Row>
+        </Form>
+
+        {/* Confirmation Modal */}
+        <Modal
+          title={
+            <div style={{ textAlign: "center" }}>
+              <CheckCircleOutlined
+                style={{ color: "#52c41a", fontSize: 24, marginRight: 8 }}
+              />
+              Xác nhận tạo mẫu xe điện
+            </div>
+          }
+          open={confirmModalVisible}
+          onOk={confirmCreateTemplate}
+          onCancel={() => setConfirmModalVisible(false)}
+          okText="Xác nhận tạo"
+          cancelText="Hủy bỏ"
+          okButtonProps={{
+            loading: loading,
+            size: "large",
+            type: "primary",
+          }}
+          cancelButtonProps={{ size: "large" }}
+          width={600}
+        >
+          <div style={{ padding: "20px 0" }}>
+            <Alert
+              message="Thông tin mẫu xe sẽ được tạo"
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+
+            {templateData && (
+              <div>
+                <Row gutter={[16, 8]}>
+                  <Col span={8}>
+                    <Text strong>Version:</Text>
+                  </Col>
+                  <Col span={16}>
+                    <Text>
+                      {templateData.versionName} ({templateData.modelName})
+                    </Text>
+                  </Col>
+
+                  <Col span={8}>
+                    <Text strong>Màu sắc:</Text>
+                  </Col>
+                  <Col span={16}>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <div
+                        style={{
+                          width: 16,
+                          height: 16,
+                          backgroundColor: templateData.colorHex,
+                          borderRadius: "50%",
+                          marginRight: 8,
+                          border: "1px solid #d9d9d9",
+                        }}
+                      />
+                      <Text>{templateData.colorName}</Text>
+                    </div>
+                  </Col>
+
+                  <Col span={8}>
+                    <Text strong>Giá:</Text>
+                  </Col>
+                  <Col span={16}>
+                    <Text strong style={{ color: "#f5222d" }}>
+                      {templateData.price?.toLocaleString()} VNĐ
+                    </Text>
+                  </Col>
+
+                  <Col span={8}>
+                    <Text strong>Mô tả:</Text>
+                  </Col>
+                  <Col span={16}>
+                    <Text>{templateData.description}</Text>
+                  </Col>
+
+                  <Col span={8}>
+                    <Text strong>Hình ảnh:</Text>
+                  </Col>
+                  <Col span={16}>
+                    <Text>
+                      {templateData.attachmentKeys?.length || 0} file đã upload
+                    </Text>
+                  </Col>
+                </Row>
+              </div>
+            )}
+          </div>
+        </Modal>
+      </Card>
+    </Spin>
+  );
+}
+
 function VehicleManagement() {
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -619,6 +1089,20 @@ function VehicleManagement() {
                     Tạo Xe Điện
                   </Button>
                   <Button
+                    type="primary"
+                    size="large"
+                    icon={<PlusOutlined />}
+                    onClick={() => setActiveTab("create-template")}
+                    style={{
+                      minWidth: "160px",
+                      background: "#1890ff",
+                      borderColor: "#1890ff",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Tạo Mẫu Xe
+                  </Button>
+                  <Button
                     size="large"
                     icon={<CarOutlined />}
                     onClick={() => setActiveTab("manage-models")}
@@ -803,7 +1287,7 @@ function VehicleManagement() {
                             showSizeChanger: true,
                             showQuickJumper: true,
                             showTotal: (total, range) =>
-                              `Hiển thị ${range[0]}-${range[1]} trong tổng số ${total} xe điện (Loại bỏ versionId & colorId)`,
+                              `Hiển thị ${range[0]}-${range[1]} trong tổng số ${total} `,
                             pageSizeOptions: ["10", "20", "30", "50", "100"],
                           }}
                           bordered
@@ -837,6 +1321,16 @@ function VehicleManagement() {
                     </span>
                   ),
                   children: <CreateElectricVehicle />,
+                },
+                {
+                  key: "create-template",
+                  label: (
+                    <span>
+                      <CarOutlined />
+                      Tạo Mẫu Xe
+                    </span>
+                  ),
+                  children: <CreateTemplateVehicleForm />,
                 },
                 {
                   key: "manage-models",
