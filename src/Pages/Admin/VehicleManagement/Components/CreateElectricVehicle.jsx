@@ -33,16 +33,40 @@ import { vehicleApi } from "../../../../App/EVMAdmin/VehiclesManagement/Vehicles
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// Helper function cho VIN - Format: VIN + 6 chữ số
-const generateSampleVIN = () => {
-  const randomNum = Math.floor(Math.random() * 900000) + 100000; // 6 chữ số từ 100000-999999
-  return `VIN${randomNum}`;
-};
+/** ---- Helpers: normalize API & extract error ---- */
+const normalizeApi = (res) => ({
+  success: res?.success ?? res?.isSuccess ?? false,
+  data: res?.data ?? res?.result,
+  message: res?.message ?? res?.error ?? "",
+});
+const extractErrorMessage = (err) => {
+  // Axios error shape
+  const status = err?.response?.status;
+  const serverMsg =
+    err?.response?.data?.message || err?.response?.data?.error || err?.message;
 
-// Validation function cho VIN format
-const validateVINFormat = (vin) => {
-  const vinPattern = /^VIN\d{6}$/; // VIN theo sau bởi đúng 6 chữ số
-  return vinPattern.test(vin);
+  // Validation errors array/object
+  const errorsObj = err?.response?.data?.errors;
+  if (errorsObj && typeof errorsObj === "object") {
+    try {
+      const parts = [];
+      Object.keys(errorsObj).forEach((k) => {
+        const v = errorsObj[k];
+        if (Array.isArray(v)) parts.push(...v);
+        else if (typeof v === "string") parts.push(v);
+      });
+      if (parts.length) return parts.join("\n");
+    } catch {}
+  }
+
+  if (err?.code === "ECONNABORTED")
+    return "Yêu cầu bị timeout. Vui lòng thử lại.";
+  if (status === 400) return serverMsg || "Yêu cầu không hợp lệ (400).";
+  if (status === 401) return "Chưa được xác thực (401).";
+  if (status === 403) return "Không có quyền thực hiện (403).";
+  if (status === 404) return "Không tìm thấy tài nguyên (404).";
+  if (status === 500) return serverMsg || "Lỗi máy chủ (500).";
+  return serverMsg || "Đã xảy ra lỗi không xác định.";
 };
 
 function CreateElectricVehicle() {
@@ -84,7 +108,8 @@ function CreateElectricVehicle() {
 
       if (!nv.success) message.warning(nv.message || "Không thể tải xe.");
       if (!nm.success) message.warning(nm.message || "Không thể tải model.");
-      if (!nver.success) message.warning(nver.message || "Không thể tải version.");
+      if (!nver.success)
+        message.warning(nver.message || "Không thể tải version.");
       if (!nc.success) message.warning(nc.message || "Không thể tải màu.");
 
       setVehicles(nv.data || []);
@@ -135,7 +160,9 @@ function CreateElectricVehicle() {
       title: "Model",
       dataIndex: ["version", "modelName"],
       width: 220,
-      render: (text) => <Text ellipsis={{ tooltip: text }}>{text || "N/A"}</Text>,
+      render: (text) => (
+        <Text ellipsis={{ tooltip: text }}>{text || "N/A"}</Text>
+      ),
     },
     {
       title: "Version",
@@ -224,7 +251,8 @@ function CreateElectricVehicle() {
     setIsCreateModalVisible(true);
   };
 
-  const customUpload = ({ onSuccess }) => setTimeout(() => onSuccess("ok"), 100);
+  const customUpload = ({ onSuccess }) =>
+    setTimeout(() => onSuccess("ok"), 100);
 
   const handleImageChange = ({ fileList }) => {
     let list = [...fileList];
@@ -240,7 +268,10 @@ function CreateElectricVehicle() {
     setPreviewVisible(true);
   };
 
-  const steps = [{ title: "Thông tin xe & hình ảnh" }, { title: "Xác nhận thông tin" }];
+  const steps = [
+    { title: "Thông tin xe & hình ảnh" },
+    { title: "Xác nhận thông tin" },
+  ];
 
   const next = () => {
     form
@@ -259,7 +290,11 @@ function CreateElectricVehicle() {
       const values = form.getFieldsValue(true);
 
       // 1) Upload ảnh
-      message.loading({ content: "Đang upload ảnh lên S3...", key: "uploading", duration: 0 });
+      message.loading({
+        content: "Đang upload ảnh lên S3...",
+        key: "uploading",
+        duration: 0,
+      });
       let attachmentKeys = [];
       try {
         const uploadPromises = uploadedImages.map((f) =>
@@ -287,7 +322,11 @@ function CreateElectricVehicle() {
 
       console.log("📤 FINAL PAYLOAD:", JSON.stringify(payload, null, 2));
 
-      message.loading({ content: "Đang tạo xe mẫu...", key: "creatingVehicle", duration: 0 });
+      message.loading({
+        content: "Đang tạo xe mẫu...",
+        key: "creatingVehicle",
+        duration: 0,
+      });
       const res = await vehicleApi.createVehicle(payload);
       message.destroy("creatingVehicle");
 
@@ -319,10 +358,20 @@ function CreateElectricVehicle() {
         subTitle: "Quản lý xe điện, model, version và màu sắc",
         breadcrumb: undefined,
         extra: [
-          <Button key="reload" icon={<ReloadOutlined />} onClick={loadAll} loading={loading}>
+          <Button
+            key="reload"
+            icon={<ReloadOutlined />}
+            onClick={loadAll}
+            loading={loading}
+          >
             Tải lại
           </Button>,
-          <Button key="create" type="primary" icon={<PlusOutlined />} onClick={handleCreateModal}>
+          <Button
+            key="create"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleCreateModal}
+          >
             Tạo Xe Điện
           </Button>,
         ],
@@ -362,121 +411,27 @@ function CreateElectricVehicle() {
         width={980}
         destroyOnClose
       >
-        <Steps current={currentStep} items={steps} style={{ marginBottom: 24 }} />
+        <Steps
+          current={currentStep}
+          items={steps}
+          style={{ marginBottom: 24 }}
+        />
         <Form form={form} layout="vertical" onFinish={handleSubmit} preserve>
           {currentStep === 0 && (
             <>
               <Row gutter={16}>
                 <Col span={8}>
                   <Form.Item
-                    label="VIN (Vehicle Identification Number)"
-                    name="vin"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập VIN!" },
-                      {
-                        len: 9,
-                        message: "VIN phải có đúng 9 ký tự (VIN + 6 chữ số)!",
-                      },
-                      {
-                        pattern: /^VIN\d{6}$/,
-                        message:
-                          "VIN phải theo định dạng VIN + 6 chữ số (ví dụ: VIN101005)!",
-                      },
-                      {
-                        validator: (_, value) => {
-                          if (!value) return Promise.resolve();
-                          if (validateVINFormat(value)) {
-                            return Promise.resolve();
-                          }
-                          return Promise.reject(
-                            new Error("Định dạng VIN không hợp lệ!")
-                          );
-                        },
-                      },
-                    ]}
-                    extra={
-                      <div style={{ fontSize: 12, color: "#666" }}>
-                        <strong>Quy tắc VIN:</strong>
-                        <br />• Định dạng: VIN + 6 chữ số
-                        <br />• Tổng cộng 9 ký tự
-                        <br />• Ví dụ hợp lệ: VIN101005, VIN101006, VIN101008
-                        <br />• Không được trùng lặp với VIN đã có
-                      </div>
-                    }
+                    label="Model"
+                    name="modelId"
+                    rules={[{ required: true, message: "Chọn model" }]}
                   >
-                    <Input.Group compact>
-                      <Input
-                        placeholder="Nhập VIN theo format VIN + 6 chữ số"
-                        size="large"
-                        maxLength={9}
-                        style={{
-                          width: "calc(100% - 120px)",
-                          textTransform: "uppercase",
-                          fontFamily: "monospace",
-                          letterSpacing: "1px",
-                        }}
-                        onChange={(e) => {
-                          // Tự động format VIN + chỉ số
-                          let value = e.target.value.toUpperCase();
-
-                          // Nếu user nhập không có VIN prefix, tự động thêm
-                          if (value && !value.startsWith("VIN")) {
-                            // Nếu chỉ nhập số thì thêm VIN prefix
-                            if (/^\d/.test(value)) {
-                              value = "VIN" + value;
-                            }
-                          }
-
-                          // Chỉ giữ VIN + số
-                          value = value.replace(/[^VIN0-9]/g, "");
-
-                          // Đảm bảo format đúng VIN + 6 số
-                          if (value.startsWith("VIN")) {
-                            const numbers = value
-                              .substring(3)
-                              .replace(/\D/g, "");
-                            value = "VIN" + numbers.substring(0, 6);
-                          }
-
-                          form.setFieldsValue({ vin: value });
-                        }}
-                      />
-                      <Button
-                        size="large"
-                        style={{ width: 120 }}
-                        onClick={() => {
-                          const sampleVIN = generateSampleVIN();
-                          form.setFieldsValue({ vin: sampleVIN });
-                          message.success(`Đã tạo VIN mẫu: ${sampleVIN}`);
-                        }}
-                      >
-                        Tạo VIN mẫu
-                      </Button>
-                    </Input.Group>
-                  </Form.Item>
-                </Col>
-
-                <Col span={12}>
-                  <Form.Item label="Upload hình ảnh xe">
-                    <Upload
-                      multiple
-                      listType="picture-card"
-                      fileList={uploadedImages}
-                      onChange={handleImageUpload}
-                      onPreview={handlePreview}
-                      onRemove={handleRemove}
-                      customRequest={customUpload}
-                      accept="image/*"
-                      beforeUpload={(file) => {
-                        const isImage = file.type.startsWith("image/");
-                        if (!isImage) {
-                          message.error("Chỉ được upload file hình ảnh!");
-                        }
-                        const isLt5M = file.size / 1024 / 1024 < 5;
-                        if (!isLt5M) {
-                          message.error("Hình ảnh phải nhỏ hơn 5MB!");
-                        }
-                        return isImage && isLt5M;
+                    <Select
+                      placeholder="Chọn model"
+                      onChange={(id) => {
+                        const list = versions.filter((v) => v.modelId === id);
+                        setFilteredVersions(list);
+                        form.setFieldValue("versionId", null);
                       }}
                       showSearch
                       optionFilterProp="children"
@@ -496,7 +451,11 @@ function CreateElectricVehicle() {
                     name="versionId"
                     rules={[{ required: true, message: "Chọn version" }]}
                   >
-                    <Select placeholder="Chọn version" showSearch optionFilterProp="children">
+                    <Select
+                      placeholder="Chọn version"
+                      showSearch
+                      optionFilterProp="children"
+                    >
                       {filteredVersions.map((v) => (
                         <Option key={v.id} value={v.id}>
                           {v.versionName}
@@ -512,7 +471,11 @@ function CreateElectricVehicle() {
                     name="colorId"
                     rules={[{ required: true, message: "Chọn màu sắc" }]}
                   >
-                    <Select placeholder="Chọn màu" showSearch optionFilterProp="children">
+                    <Select
+                      placeholder="Chọn màu"
+                      showSearch
+                      optionFilterProp="children"
+                    >
                       {colors.map((c) => (
                         <Option key={c.id} value={c.id}>
                           <Space>
@@ -545,7 +508,9 @@ function CreateElectricVehicle() {
                     <InputNumber
                       min={0}
                       style={{ width: "100%" }}
-                      formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                      formatter={(v) =>
+                        `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                      }
                       parser={(v) => v.replace(/\$\s?|(,*)/g, "")}
                     />
                   </Form.Item>
@@ -586,7 +551,9 @@ function CreateElectricVehicle() {
                     </div>
                   )}
                 </Upload>
-                <div className="text-xs text-gray-500">Mỗi ảnh &lt; 5MB. Tối đa 8 ảnh.</div>
+                <div className="text-xs text-gray-500">
+                  Mỗi ảnh &lt; 5MB. Tối đa 8 ảnh.
+                </div>
               </Form.Item>
             </>
           )}
@@ -603,23 +570,34 @@ function CreateElectricVehicle() {
                 <Col span={12}>
                   <p>
                     <strong>Model:</strong>{" "}
-                    {models.find((m) => m.id === form.getFieldValue("modelId"))?.modelName || "—"}
+                    {models.find((m) => m.id === form.getFieldValue("modelId"))
+                      ?.modelName || "—"}
                   </p>
                   <p>
                     <strong>Version:</strong>{" "}
-                    {versions.find((v) => v.id === form.getFieldValue("versionId"))?.versionName}
+                    {
+                      versions.find(
+                        (v) => v.id === form.getFieldValue("versionId")
+                      )?.versionName
+                    }
                   </p>
                   <p>
                     <strong>Màu sắc:</strong>{" "}
-                    {colors.find((c) => c.id === form.getFieldValue("colorId"))?.colorName || "—"}
+                    {colors.find((c) => c.id === form.getFieldValue("colorId"))
+                      ?.colorName || "—"}
                   </p>
                   <p>
                     <strong>Giá:</strong>{" "}
-                    {(form.getFieldValue("costPrice") || 0).toLocaleString("vi-VN")} ₫
+                    {(form.getFieldValue("costPrice") || 0).toLocaleString(
+                      "vi-VN"
+                    )}{" "}
+                    ₫
                   </p>
                   <p>
                     <strong>Mô tả:</strong>{" "}
-                    {form.getFieldValue("description") || <span className="text-gray-400">—</span>}
+                    {form.getFieldValue("description") || (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </p>
                 </Col>
                 <Col span={12}>
@@ -698,7 +676,12 @@ function CreateElectricVehicle() {
       </Modal>
 
       {/* Modal xem ảnh lớn */}
-      <Modal open={previewVisible} footer={null} onCancel={() => setPreviewVisible(false)} width={800}>
+      <Modal
+        open={previewVisible}
+        footer={null}
+        onCancel={() => setPreviewVisible(false)}
+        width={800}
+      >
         <img alt="preview" style={{ width: "100%" }} src={previewImage} />
       </Modal>
 
@@ -718,7 +701,8 @@ function CreateElectricVehicle() {
                   <strong>Model:</strong> {selectedVehicle.version?.modelName}
                 </p>
                 <p>
-                  <strong>Version:</strong> {selectedVehicle.version?.versionName}
+                  <strong>Version:</strong>{" "}
+                  {selectedVehicle.version?.versionName}
                 </p>
                 <p>
                   <strong>Màu sắc:</strong> {selectedVehicle.color?.colorName}
@@ -731,8 +715,12 @@ function CreateElectricVehicle() {
                 </p>
                 <p>
                   <strong>Trạng thái:</strong>{" "}
-                  <Tag color={selectedVehicle.status === 1 ? "success" : "error"}>
-                    {selectedVehicle.status === 1 ? "Hoạt động" : "Không hoạt động"}
+                  <Tag
+                    color={selectedVehicle.status === 1 ? "success" : "error"}
+                  >
+                    {selectedVehicle.status === 1
+                      ? "Hoạt động"
+                      : "Không hoạt động"}
                   </Tag>
                 </p>
                 <p>
@@ -743,17 +731,23 @@ function CreateElectricVehicle() {
               <Col span={12}>
                 {selectedVehicle.imgUrl?.length > 0 ? (
                   <>
-                    <strong>Hình ảnh xe ({selectedVehicle.imgUrl.length}):</strong>
+                    <strong>
+                      Hình ảnh xe ({selectedVehicle.imgUrl.length}):
+                    </strong>
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))",
+                        gridTemplateColumns:
+                          "repeat(auto-fill, minmax(110px, 1fr))",
                         gap: 10,
                         marginTop: 10,
                       }}
                     >
                       <Image.PreviewGroup
-                        items={selectedVehicle.imgUrl.map((url) => ({ src: url, alt: "Xe điện" }))}
+                        items={selectedVehicle.imgUrl.map((url) => ({
+                          src: url,
+                          alt: "Xe điện",
+                        }))}
                       >
                         {selectedVehicle.imgUrl.map((url, i) => (
                           <Image

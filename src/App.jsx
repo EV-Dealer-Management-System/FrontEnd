@@ -12,6 +12,7 @@ import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
 import ContractPage from "./Pages/PublicPage/ContractPage";
 import EVMAdmin from "./Pages/Admin/EVMAdmin";
 import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
+import InventoryManagement from "./Pages/Admin/InventoryManagement/InventoryManagement";
 import GetAllDealerContractPage from "./Pages/Admin/GetAllDealerContracts/GetAllDealerContract";
 import DealerManager from "./Pages/DealerManager/DealerManager";
 import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
@@ -87,6 +88,10 @@ function App() {
                 <Route
                   path="vehicle-management"
                   element={<VehicleManagement />}
+                />
+                <Route
+                  path="inventory-management"
+                  element={<InventoryManagement />}
                 />
                 <Route
                   path="dealer/create-contract"
