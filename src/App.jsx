@@ -34,6 +34,7 @@ import CreateDealerAccount from "./Pages/DealerManager/CreateDealerAccount/Creat
 import GetAllEVInventory from "./Pages/DealerManager/GetAllEVInventory/GetAllEVInventory";
 import DealerStaff from "./Pages/DealerStaff/Main/DealerStaff";
 import GetAvailableEVInventory from "./Pages/DealerStaff/GetAvailableEVInventory/GetAvailableEVInventory";
+import TemplateEditorPage from "./Pages/Admin/TemplateEditor/TemplateEditorPage";
 function App() {
   return (
     <BrowserRouter>
@@ -97,6 +98,7 @@ function App() {
                 <Route path="staff/evm-staff" element={<GetAllEVMStaff />} />
                 <Route path="staff/create-evm-staff" element={<CreateEVMStaffAccount />} />
                 <Route path="settings/change-password" element={<ChangePassword />} />
+                <Route path="settings/template-editor" element={<TemplateEditorPage />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ admin */}
                 <Route path="*" element={<Navigate to="/admin" replace />} />
               </Routes>
