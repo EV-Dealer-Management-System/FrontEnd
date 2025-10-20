@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import Quill from 'quill';
 import { App } from 'antd';
 
 // ✅ Cấu hình ReactQuill modules - Giới hạn để tránh phá layout A4
@@ -40,7 +41,7 @@ export const useQuillEditor = (visible, htmlContent, setHasUnsavedChanges, isUpd
 
   // ✅ Dynamic import Quill với async polling fix cho React 19 + Ant Design Modal
   useEffect(() => {
-    if (!visible || quill) return;
+    if (!visible || quill || !quillRef.current) return;
 
     let cancelled = false;
     let globalRetry = 0; // ✅ Biến ngoài useEffect để tránh React 19 double invoke reset
@@ -100,6 +101,8 @@ export const useQuillEditor = (visible, htmlContent, setHasUnsavedChanges, isUpd
       } catch (error) {
         console.error('❌ Error initializing Quill:', error);
         message.error('Lỗi khởi tạo editor. Vui lòng thử lại.');
+        console.error('Init Quill v2 error:', error);
+        message.error('Lỗi khởi tạo editor');
       }
     };
 
@@ -108,27 +111,26 @@ export const useQuillEditor = (visible, htmlContent, setHasUnsavedChanges, isUpd
     return () => {
       cancelled = true;
     };
-  }, [visible]); // Chỉ phụ thuộc vào visible
+  }, [visible, quill]); // Chỉ phụ thuộc vào visible
 
   // ✅ Paste toàn bộ HTML khi Quill sẵn sàng và có nội dung
   useEffect(() => {
-    if (quill && htmlContent && !isPasted) {
+    if (!quill || isPasted || !visible || !htmlContent) return;
       console.log('✅ Pasting HTML to Quill, content length:', htmlContent.length);
-      const bodyOnly = htmlContent.replace(/^[\s\S]*<body[^>]*>|<\/body>[\s\S]*$/g, '');
-      const processed = preprocessHtmlForQuill(bodyOnly);
-      
       try {
+        const bodyOnly = htmlContent.replace(/^[\s\S]*<body[^>]*>|<\/body>[\s\S]*$/g, '');
+        const processed = preprocessHtmlForQuill(bodyOnly);
         quill.clipboard.dangerouslyPasteHTML(processed);
         setIsPasted(true);
       } catch (error) {
         console.warn('Failed to paste HTML:', error);
       }
-    }
-  }, [quill, htmlContent]);
+    
+  }, [quill, htmlContent, isPasted, visible]);
 
   // ✅ Đồng bộ Quill editor với htmlContent và track changes - CHỈ dùng quill
   useEffect(() => {
-    if (quill) {
+    if (!quill) return;
       let debounceTimer;
       
       // Setup listener: luôn postprocess trước khi lưu về state (để htmlContent luôn là raw)
@@ -138,8 +140,6 @@ export const useQuillEditor = (visible, htmlContent, setHasUnsavedChanges, isUpd
         // Debounce để tránh update quá nhanh khi gõ
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
-          const currentHtml = quill.root.innerHTML;
-          const raw = postprocessHtmlFromQuill(currentHtml); // ← trả về {{ ... }}
           // Note: setHtmlContent sẽ được truyền từ parent component
           setHasUnsavedChanges(true);
         }, 300); // Delay 300ms
@@ -151,7 +151,7 @@ export const useQuillEditor = (visible, htmlContent, setHasUnsavedChanges, isUpd
         quill.off('text-change', handleTextChange);
         clearTimeout(debounceTimer);
       };
-    }
+    
   }, [quill, isUpdatingFromCode]);
 
   // ✅ Debug Quill initialization - CHỈ log 1 lần khi ready
@@ -166,16 +166,17 @@ export const useQuillEditor = (visible, htmlContent, setHasUnsavedChanges, isUpd
 
   // ✅ Cleanup Quill instance khi modal đóng
   useEffect(() => {
-    if (!visible && quill) {
+    if (visible || !quill) return;
       console.log('🗑️ Cleaning up Quill instance');
       try {
         // Quill cleanup - remove listeners và destroy instance
         quill.off('text-change'); // Remove listeners trước
         setQuill(null); // Reset state
+        setIsPasted(false); // Reset paste flag
+        console.log('✅ Quill instance cleaned up');
       } catch (error) {
         console.warn('Quill cleanup warning:', error);
       }
-    }
   }, [visible, quill]);
 
   // Method để reset Quill content
