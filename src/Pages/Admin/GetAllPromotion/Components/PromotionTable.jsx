@@ -1,10 +1,12 @@
 import React from 'react';
-import { Card, Table, Tag, Badge, Typography } from 'antd';
+import { Card, Table, Tag, Badge, Typography, Button, Space, Tooltip } from 'antd';
 import {
     GiftOutlined,
     PercentageOutlined,
     DollarOutlined,
-    CalendarOutlined
+    CalendarOutlined,
+    EditOutlined,
+    EyeOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -13,7 +15,9 @@ function PromotionTable({
     promotions,
     formatCurrency,
     formatDate,
-    getPromotionStatus
+    getPromotionStatus,
+    onEdit,
+    onView
 }) {
 
     const columns = [
@@ -161,6 +165,32 @@ function PromotionTable({
                         {formatDate(date)}
                     </div>
                 </div>
+            ),
+        },
+        {
+            title: 'Thao tác',
+            key: 'actions',
+            width: 120,
+            fixed: 'right',
+            render: (_, record) => (
+                <Space size="small">
+                    <Tooltip title="Xem chi tiết">
+                        <Button
+                            type="text"
+                            icon={<EyeOutlined />}
+                            onClick={() => onView && onView(record)}
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                        />
+                    </Tooltip>
+                    <Tooltip title="Chỉnh sửa">
+                        <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            onClick={() => onEdit && onEdit(record)}
+                            className="text-green-500 hover:text-green-700 hover:bg-green-50"
+                        />
+                    </Tooltip>
+                </Space>
             ),
         },
     ];

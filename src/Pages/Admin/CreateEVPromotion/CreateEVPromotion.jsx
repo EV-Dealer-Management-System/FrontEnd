@@ -6,7 +6,8 @@ import {
     ProFormTextArea,
     ProFormDigit,
     ProFormSelect,
-    ProFormDateTimePicker
+    ProFormDateTimePicker,
+    ProFormRadio
 } from '@ant-design/pro-components';
 import { Card, message, Spin, Button, Space } from 'antd';
 import { PlusOutlined, ArrowLeftOutlined } from '@ant-design/icons';
@@ -14,6 +15,8 @@ import { useNavigate } from 'react-router-dom';
 import { getAllEVTemplates } from '../../../App/EVMAdmin/EVPromotion/Layouts/GetAllEVTemplate';
 import { createPromotion } from '../../../App/EVMAdmin/EVPromotion/CreatePromotion';
 import AdminLayout from '../../../Components/Admin/AdminLayout';
+import VehicleSelection from './components/VehicleSelection';
+import SuccessModal from './components/SuccessModal';
 
 function CreateEVPromotion() {
     const navigate = useNavigate();
@@ -23,6 +26,9 @@ function CreateEVPromotion() {
     const [loadingTemplates, setLoadingTemplates] = useState(true);
     const [selectedModel, setSelectedModel] = useState(null);
     const [filteredVersions, setFilteredVersions] = useState([]);
+    const [applyToAll, setApplyToAll] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [promotionName, setPromotionName] = useState('');
 
     // Lấy danh sách EV Templates khi component mount
     useEffect(() => {
@@ -99,6 +105,20 @@ function CreateEVPromotion() {
         form.setFieldsValue({ versionId: undefined });
     };
 
+    // Xử lý khi thay đổi option áp dụng toàn bộ
+    const handleApplyToAllChange = (value) => {
+        setApplyToAll(value);
+        if (value) {
+            // Reset model và version khi chọn áp dụng toàn bộ
+            setSelectedModel(null);
+            setFilteredVersions([]);
+            form.setFieldsValue({
+                modelId: undefined,
+                versionId: undefined
+            });
+        }
+    };
+
     // Xử lý submit form
     const handleSubmit = async (values) => {
         try {
@@ -127,8 +147,8 @@ function CreateEVPromotion() {
                 description: values.description,
                 percentage: values.discountType === 1 ? Number(values.percentage || 0) : 0,
                 fixedAmount: values.discountType === 0 ? Number(values.fixedAmount || 0) : 0,
-                modelId: values.modelId,
-                versionId: values.versionId,
+                modelId: values.applyToAll ? null : values.modelId,
+                versionId: values.applyToAll ? null : values.versionId,
                 discountType: Number(values.discountType),
                 startDate: convertToISOString(values.startDate),
                 endDate: convertToISOString(values.endDate),
@@ -140,9 +160,17 @@ function CreateEVPromotion() {
             const response = await createPromotion(promotionData);
 
             if (response) {
-                message.success('Tạo khuyến mãi thành công!');
+                // Lưu tên khuyến mãi để hiển thị trong popup
+                setPromotionName(values.name);
+
+                // Hiển thị popup thành công thay vì message
+                setShowSuccessModal(true);
+
+                // Reset form
                 form.resetFields();
-                navigate('/admin/promotions'); // Chuyển đến trang danh sách khuyến mãi
+                setSelectedModel(null);
+                setFilteredVersions([]);
+                setApplyToAll(false);
             }
         } catch (error) {
             console.error('Lỗi khi tạo khuyến mãi:', error);
@@ -160,6 +188,21 @@ function CreateEVPromotion() {
         }
     };
 
+    // Handler cho success modal
+    const handleViewPromotionList = () => {
+        setShowSuccessModal(false);
+        navigate('/admin/promotions/all-promotions');
+    };
+
+    const handleCreateAnother = () => {
+        setShowSuccessModal(false);
+        // Form đã được reset, chỉ cần đóng modal
+    };
+
+    const handleCloseSuccessModal = () => {
+        setShowSuccessModal(false);
+    };
+
     return (
         <AdminLayout>
             <PageContainer
@@ -169,7 +212,7 @@ function CreateEVPromotion() {
                     <Button
                         key="back"
                         icon={<ArrowLeftOutlined />}
-                        onClick={() => navigate('/admin/promotions')}
+                        onClick={() => navigate('/admin/promotions/create-promotion')}
                         className="bg-gray-100 hover:bg-gray-200"
                     >
                         Quay lại
@@ -299,96 +342,30 @@ function CreateEVPromotion() {
                                     </ProForm.Item>
                                 </div>
 
-                                {/* Thông tin xe điện và thời gian */}
+                                {/* Vehicle Selection Component */}
                                 <div className="space-y-4">
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                        Xe điện áp dụng
-                                    </h3>
-
-                                    <ProFormSelect
-                                        name="modelId"
-                                        label="Model xe điện"
-                                        placeholder="Chọn model xe điện"
-                                        options={getUniqueModels()}
-                                        rules={[
-                                            { required: true, message: 'Vui lòng chọn model xe điện!' }
-                                        ]}
-                                        fieldProps={{
-                                            showSearch: true,
-                                            filterOption: (input, option) =>
-                                                option?.label?.toLowerCase().includes(input.toLowerCase()),
-                                            onChange: handleModelChange,
-                                            className: 'rounded-lg'
-                                        }}
+                                    <VehicleSelection
+                                        uniqueModels={getUniqueModels()}
+                                        filteredVersions={filteredVersions}
+                                        selectedModel={selectedModel}
+                                        onModelChange={handleModelChange}
+                                        onApplyToAllChange={handleApplyToAllChange}
                                     />
-
-                                    <ProFormSelect
-                                        name="versionId"
-                                        label="Phiên bản"
-                                        placeholder="Chọn phiên bản xe"
-                                        options={filteredVersions}
-                                        disabled={!selectedModel}
-                                        rules={[
-                                            { required: true, message: 'Vui lòng chọn phiên bản xe!' }
-                                        ]}
-                                        fieldProps={{
-                                            showSearch: true,
-                                            filterOption: (input, option) =>
-                                                option?.label?.toLowerCase().includes(input.toLowerCase()),
-                                            className: 'rounded-lg'
-                                        }}
-                                    />
-
-                                    <div className="mt-6">
-                                        <h4 className="text-md font-medium text-gray-700 mb-3">
-                                            Thời gian áp dụng
-                                        </h4>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <ProFormDateTimePicker
-                                                name="startDate"
-                                                label="Ngày bắt đầu"
-                                                placeholder="Chọn ngày bắt đầu"
-                                                rules={[
-                                                    { required: true, message: 'Vui lòng chọn ngày bắt đầu!' }
-                                                ]}
-                                                fieldProps={{
-                                                    className: 'rounded-lg w-full',
-                                                    format: 'DD/MM/YYYY HH:mm',
-                                                    showTime: { format: 'HH:mm' }
-                                                }}
-                                            />
-
-                                            <ProFormDateTimePicker
-                                                name="endDate"
-                                                label="Ngày kết thúc"
-                                                placeholder="Chọn ngày kết thúc"
-                                                rules={[
-                                                    { required: true, message: 'Vui lòng chọn ngày kết thúc!' },
-                                                    ({ getFieldValue }) => ({
-                                                        validator(_, value) {
-                                                            const startDate = getFieldValue('startDate');
-                                                            if (!value || !startDate || value.isAfter(startDate)) {
-                                                                return Promise.resolve();
-                                                            }
-                                                            return Promise.reject(new Error('Ngày kết thúc phải sau ngày bắt đầu!'));
-                                                        },
-                                                    }),
-                                                ]}
-                                                fieldProps={{
-                                                    className: 'rounded-lg w-full',
-                                                    format: 'DD/MM/YYYY HH:mm',
-                                                    showTime: { format: 'HH:mm' }
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </ProForm>
                     </Spin>
                 </Card>
             </PageContainer>
+
+            {/* Success Modal */}
+            <SuccessModal
+                visible={showSuccessModal}
+                onClose={handleCloseSuccessModal}
+                onViewList={handleViewPromotionList}
+                onCreateAnother={handleCreateAnother}
+                promotionName={promotionName}
+            />
         </AdminLayout>
     );
 }

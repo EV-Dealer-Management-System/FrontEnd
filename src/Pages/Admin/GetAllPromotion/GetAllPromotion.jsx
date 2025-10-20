@@ -10,11 +10,14 @@ import PromotionTable from './Components/PromotionTable';
 import PageHeader from './Components/PageHeader';
 import LoadingSpinner from './Components/LoadingSpinner';
 import ErrorDisplay from './Components/ErrorDisplay';
+import UpdatePromotionForm from './Components/UpdatePromotionForm';
 
 function GetAllPromotion() {
     const [promotions, setPromotions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showUpdateModal, setShowUpdateModal] = useState(false);
+    const [selectedPromotion, setSelectedPromotion] = useState(null);
 
     // Fetch promotions data
     const fetchPromotions = async () => {
@@ -106,6 +109,31 @@ function GetAllPromotion() {
         }
     };
 
+    // Handle edit promotion
+    const handleEdit = (promotion) => {
+        setSelectedPromotion(promotion);
+        setShowUpdateModal(true);
+    };
+
+    // Handle view promotion details
+    const handleView = (promotion) => {
+        // TODO: Implement view details modal or navigate to detail page
+        console.log('View promotion:', promotion);
+        message.info('Chức năng xem chi tiết đang được phát triển');
+    };
+
+    // Handle update success
+    const handleUpdateSuccess = () => {
+        fetchPromotions(); // Refresh data
+        message.success('Cập nhật khuyến mãi thành công!');
+    };
+
+    // Handle close update modal
+    const handleCloseUpdateModal = () => {
+        setShowUpdateModal(false);
+        setSelectedPromotion(null);
+    };
+
     // Render loading state
     if (loading) {
         return (
@@ -149,8 +177,18 @@ function GetAllPromotion() {
                         formatCurrency={formatCurrency}
                         formatDate={formatDate}
                         getPromotionStatus={getPromotionStatus}
+                        onEdit={handleEdit}
+                        onView={handleView}
                     />
                 </div>
+
+                {/* Update Promotion Modal */}
+                <UpdatePromotionForm
+                    visible={showUpdateModal}
+                    onCancel={handleCloseUpdateModal}
+                    onSuccess={handleUpdateSuccess}
+                    promotionData={selectedPromotion}
+                />
             </PageContainer>
         </AdminLayout>
     );

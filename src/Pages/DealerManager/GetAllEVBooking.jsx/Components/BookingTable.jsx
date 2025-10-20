@@ -290,7 +290,7 @@ function BookingTable({
                   borderColor: "#1890ff",
                 }}
               >
-                Duyệt Đơn
+                Hủy Đơn
               </Button>
             )}
           </Space>
@@ -352,10 +352,10 @@ function BookingTable({
         booking={reviewModal.booking}
         onClose={closeReviewModal}
         onApprove={() =>
-          handleUpdateStatus(reviewModal.booking?.id, 1, "Đồng Ý")
+          handleUpdateStatus(reviewModal.booking?.id, 3, "Đồng Ý")
         }
         onReject={() =>
-          handleUpdateStatus(reviewModal.booking?.id, 2, "Từ chối")
+          handleUpdateStatus(reviewModal.booking?.id, 0, "Từ chối")
         }
         loading={updatingStatus[reviewModal.booking?.id]}
       />
