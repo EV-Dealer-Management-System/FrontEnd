@@ -147,6 +147,10 @@ function App() {
                 <Route path="" element={<EVMStaff />} />
                 <Route path="settings/change-password" element={<ChangePasswordEVMStaff />} />
                 <Route path="ev/get-all-ev-booking" element={<EVMGetAllEVBooking />} />
+                <Route
+                  path="contracts/create-contract"
+                  element={<CreateContract />}
+                />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ EVM Staff */}
                 <Route
                   path="*"
