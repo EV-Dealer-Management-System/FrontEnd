@@ -66,7 +66,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
                 icon: <ShoppingCartOutlined />,
                 routes: [
                     {
-                        path: "/dealer-staff/sales/create-quote",
+                        path: "/dealer-staff/quotes/create-quote",
                         name: "Tạo báo giá",
                         icon: <FileTextOutlined />,
                         component: "./CreateQuote",

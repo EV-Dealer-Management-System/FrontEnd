@@ -34,6 +34,7 @@ import CreateDealerAccount from "./Pages/DealerManager/CreateDealerAccount/Creat
 import GetAllEVInventory from "./Pages/DealerManager/GetAllEVInventory/GetAllEVInventory";
 import DealerStaff from "./Pages/DealerStaff/Main/DealerStaff";
 import GetAvailableEVInventory from "./Pages/DealerStaff/GetAvailableEVInventory/GetAvailableEVInventory";
+import CreateEVQuote from "./Pages/DealerStaff/CreateEVQuote/CreateEVQuote";
 import GetAllPromotion from "./Pages/Admin/GetAllPromotion/GetAllPromotion";
 import CreateEVPromotion from "./Pages/Admin/CreateEVPromotion/CreateEVPromotion";
 import TemplateEditorPage from "./Pages/Admin/TemplateEditor/TemplateEditorPage";
@@ -160,6 +161,7 @@ function App() {
                 <Route path="" element={<DealerStaff />} />
                 <Route path="settings/change-password" element={<ChangePasswordDealerStaff />} />
                 <Route path="ev/inventory" element={<GetAvailableEVInventory />} />
+                <Route path="quotes/create-quote" element={<CreateEVQuote />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ Dealer Staff */}
                 <Route
                   path="*"
