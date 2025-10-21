@@ -8,7 +8,7 @@ import PDFViewer from '../Admin/SignContract/Components/PDF/PDFViewer';
 
 const { Title, Text } = Typography;
 
-function ContractView() {
+function ContractViewer() {
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -388,4 +388,4 @@ function ContractView() {
   );
 }
 
-export default ContractView;
+export default ContractViewer;
