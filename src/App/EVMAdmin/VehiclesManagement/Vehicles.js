@@ -169,6 +169,33 @@ export const vehicleApi = {
       };
     }
   },
+// create version 
+ createVersion: async function (versionData) {
+    try {
+      const response = await api.post(
+        "/ElectricVehicleVersion/create-version",
+        versionData
+      );
+      if (response.data?.isSuccess) {
+        return {
+          success: true,
+          data: response.data.result || response.data.data,
+          message: response.data.message || "Tạo model mới thành công!",
+        };
+      } else {
+        return {
+          success: false,
+          error: response.data?.message || "Không thể tạo version",
+        };
+      }
+    } catch (error) {
+      console.error("Error creating version:", error);
+      return {
+        success: false,
+        error: error.message || "Lỗi khi tạo version",
+      };
+    }
+  },
 
   getAllColors: async function () {
     try {
@@ -191,6 +218,33 @@ export const vehicleApi = {
         success: false,
         data: [],
         error: error.message || "Lỗi khi tải danh sách colors",
+      };
+    }
+  },
+//create color 
+ createColor: async function (colorData) {
+    try {
+      const response = await api.post(
+        "/ElectricVehicleColor/create-color",
+        colorData
+      );
+      if (response.data?.isSuccess) {
+        return {
+          success: true,
+          data: response.data.result || response.data.data,
+          message: response.data.message || "Tạo color mới thành công!",
+        };
+      } else {
+        return {
+          success: false,
+          error: response.data?.message || "Không thể tạo color",
+        };
+      }
+    } catch (error) {
+      console.error("Error creating color:", error);
+      return {
+        success: false,
+        error: error.message || "Lỗi khi tạo color",
       };
     }
   },
