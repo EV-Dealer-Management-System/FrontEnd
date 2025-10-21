@@ -63,24 +63,24 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
                         icon: <FileAddOutlined />,
                         component: "",
                     },
-                    {
-                        path: "/evm-staff/contracts/edit",
-                        name: "Chỉnh sửa hợp đồng",
-                        icon: <FileSyncOutlined />,
-                        component: "./EditContract",
-                    },
-                    {
-                        path: "/evm-staff/contracts/verify",
-                        name: "Xác nhận hợp đồng",
-                        icon: <FileProtectOutlined />,
-                        component: "./VerifyContract",
-                    },
-                    {
-                        path: "/evm-staff/contracts/all",
-                        name: "Danh sách hợp đồng",
-                        icon: <ContainerOutlined />,
-                        component: "./ContractsList",
-                    },
+                    // {
+                    //     path: "/evm-staff/contracts/edit",
+                    //     name: "Chỉnh sửa hợp đồng",
+                    //     icon: <FileSyncOutlined />,
+                    //     component: "./EditContract",
+                    // },
+                    // {
+                    //     path: "/evm-staff/contracts/verify",
+                    //     name: "Xác nhận hợp đồng",
+                    //     icon: <FileProtectOutlined />,
+                    //     component: "./VerifyContract",
+                    // },
+                    // {
+                    //     path: "/evm-staff/contracts/all",
+                    //     name: "Danh sách hợp đồng",
+                    //     icon: <ContainerOutlined />,
+                    //     component: "./ContractsList",
+                    // },
                 ],
             },
             {

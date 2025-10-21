@@ -34,7 +34,7 @@ import ContractViewer from '../SignContract/Components/ContractViewer';
 import PDFEdit from '../SignContract/Components/PDF/PDFEdit/PDFEditMain';
 import { createAccountApi } from '../../../App/EVMAdmin/DealerContract/CreateDealerContract';
 import { PDFUpdateService } from '../../../App/Home/PDFconfig/PDFUpdate';
-import AdminLayout from '../../../components/Admin/AdminLayout';
+import EVMStaffLayout from '../../../Components/EVMStaff/EVMStaffLayout';
 
 const FIXED_USER_ID = "18858";
 
@@ -461,7 +461,7 @@ const CreateContract = () => {
   };
 
   return (
-    <AdminLayout>
+    <EVMStaffLayout>
       <div className="max-w-6xl mx-auto px-4">
         <Card 
           className="shadow-2xl rounded-2xl mb-8 overflow-hidden border-0"
@@ -882,7 +882,7 @@ const CreateContract = () => {
           />
         </App>
       </div>
-    </AdminLayout>
+    </EVMStaffLayout>
   );
 };
 

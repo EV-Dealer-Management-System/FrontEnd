@@ -76,12 +76,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <TeamOutlined />,
             component: "./DealerList",
           },
-          {
-            path: '/admin/dealer/create-contract',
-            name: 'Tạo hợp đồng đại lý',
-            icon: <FileTextOutlined />,
-            component: './CreateContract',
-          },
+          // {
+          //   path: '/admin/dealer/create-contract',
+          //   name: 'Tạo hợp đồng đại lý',
+          //   icon: <FileTextOutlined />,
+          //   component: './CreateContract',
+          // },
           {
             path: "/admin/dealer/contracts",
             name: "Hợp đồng đại lý",
