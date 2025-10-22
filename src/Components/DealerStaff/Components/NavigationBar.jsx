@@ -66,7 +66,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
                 icon: <ShoppingCartOutlined />,
                 routes: [
                     {
-                        path: "/dealer-staff/quotes/create-quote",
+                        path: "/dealer-staff/sales/create-quote",
                         name: "Tạo báo giá",
                         icon: <FileTextOutlined />,
                         component: "./CreateQuote",
@@ -112,21 +112,21 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             },
             {
                 path: "/dealer-staff/vehicles",
-                name: "Kho xe",
+                name: "Xe điện",
                 icon: <CarOutlined />,
                 routes: [
                     {
-                        path: "/dealer-staff/ev/inventory",
-                        name: "Số lượng xe",
+                        path: "/dealer-staff/vehicles/catalog",
+                        name: "Danh mục xe",
                         icon: <DatabaseOutlined />,
                         component: "./VehicleCatalog",
                     },
-                    // {
-                    //     path: "/dealer-staff/vehicles/compare",
-                    //     name: "So sánh xe",
-                    //     icon: <GlobalOutlined />,
-                    //     component: "./CompareVehicles",
-                    // },
+                    {
+                        path: "/dealer-staff/vehicles/compare",
+                        name: "So sánh xe",
+                        icon: <GlobalOutlined />,
+                        component: "./CompareVehicles",
+                    },
                 ],
             },
             {

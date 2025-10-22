@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 
 import LoginPage from "./Pages/Home/Login/LoginPage";
+import LoginSuccess from "./Pages/Home/Login/LoginSuccess";
 import RegisterPage from "./Pages/Home/Register/RegisterPage";
 import { MailConfirmation } from "./Pages/Home/Register/partial/MailConfirmation";
 import EmailVerification from "./Pages/Home/Register/partial/EmailVerification";
@@ -51,6 +52,7 @@ function App() {
             </PublicRoute>
           }
         />
+        <Route path="/login-success" element={<LoginSuccess />} />
         <Route
           path="/register"
           element={
