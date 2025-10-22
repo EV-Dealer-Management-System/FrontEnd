@@ -37,6 +37,7 @@ import GetAllEVInventory from "./Pages/DealerManager/GetAllEVInventory/GetAllEVI
 import DealerStaff from "./Pages/DealerStaff/Main/DealerStaff";
 import GetAvailableEVInventory from "./Pages/DealerStaff/GetAvailableEVInventory/GetAvailableEVInventory";
 import CreateEVQuote from "./Pages/DealerStaff/CreateEVQuote/CreateEVQuote";
+import GetAllEVQuotes from "./Pages/DealerStaff/GetAllEVQuotes/GetAllEVQuotes";
 import GetAllPromotion from "./Pages/Admin/GetAllPromotion/GetAllPromotion";
 import CreateEVPromotion from "./Pages/Admin/CreateEVPromotion/CreateEVPromotion";
 import TemplateEditorPage from "./Pages/Admin/TemplateEditor/TemplateEditorPage";
@@ -106,11 +107,26 @@ function App() {
                   element={<GetAllDealerContractPage />}
                 />
                 <Route path="staff/evm-staff" element={<GetAllEVMStaff />} />
-                <Route path="staff/create-evm-staff" element={<CreateEVMStaffAccount />} />
-                <Route path="settings/change-password" element={<ChangePassword />} />
-                <Route path="promotions/all-promotions" element={<GetAllPromotion />} />
-                <Route path="promotions/create-promotion" element={<CreateEVPromotion />} />
-                <Route path="settings/template-editor" element={<TemplateEditorPage />} />
+                <Route
+                  path="staff/create-evm-staff"
+                  element={<CreateEVMStaffAccount />}
+                />
+                <Route
+                  path="settings/change-password"
+                  element={<ChangePassword />}
+                />
+                <Route
+                  path="promotions/all-promotions"
+                  element={<GetAllPromotion />}
+                />
+                <Route
+                  path="promotions/create-promotion"
+                  element={<CreateEVPromotion />}
+                />
+                <Route
+                  path="settings/template-editor"
+                  element={<TemplateEditorPage />}
+                />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ admin */}
                 <Route path="*" element={<Navigate to="/admin" replace />} />
               </Routes>
@@ -128,8 +144,14 @@ function App() {
                 <Route path="ev/all-ev-booking" element={<GetAllEVBooking />} />
                 <Route path="ev/inventory" element={<GetAllEVInventory />} />
                 <Route path="staff/staff-list" element={<DealerStaffList />} />
-                <Route path="settings/change-password" element={<ChangePasswordDealerManager />} />
-                <Route path="staff/create-dealer-staff-account" element={<CreateDealerAccount />} />
+                <Route
+                  path="settings/change-password"
+                  element={<ChangePasswordDealerManager />}
+                />
+                <Route
+                  path="staff/create-dealer-staff-account"
+                  element={<CreateDealerAccount />}
+                />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}
                 <Route
                   path="*"
@@ -147,8 +169,14 @@ function App() {
             <EVMStaffRoute>
               <Routes>
                 <Route path="" element={<EVMStaff />} />
-                <Route path="settings/change-password" element={<ChangePasswordEVMStaff />} />
-                <Route path="ev/get-all-ev-booking" element={<EVMGetAllEVBooking />} />
+                <Route
+                  path="settings/change-password"
+                  element={<ChangePasswordEVMStaff />}
+                />
+                <Route
+                  path="ev/get-all-ev-booking"
+                  element={<EVMGetAllEVBooking />}
+                />
                 <Route
                   path="contracts/create-contract"
                   element={<CreateContract />}
@@ -170,9 +198,16 @@ function App() {
             <DealerStaffRoute>
               <Routes>
                 <Route path="" element={<DealerStaff />} />
-                <Route path="settings/change-password" element={<ChangePasswordDealerStaff />} />
-                <Route path="ev/inventory" element={<GetAvailableEVInventory />} />
+                <Route
+                  path="settings/change-password"
+                  element={<ChangePasswordDealerStaff />}
+                />
+                <Route
+                  path="ev/inventory"
+                  element={<GetAvailableEVInventory />}
+                />
                 <Route path="quotes/create-quote" element={<CreateEVQuote />} />
+                <Route path="quotes/all-quotes" element={<GetAllEVQuotes />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ Dealer Staff */}
                 <Route
                   path="*"

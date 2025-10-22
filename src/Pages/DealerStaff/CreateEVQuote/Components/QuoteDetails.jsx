@@ -1,178 +1,194 @@
-import React from 'react';
-import { Card, InputNumber, Input, Typography, Alert, Row, Col, Statistic } from 'antd';
+import React from "react";
+import { ProCard } from "@ant-design/pro-components";
 import {
-    NumberOutlined,
-    FileTextOutlined,
-    CheckCircleOutlined,
-    CarOutlined
-} from '@ant-design/icons';
+  Input,
+  Typography,
+  Alert,
+  Row,
+  Col,
+  Statistic,
+  Space,
+  Divider,
+} from "antd";
+import {
+  FileTextOutlined,
+  CheckCircleOutlined,
+  CarOutlined,
+  GiftOutlined,
+} from "@ant-design/icons";
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 const { TextArea } = Input;
 
 function QuoteDetails({
-    quantity,
-    onQuantityChange,
-    note,
-    onNoteChange,
-    maxQuantity,
-    selectedVehicle,
-    selectedPromotion
+  quantity,
+  note,
+  onNoteChange,
+  maxQuantity,
+  selectedVehicle,
+  selectedPromotion,
 }) {
-    return (
-        <div className="space-y-4">
-            {/* Quantity Input */}
-            <Card
-                title={
-                    <div className="flex items-center gap-2">
-                        <NumberOutlined className="text-orange-500" />
-                        <span className="text-base font-semibold">Số lượng đặt hàng</span>
-                    </div>
-                }
-                className="shadow-sm border border-gray-200 rounded-lg"
-                size="small"
-            >
-                <div className="space-y-3">
-                    <InputNumber
-                        placeholder="Nhập số lượng xe cần báo giá"
-                        size="large"
-                        min={1}
-                        max={maxQuantity}
-                        value={quantity}
-                        onChange={onQuantityChange}
-                        className="w-full"
-                        controls={{
-                            upIcon: '+',
-                            downIcon: '-'
-                        }}
-                        addonAfter="xe"
-                    />
+  return (
+    <ProCard
+      title={
+        <Space>
+          <CheckCircleOutlined style={{ color: "#52c41a" }} />
+          <Text strong>Chi tiết báo giá</Text>
+        </Space>
+      }
+      bordered
+      headerBordered
+    >
+      {selectedVehicle ? (
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          {/* Thông tin xe */}
+          <div>
+            <div style={{ marginBottom: 12 }}>
+              <Space>
+                <CarOutlined style={{ color: "#1890ff", fontSize: 16 }} />
+                <Text strong style={{ fontSize: 15 }}>
+                  Thông tin xe
+                </Text>
+              </Space>
+            </div>
+            <Row gutter={[16, 12]}>
+              <Col span={12}>
+                <Space direction="vertical" size={2}>
+                  <Text type="secondary" style={{ fontSize: 13 }}>
+                    Model
+                  </Text>
+                  <Text strong style={{ fontSize: 14 }}>
+                    {selectedVehicle.modelName}
+                  </Text>
+                </Space>
+              </Col>
+              <Col span={12}>
+                <Space direction="vertical" size={2}>
+                  <Text type="secondary" style={{ fontSize: 13 }}>
+                    Phiên bản
+                  </Text>
+                  <Text strong style={{ fontSize: 14 }}>
+                    {selectedVehicle.versionName}
+                  </Text>
+                </Space>
+              </Col>
+              <Col span={12}>
+                <Space direction="vertical" size={2}>
+                  <Text type="secondary" style={{ fontSize: 13 }}>
+                    Màu sắc
+                  </Text>
+                  <Text strong style={{ fontSize: 14 }}>
+                    {selectedVehicle.colorName}
+                  </Text>
+                </Space>
+              </Col>
+              <Col span={12}>
+                <Space direction="vertical" size={2}>
+                  <Text type="secondary" style={{ fontSize: 13 }}>
+                    Số lượng
+                  </Text>
+                  <Text strong style={{ fontSize: 16, color: "#52c41a" }}>
+                    {quantity || 0} xe
+                  </Text>
+                </Space>
+              </Col>
+            </Row>
+          </div>
 
-                    {maxQuantity > 0 && (
-                        <div className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
-                            <Text type="secondary">Tối đa có sẵn: {maxQuantity} xe</Text>
-                            {quantity > maxQuantity && (
-                                <Text type="danger" className="font-medium">
-                                    Vượt quá số lượng!
-                                </Text>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </Card>
-
-            {/* Note Input */}
-            <Card
-                title={
-                    <div className="flex items-center gap-2">
-                        <FileTextOutlined className="text-purple-500" />
-                        <span className="text-base font-semibold">Ghi chú</span>
-                    </div>
-                }
-                className="shadow-sm border border-gray-200 rounded-lg"
-                size="small"
-            >
-                <TextArea
-                    placeholder="Ghi chú cho báo giá (tùy chọn)&#10;VD: Yêu cầu giao hàng, thông tin liên hệ..."
-                    value={note}
-                    onChange={(e) => onNoteChange(e.target.value)}
-                    rows={3}
-                    showCount
-                    maxLength={300}
-                    className="resize-none"
+          {/* Số lượng đặt hàng */}
+          <div
+            style={{
+              padding: "16px",
+              backgroundColor: "#f0f5ff",
+              borderRadius: 8,
+              border: "1px solid #91d5ff",
+            }}
+          >
+            <Row gutter={24} align="middle">
+              <Col span={12}>
+                <Statistic
+                  title={
+                    <Text strong style={{ fontSize: 14 }}>
+                      Số lượng đặt hàng
+                    </Text>
+                  }
+                  value={quantity || 0}
+                  suffix="xe"
+                  valueStyle={{ color: "#1890ff", fontSize: 24 }}
                 />
-            </Card>
+              </Col>
+              <Col span={12}>
+                <div style={{ textAlign: "center" }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Tối đa có sẵn: {maxQuantity} xe
+                  </Text>
+                </div>
+              </Col>
+            </Row>
+          </div>
 
-            {/* Quote Summary */}
-            <Card
-                title={
-                    <div className="flex items-center gap-2">
-                        <CheckCircleOutlined className="text-green-500" />
-                        <span className="text-base font-semibold">Tóm tắt báo giá</span>
-                    </div>
-                }
-                className="shadow-sm border border-gray-200 rounded-lg"
-                size="small"
-            >
-                {selectedVehicle ? (
-                    <div className="space-y-4">
-                        {/* Vehicle Info */}
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-200">
-                            <div className="flex items-center gap-2 mb-2">
-                                <CarOutlined className="text-blue-600" />
-                                <Text strong className="text-blue-900">Thông tin xe</Text>
-                            </div>
-                            <Row gutter={[8, 8]}>
-                                <Col span={12}>
-                                    <div className="text-xs text-gray-600">Model</div>
-                                    <div className="font-medium text-sm">{selectedVehicle.modelName}</div>
-                                </Col>
-                                <Col span={12}>
-                                    <div className="text-xs text-gray-600">Phiên bản</div>
-                                    <div className="font-medium text-sm">{selectedVehicle.versionName}</div>
-                                </Col>
-                                <Col span={12}>
-                                    <div className="text-xs text-gray-600">Màu sắc</div>
-                                    <div className="font-medium text-sm">{selectedVehicle.colorName}</div>
-                                </Col>
-                                <Col span={12}>
-                                    <div className="text-xs text-gray-600">Số lượng</div>
-                                    <div className="font-bold text-green-600 text-base">{quantity || 0} xe</div>
-                                </Col>
-                            </Row>
-                        </div>
+          <Divider style={{ margin: 0 }} />
 
-                        {/* Promotion Info */}
-                        {selectedPromotion && (
-                            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-3 rounded-lg border border-orange-200">
-                                <Text strong className="text-orange-900 block mb-1">🎁 Khuyến mãi áp dụng</Text>
-                                <Text className="text-orange-700 text-sm">{selectedPromotion.name}</Text>
-                            </div>
-                        )}
+          {/* Khuyến mãi */}
+          {selectedPromotion && (
+            <>
+              <div>
+                <div style={{ marginBottom: 12 }}>
+                  <Space>
+                    <GiftOutlined style={{ color: "#fa8c16", fontSize: 16 }} />
+                    <Text strong style={{ fontSize: 15 }}>
+                      Khuyến mãi áp dụng
+                    </Text>
+                  </Space>
+                </div>
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    backgroundColor: "#fff7e6",
+                    border: "1px solid #ffd591",
+                    borderRadius: 8,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, color: "#d46b08" }}>
+                    🎁 {selectedPromotion.name}
+                  </Text>
+                </div>
+              </div>
+              <Divider style={{ margin: 0 }} />
+            </>
+          )}
 
-                        {/* Note Info */}
-                        {note && (
-                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                <Text strong className="text-gray-700 block mb-1">📝 Ghi chú</Text>
-                                <Text className="text-gray-600 text-sm">{note}</Text>
-                            </div>
-                        )}
-
-                        {/* Summary Stats */}
-                        <Row gutter={16} className="mt-4">
-                            <Col span={12}>
-                                <Statistic
-                                    title="Tổng số xe"
-                                    value={quantity || 0}
-                                    suffix="xe"
-                                    valueStyle={{ color: '#1890ff', fontSize: '18px' }}
-                                />
-                            </Col>
-                            <Col span={12}>
-                                <Statistic
-                                    title="Còn lại kho"
-                                    value={maxQuantity - (quantity || 0)}
-                                    suffix="xe"
-                                    valueStyle={{
-                                        color: (maxQuantity - (quantity || 0)) > 0 ? '#52c41a' : '#ff4d4f',
-                                        fontSize: '18px'
-                                    }}
-                                />
-                            </Col>
-                        </Row>
-                    </div>
-                ) : (
-                    <Alert
-                        message="Chưa hoàn thành"
-                        description="Vui lòng chọn xe điện và màu sắc để xem tóm tắt báo giá."
-                        type="info"
-                        showIcon
-                        className="border-0"
-                    />
-                )}
-            </Card>
-        </div>
-    );
+          {/* Ghi chú */}
+          <div>
+            <div style={{ marginBottom: 12 }}>
+              <Space>
+                <FileTextOutlined style={{ color: "#722ed1", fontSize: 16 }} />
+                <Text strong style={{ fontSize: 15 }}>
+                  Ghi chú
+                </Text>
+              </Space>
+            </div>
+            <TextArea
+              placeholder="Nhập ghi chú cho báo giá (tùy chọn)&#10;VD: Yêu cầu giao hàng, thông tin liên hệ..."
+              value={note}
+              onChange={(e) => onNoteChange(e.target.value)}
+              rows={4}
+              showCount
+              maxLength={300}
+              style={{ resize: "none" }}
+            />
+          </div>
+        </Space>
+      ) : (
+        <Alert
+          message="Chưa có thông tin"
+          description="Vui lòng chọn xe điện, màu sắc và số lượng ở bước trước để xem chi tiết báo giá."
+          type="info"
+          showIcon
+        />
+      )}
+    </ProCard>
+  );
 }
 
 export default QuoteDetails;
