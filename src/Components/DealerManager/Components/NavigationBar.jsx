@@ -43,6 +43,8 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
     localStorage.removeItem("jwt_token");
     // Xóa thông tin user nếu có
     localStorage.removeItem("user");
+    localStorage.removeItem("userFullName");
+    localStorage.removeItem("refresh_token");
     // Hiển thị thông báo logout thành công
     message.success("Đăng xuất thành công!");
     // Chuyển về trang login
@@ -69,6 +71,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             name: "Đơn hàng",
             icon: <FileTextOutlined />,
             component: "./Orders",
+          },
+          {
+            path: "/dealer-manager/ev/all-ev-quotes",
+            name: "Báo giá xe điện",
+            icon: <DollarOutlined />,
+            component: "./EVQuotes",
           },
           {
             path: "/dealer/sales/create-order",
