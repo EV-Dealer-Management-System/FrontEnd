@@ -73,6 +73,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: "./Orders",
           },
           {
+            path: "/dealer-manager/ev/all-ev-quotes",
+            name: "Báo giá xe điện",
+            icon: <DollarOutlined />,
+            component: "./EVQuotes",
+          },
+          {
             path: "/dealer/sales/create-order",
             name: "Tạo đơn hàng mới",
             icon: <UserAddOutlined />,

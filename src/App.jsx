@@ -18,6 +18,7 @@ import GetAllDealerContractPage from "./Pages/Admin/GetAllDealerContracts/GetAll
 import DealerManager from "./Pages/DealerManager/DealerManager";
 import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
 import GetAllEVBooking from "./Pages/DealerManager/GetAllEVBooking.jsx/GetAllEVBooking";
+import GetAllEVQuotesDealerManager from "./Pages/DealerManager/GetAllEVQuotes/GetAllEVQuotes";
 import DealerManagerRoute from "./Router/DealerManagerRoute";
 import AdminRoute from "./Router/AdminRoute";
 import DealerStaffRoute from "./Router/DealerStaffRoute";
@@ -142,6 +143,7 @@ function App() {
                 <Route path="" element={<DealerManager />} />
                 <Route path="ev/ev-booking" element={<EVBooking />} />
                 <Route path="ev/all-ev-booking" element={<GetAllEVBooking />} />
+                <Route path="ev/all-ev-quotes" element={<GetAllEVQuotesDealerManager />} />
                 <Route path="ev/inventory" element={<GetAllEVInventory />} />
                 <Route path="staff/staff-list" element={<DealerStaffList />} />
                 <Route
