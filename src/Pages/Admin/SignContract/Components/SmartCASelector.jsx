@@ -156,7 +156,7 @@ const SmartCASelector = ({
         </Button>
       ]}
       width={800}
-      destroyOnClose
+      destroyOnHidden
     >
       {/* Custom CSS cho animations */}
       <style jsx>{`

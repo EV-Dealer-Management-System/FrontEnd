@@ -107,6 +107,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <GlobalOutlined />,
             component: "./InventoryHistory",
           },
+          {
+            path: "/dealer-manager/ev/booking-management",
+            name: "Quản lý đơn đặt xe",
+            icon: <GlobalOutlined />,
+            component: "./BookingManagement",
+          },
         ],
       },
       {

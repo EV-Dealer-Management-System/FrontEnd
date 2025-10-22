@@ -96,7 +96,7 @@ function PDFModal({ visible, onClose, contractNo, pdfUrl, title }) {
       centered={true}
       maskClosable={true}
       keyboard={true}
-      destroyOnClose={true}
+      destroyOnHidden={true}
     >
       <div className="flex flex-col h-full bg-white">
         {/* Toolbar với tất cả chức năng */}

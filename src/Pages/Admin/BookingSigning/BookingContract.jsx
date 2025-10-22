@@ -1,0 +1,490 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  PageContainer 
+} from '@ant-design/pro-components';
+import { 
+  Table, 
+  Button, 
+  Select, 
+  Input, 
+  Space, 
+  Tag, 
+  Drawer, 
+  Row, 
+  Col,
+  Typography,
+  message,
+  Alert
+} from 'antd';
+import { 
+  EyeOutlined, 
+  EditOutlined,
+  FilePdfOutlined,
+  SafetyOutlined 
+} from '@ant-design/icons';
+import dayjs from 'dayjs';
+import AdminLayout from '../../../Components/Admin/AdminLayout';
+import { ConfigProvider } from 'antd';
+import viVN from 'antd/lib/locale/vi_VN';
+// Import hooks logic
+import useFetchContracts from '../../../App/Admin/Booking/useFetchContract';
+import useContractDetails from './Components/useContractDetails';
+
+// Reuse SignContract system components
+import useContractSigning from '../../Admin/SignContract/useContractSigning';
+import SignatureModal from '../../Admin/SignContract/Components/SignatureModal';
+import PDFModal from '../../Admin/SignContract/Components/PDF/PDFModal';
+import PDFViewer from '../../Admin/SignContract/Components/PDF/PDFViewer';
+
+// Reuse SmartCA system components
+import SmartCAStatusChecker from '../../Admin/SignContract/Components/SmartCAStatusChecker';
+import AddSmartCA from '../../Admin/SignContract/Components/AddSmartCA';
+import SmartCAModal from '../../Admin/SignContract/Components/SmartCAModal';
+import SmartCASelector from '../../Admin/SignContract/Components/SmartCASelector';
+
+// Reuse Contract service
+import { ContractService } from '../../../App/Home/SignContractCustomer';
+
+const { Search } = Input;
+const { Option } = Select;
+const { Title, Text } = Typography;
+
+function BookingContract() {
+  // State quản lý UI
+  const [selectedContract, setSelectedContract] = useState(null);
+  const [detailDrawerVisible, setDetailDrawerVisible] = useState(false);
+  const [pdfModalVisible, setPdfModalVisible] = useState(false);
+
+  // SmartCA States
+  const [smartCAInfo, setSmartCAInfo] = useState(null);
+  const [selectedSmartCA, setSelectedSmartCA] = useState(null);
+  const [showSmartCASelector, setShowSmartCASelector] = useState(false);
+
+  // Hooks logic
+  const { contracts, loading, filters, updateFilter, reload } = useFetchContracts();
+  const { detail, loading: detailLoading, canSign, signProcessId, fetchContractDetails, clearDetails, getPreviewUrl } = useContractDetails();
+  
+  // Reuse Contract Signing system
+  const contractSigning = useContractSigning();
+  const contractService = ContractService();
+
+  // Hàm xử lý mở chi tiết hợp đồng
+  const handleViewContract = async (contract) => {
+    setSelectedContract(contract);
+    setDetailDrawerVisible(true);
+    await fetchContractDetails(contract.id);
+  };
+
+  // Hàm đóng drawer chi tiết
+  const handleCloseDetail = () => {
+    setDetailDrawerVisible(false);
+    setSelectedContract(null);
+    clearDetails();
+    // Reset SmartCA states
+    setSmartCAInfo(null);
+    setSelectedSmartCA(null);
+    contractSigning.resetSigningState();
+  };
+
+  // Hàm kiểm tra SmartCA cho Admin (userId cố định cho hãng)
+  const handleSmartCAChecked = (smartCAData) => {
+    console.log('SmartCA checked for admin:', smartCAData);
+    if(!smartCAInfo){
+    setSmartCAInfo(smartCAData);
+    }
+    
+    // Tự động chọn SmartCA nếu có sẵn
+    if(!selectedSmartCA) {
+      if (smartCAData?.defaultSmartCa?.isValid) {
+        setSelectedSmartCA(smartCAData.defaultSmartCa);
+      } else if (smartCAData?.userCertificates?.length > 0) {
+        const validCert = smartCAData.userCertificates.find(cert => cert.isValid);
+        if (validCert) {
+          setSelectedSmartCA(validCert);
+        }
+      }
+    } 
+  };
+
+  // Hàm mở signature modal (có SmartCA rồi)
+  const handleOpenSignModal = () => {
+    if (!canSign || !signProcessId) {
+      message.warning('Hợp đồng không thể ký lúc này');
+      return;
+    }
+
+    if (!selectedSmartCA) {
+      message.warning('Vui lòng chọn SmartCA trước khi ký');
+      setShowSmartCASelector(true);
+      return;
+    }
+
+    contractSigning.setShowSignatureModal(true);
+  };
+
+  // Hàm xử lý ký hợp đồng - reuse logic từ useContractSigning
+  const handleSignContract = async (signatureData, signatureDisplayMode) => {
+    if (!signProcessId || !detail) {
+      message.error('Thiếu thông tin hợp đồng');
+      return;
+    }
+
+    // Chuẩn bị data cho ký - theo format của EVM Admin
+    const waitingProcessData = {
+      id: signProcessId,
+      pageSign: detail.processes?.[0]?.pageSign || 1,
+      position: detail.processes?.[0]?.position || "50,110,220,180"
+    };
+
+    try {
+      await contractSigning.handleSignature(
+        signatureData,
+        signatureDisplayMode,
+        signProcessId,
+        waitingProcessData,
+        detail.downloadUrl,
+        detail.processes?.[0]?.position || "50,110,220,180",
+        detail.processes?.[0]?.pageSign || 1
+      );
+
+      // Reload contract detail sau khi ký thành công
+      if (selectedContract) {
+        await fetchContractDetails(selectedContract.id);
+      }
+      reload(); // Reload danh sách
+
+    } catch (error) {
+      console.error('Error signing contract:', error);
+      message.error('Có lỗi khi ký hợp đồng');
+    }
+  };
+
+  // Hàm chọn SmartCA
+  const handleSelectSmartCA = (certificate) => {
+    setSelectedSmartCA(certificate);
+    setShowSmartCASelector(false);
+    message.success(`Đã chọn chứng thư: ${certificate.commonName}`);
+  };
+
+
+
+
+  // Render trạng thái hợp đồng
+  const renderStatus = (status) => {
+    const statusConfig = {
+      1: { color: 'blue', text: 'Mới' },
+      2: { color: 'processing', text: 'Đang xử lý' },
+      4: { color: 'warning', text: 'Chờ xử lý' },
+      5: { color: 'orange', text: 'Đang sửa' },
+      6: { color: 'success', text: 'Đã chấp nhận' },
+      '-1': { color: 'error', text: 'Từ chối' },
+      '-2': { color: 'default', text: 'Đã xóa' },
+      '-3': { color: 'volcano', text: 'Hủy' }
+    };
+
+    const config = statusConfig[status] || { color: 'default', text: 'Không xác định' };
+    return <Tag color={config.color}>{config.text}</Tag>;
+  };
+
+  // Cấu hình columns table
+  const columns = [
+    {
+      title: 'Tên hợp đồng',
+      dataIndex: 'name',
+      key: 'name',
+      ellipsis: true,
+    },
+    {
+      title: 'Chủ sở hữu',
+      dataIndex: 'ownerName',
+      key: 'ownerName',
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => renderStatus(status),
+    },
+    {
+      title: 'Ngày tạo',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+    },
+    {
+      title: 'Người tạo',
+      dataIndex: 'createdBy',
+      key: 'createdBy',
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
+            size="small"
+            onClick={() => handleViewContract(record)}
+          >
+            Xem
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <AdminLayout>
+    <PageContainer
+      title="Quản lý hợp đồng Booking"
+      subTitle="Xem và ký hợp đồng booking từ khách hàng"
+    >
+      {/* Filter Section */}
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
+        <Row gutter={16}>
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Select
+              placeholder="Lọc theo trạng thái"
+              style={{ width: '100%' }}
+              value={filters.status}
+              onChange={(value) => updateFilter('status', value)}
+              allowClear
+            >
+              <Option value={4}>Chờ xử lý</Option>
+              <Option value={5}>Đang sửa</Option>
+              <Option value={6}>Đã chấp nhận</Option>
+              <Option value={-1}>Từ chối</Option>
+              <Option value={-2}>Đã xóa</Option>
+              <Option value={-3}>Hủy</Option>
+            </Select>
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Search
+              placeholder="Tìm theo tên hoặc ID"
+              value={filters.search}
+              onChange={(e) => updateFilter('search', e.target.value)}
+              allowClear
+            />
+          </Col>
+          <Col xs={24} sm={24} md={8} lg={12} className="flex justify-end">
+            <Button onClick={reload}>
+              Làm mới
+            </Button>
+          </Col>
+        </Row>
+      </div>
+      <ConfigProvider locale={viVN}>
+      {/* Contracts Table */}
+      <div className="bg-white rounded-lg shadow-sm">
+        <Table
+          columns={columns}
+          dataSource={contracts}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total) => `Tổng ${total} hợp đồng`,
+          }}
+        />
+      </div>
+</ConfigProvider>
+      {/* Contract Detail Drawer */}
+      <Drawer
+        title="Chi tiết hợp đồng Booking"
+        width={1100}
+        open={detailDrawerVisible}
+        onClose={handleCloseDetail}
+        loading={detailLoading}
+        extra={
+          <Space>
+            {canSign && selectedSmartCA && (
+              <Button 
+                type="primary" 
+                icon={<EditOutlined />}
+                onClick={handleOpenSignModal}
+                loading={contractSigning.signingLoading}
+              >
+                Ký hợp đồng
+              </Button>
+            )}
+            {canSign && !selectedSmartCA && (
+              <Button 
+                type="default"
+                icon={<SafetyOutlined />}
+                onClick={() => setShowSmartCASelector(true)}
+              >
+                Chọn SmartCA
+              </Button>
+            )}
+            {!canSign && (
+              <Button 
+                type="default"
+                disabled
+              >
+                Ký hợp đồng
+              </Button>
+            )}
+          </Space>
+        }
+      >
+        {detail && (
+          <Row gutter={16} className="h-full">
+            {/* Left Column - Contract Info & SmartCA */}
+            <Col span={8}>
+              <div className="space-y-4">
+                {/* Thông tin cơ bản */}
+                <div className="border rounded-lg p-4">
+                  <Title level={5}>Thông tin hợp đồng</Title>
+                  <div className="space-y-2 text-sm">
+                    <div><Text strong>Số hợp đồng:</Text> {detail.no}</div>
+                    <div><Text strong>Chủ đề:</Text> {detail.subject}</div>
+                    <div><Text strong>Trạng thái:</Text> {renderStatus(detail.status.value)}</div>
+                    <div><Text strong>Ngày tạo:</Text> {dayjs(detail.createdDate).format('DD/MM/YYYY HH:mm')}</div>
+                  </div>
+                </div>
+
+                {/* SmartCA Status */}
+                <div className="border rounded-lg p-4">
+                  <Title level={5}>SmartCA cho Admin</Title>
+                  
+                  {/* SmartCA Status Checker */}
+                  {!smartCAInfo && (
+                    <SmartCAStatusChecker
+                      userId="18858" // Fixed admin user ID for EVM
+                      contractService={contractService}
+                      onChecked={handleSmartCAChecked}
+                    />
+                  )}
+                  
+                  {!smartCAInfo && (
+                    <Alert
+                      message="Đang kiểm tra SmartCA..."
+                      type="info"
+                      showIcon
+                      className="mb-3"
+                    />
+                  )}
+
+                  {smartCAInfo && (
+                    <div className="space-y-3">
+                      {selectedSmartCA ? (
+                        <Alert
+                          message="SmartCA đã sẵn sàng"
+                          description={
+                            <div>
+                              <div><strong>Chứng thư:</strong> {selectedSmartCA.commonName}</div>
+                              <div><strong>UID:</strong> {selectedSmartCA.uid}</div>
+                            </div>
+                          }
+                          type="success"
+                          action={
+                            <Button size="small" onClick={() => setShowSmartCASelector(true)}>
+                              Đổi
+                            </Button>
+                          }
+                        />
+                      ) : (
+                        <Alert
+                          message="Chưa chọn SmartCA"
+                          description="Cần chọn chứng thư số để ký hợp đồng"
+                          type="warning"
+                          action={
+                            <Button size="small" type="primary" onClick={() => setShowSmartCASelector(true)}>
+                              Chọn
+                            </Button>
+                          }
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Col>
+
+            {/* Right Column - PDF Viewer */}
+            <Col span={16}>
+
+              <div className="border rounded-lg p-4 h-[600px]">
+                <div className="flex justify-between items-center mb-3">
+                  <Title level={5}>Xem trước hợp đồng</Title>
+                  <Space>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<FilePdfOutlined />}
+                      onClick={() => setPdfModalVisible(true)}
+                    >
+                      Toàn màn hình
+                    </Button>
+                  </Space>
+                </div>
+                
+                {detail.downloadUrl ? (
+                  <div className="h-[540px] border rounded">
+                    <PDFViewer
+                      contractNo={detail.no || 'Booking'}
+                      pdfUrl={getPreviewUrl()}
+                      showAllPages={false}
+                      scale={0.8}
+                    />
+                  </div>
+                ) : (
+                  <div className="h-[540px] flex items-center justify-center bg-gray-50 border rounded">
+                    <div className="text-center text-gray-500">
+                      <FilePdfOutlined className="text-4xl mb-2" />
+                      <div>Không có PDF để hiển thị</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Col>
+          </Row>
+        )}
+      </Drawer>
+
+      {/* Signature Modal - Reuse từ SignContract system */}
+      <SignatureModal
+        visible={contractSigning.showSignatureModal}
+        onCancel={() => contractSigning.setShowSignatureModal(false)}
+        onSign={handleSignContract}
+        loading={contractSigning.signingLoading}
+      />
+
+      {/* SmartCA Modal - Reuse từ SignContract system */}
+      <SmartCAModal
+        visible={contractSigning.showSmartCAModal}
+        onCancel={() => contractSigning.setShowSmartCAModal(false)}
+        contractNo={selectedContract?.id?.substring(0, 8) || 'Booking'}
+      />
+
+      {/* SmartCA Selector Modal */}
+      <SmartCASelector
+        visible={showSmartCASelector}
+        onCancel={() => setShowSmartCASelector(false)}
+        onSelect={handleSelectSmartCA}
+        smartCAData={smartCAInfo}
+        loading={contractSigning.signingLoading}
+        currentSelectedId={selectedSmartCA?.id}
+        contractService={contractService}
+        userId="18858" // Fixed admin user ID for EVM
+      />
+
+      {/* PDF Modal - Reuse từ SignContract system */}
+      <PDFModal
+        visible={pdfModalVisible}
+        onClose={() => setPdfModalVisible(false)}
+        contractNo={selectedContract?.id?.substring(0, 8) || 'Booking'}
+        pdfUrl={detail?.downloadUrl}
+        title={`Hợp đồng Booking - ${selectedContract?.name || 'N/A'}`}
+      />
+    </PageContainer>
+    </AdminLayout>
+  );
+
+}
+
+
+export default BookingContract;

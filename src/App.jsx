@@ -39,6 +39,8 @@ import CreateEVQuote from "./Pages/DealerStaff/CreateEVQuote/CreateEVQuote";
 import GetAllPromotion from "./Pages/Admin/GetAllPromotion/GetAllPromotion";
 import CreateEVPromotion from "./Pages/Admin/CreateEVPromotion/CreateEVPromotion";
 import TemplateEditorPage from "./Pages/Admin/TemplateEditor/TemplateEditorPage";
+import BookingContract from "./Pages/Admin/BookingSigning/BookingContract";
+import BookingManagementPage from "./Pages/DealerManager/BookingManagement/BookingManagementPage";
 function App() {
   return (
     <BrowserRouter>
@@ -109,6 +111,7 @@ function App() {
                 <Route path="promotions/all-promotions" element={<GetAllPromotion />} />
                 <Route path="promotions/create-promotion" element={<CreateEVPromotion />} />
                 <Route path="settings/template-editor" element={<TemplateEditorPage />} />
+                <Route path="booking-signing" element={<BookingContract />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ admin */}
                 <Route path="*" element={<Navigate to="/admin" replace />} />
               </Routes>
@@ -128,6 +131,7 @@ function App() {
                 <Route path="staff/staff-list" element={<DealerStaffList />} />
                 <Route path="settings/change-password" element={<ChangePasswordDealerManager />} />
                 <Route path="staff/create-dealer-staff-account" element={<CreateDealerAccount />} />
+                <Route path="ev/booking-management" element={<BookingManagementPage />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}
                 <Route
                   path="*"

@@ -95,6 +95,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           //   icon: <LineChartOutlined />,
           //   component: "./DealerPerformance",
           // },
+          {
+            path: "/admin/booking-signing",
+            name: "Hợp đồng đặt xe",
+            icon: <FileTextOutlined />,
+            component: "./BookingContract",
+          }
         ],
       },
       {
