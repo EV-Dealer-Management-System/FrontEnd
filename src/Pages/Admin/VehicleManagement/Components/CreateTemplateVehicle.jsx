@@ -14,15 +14,18 @@ import {
   Typography,
   Divider,
   Alert,
-  Upload,
   Spin,
+  Table,
+  Tag,
+  Tooltip,
+  Badge,
 } from "antd";
 import {
   PlusOutlined,
   CarOutlined,
-  ArrowLeftOutlined,
   CheckCircleOutlined,
-  UploadOutlined,
+  EditOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import { PageContainer } from "@ant-design/pro-components";
 import { vehicleApi } from "../../../../App/EVMAdmin/VehiclesManagement/Vehicles";
@@ -30,444 +33,704 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../../../../Components/Admin/Components/NavigationBar";
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
 const { Option } = Select;
 
 function CreateTemplateVehicle() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(false);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
-  const [templateData, setTemplateData] = useState(null);
-  const [fileList, setFileList] = useState([]);
-  const [uploadedAttachments, setUploadedAttachments] = useState([]);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [vehicleData, setVehicleData] = useState(null);
+  const [vehiclesList, setVehiclesList] = useState([]);
+  const [editingVehicle, setEditingVehicle] = useState(null);
+
+  // State cho dropdown data
+  const [versions, setVersions] = useState([]);
+  const [colors, setColors] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
+  const [loadingColors, setLoadingColors] = useState(false);
+  const [loadingWarehouses, setLoadingWarehouses] = useState(false);
+  
+  // State để lưu template đã lấy được
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
+
   const navigate = useNavigate();
 
-  // Upload configuration
-  const uploadProps = {
-    name: "files",
-    multiple: true,
-    fileList,
-    beforeUpload: (file) => {
-      // Kiểm tra định dạng file
-      const isImage = file.type.startsWith("image/");
-      if (!isImage) {
-        message.error(`${file.name} không phải là file hình ảnh!`);
-        return Upload.LIST_IGNORE;
-      }
+  // Load data khi component mount
+  useEffect(() => {
+    loadVersions();
+    loadColors();
+    loadWarehouses();
+    fetchAllVehicles();
+  }, []);
 
-      // Kiểm tra kích thước file (5MB)
-      const isLt5M = file.size / 1024 / 1024 < 5;
-      if (!isLt5M) {
-        message.error(`${file.name} phải nhỏ hơn 5MB!`);
-        return Upload.LIST_IGNORE;
-      }
-
-      return false; // Prevent auto upload
-    },
-    onChange: (info) => {
-      setFileList(info.fileList);
-    },
-    onRemove: (file) => {
-      setFileList((prev) => prev.filter((item) => item.uid !== file.uid));
-    },
-  };
-
-  // Upload attachments function
-  const uploadAttachments = async (files) => {
-    if (!files || files.length === 0) return [];
-
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append("files", file.originFileObj || file);
-    });
-
+  // Load tất cả xe
+  const fetchAllVehicles = async () => {
     try {
-      const response = await vehicleApi.uploadAttachments(formData);
-      if (response.success) {
-        return response.data.attachmentKeys || [];
+      setTableLoading(true);
+      console.log("🔄 [CreateTemplateVehicle] Calling getAllVehicles()...");
+      
+      const result = await vehicleApi.getAllVehicles();
+      
+      console.log("📥 [CreateTemplateVehicle] Response:", result);
+
+      if (result.success) {
+        // ✅ Lấy data từ response.result (danh sách xe có VIN)
+        const vehiclesData = result.result || result.data || [];
+        
+        console.log(`✅ [CreateTemplateVehicle] Loaded ${vehiclesData.length} vehicles`);
+        
+        setVehiclesList(vehiclesData);
+        
+        if (vehiclesData.length === 0) {
+          message.info("Chưa có xe nào trong hệ thống.");
+        }
       } else {
-        throw new Error(response.message || "Upload failed");
+        console.error("❌ [CreateTemplateVehicle] API Error:", result.error);
+        message.error(result.error || "Không thể tải danh sách xe!");
+        setVehiclesList([]);
       }
     } catch (error) {
-      console.error("Upload error:", error);
-      message.error("Lỗi upload hình ảnh: " + error.message);
-      return [];
+      console.error("❌ [CreateTemplateVehicle] Error fetching vehicles:", error);
+      message.error("Có lỗi xảy ra khi tải danh sách xe!");
+      setVehiclesList([]);
+    } finally {
+      setTableLoading(false);
     }
   };
 
-  // Handle form submission
-  const handleCreateTemplate = async (values) => {
+  const loadVersions = async () => {
+    try {
+      setLoadingVersions(true);
+      const result = await vehicleApi.getAllVersions();
+      if (result.success) {
+        setVersions(result.data || []);
+      }
+    } catch (error) {
+      message.error("Lỗi khi tải danh sách version");
+    } finally {
+      setLoadingVersions(false);
+    }
+  };
+
+  const loadColors = async () => {
+    try {
+      setLoadingColors(true);
+      const result = await vehicleApi.getAllColors();
+      if (result.success) {
+        setColors(result.data || []);
+      }
+    } catch (error) {
+      message.error("Lỗi khi tải danh sách màu");
+    } finally {
+      setLoadingColors(false);
+    }
+  };
+
+  const loadWarehouses = async () => {
+    try {
+      setLoadingWarehouses(true);
+      const result = await vehicleApi.getAllWarehouses();
+      if (result.success) {
+        setWarehouses(result.data || []);
+      }
+    } catch (error) {
+      message.error("Lỗi khi tải danh sách kho");
+    } finally {
+      setLoadingWarehouses(false);
+    }
+  };
+
+  // Hàm gọi API lấy template khi chọn version và color
+  const handleVersionOrColorChange = async () => {
+    const versionId = form.getFieldValue('versionId');
+    const colorId = form.getFieldValue('colorId');
+
+    if (!versionId || !colorId) {
+      setSelectedTemplate(null);
+      return;
+    }
+
+    try {
+      setLoadingTemplate(true);
+      message.loading('Đang tìm template...', 0);
+      
+      const result = await vehicleApi.getTemplateByVersionAndColor(versionId, colorId);
+      message.destroy();
+
+      if (result.success && result.data) {
+        setSelectedTemplate(result.data);
+        message.success('✅ Đã tìm thấy template!');
+      } else {
+        setSelectedTemplate(null);
+        message.warning('⚠️ Không tìm thấy template. Vui lòng tạo template trước!');
+      }
+    } catch (error) {
+      console.error('❌ Error getting template:', error);
+      message.error('Lỗi khi tìm template!');
+      setSelectedTemplate(null);
+    } finally {
+      setLoadingTemplate(false);
+    }
+  };
+
+  // Handle form submission TẠO MỚI
+  const handleCreateVehicle = async (values) => {
+    if (!selectedTemplate || !selectedTemplate.id) {
+      message.error('❌ Chưa chọn template! Vui lòng chọn Version và Color trước.');
+      return;
+    }
+
     try {
       setLoading(true);
 
-      console.log("=== CREATE TEMPLATE VEHICLE DEBUG ===");
-      console.log("📝 Form values:", values);
-      console.log("📎 File list:", fileList);
+      const selectedWarehouse = warehouses.find((w) => w.id === values.warehouseId);
 
-      // Upload attachments first
-      let attachmentKeys = [];
-      if (fileList.length > 0) {
-        message.loading("Đang upload hình ảnh...", 0);
-        attachmentKeys = await uploadAttachments(fileList);
-        message.destroy();
-
-        if (attachmentKeys.length === 0) {
-          message.warning("Không có file nào được upload thành công!");
-        } else {
-          message.success(
-            `Upload thành công ${attachmentKeys.length} hình ảnh!`
-          );
-        }
-      }
-
-      // Prepare template data theo API format
-      const templatePayload = {
-        versionId: values.versionId,
-        colorId: values.colorId,
-        price: Number(values.price),
-        description: values.description,
-        attachmentKeys: attachmentKeys,
-        isActive: true,
+      const vehiclePayload = {
+        electricVehicleTemplateId: selectedTemplate.id,
+        warehouseId: values.warehouseId,
+        vin: values.vin,
+        status: values.status || 1,
+        vehicleList: [],
+        manufactureDate: values.manufactureDate || null,
+        importDate: null,
+        warrantyExpiryDate: null,
+        dealerReceivedDate: values.dealerReceivedDate || null,
       };
 
-      console.log("📤 Template payload:", templatePayload);
-      setTemplateData(templatePayload);
+      setVehicleData({
+        ...vehiclePayload,
+        _displayInfo: {
+          templateInfo: selectedTemplate,
+          warehouseName: selectedWarehouse?.name || "N/A",
+          versionName: versions.find(v => v.id === form.getFieldValue('versionId'))?.name || 'N/A',
+          colorName: colors.find(c => c.id === form.getFieldValue('colorId'))?.name || 'N/A',
+        }
+      });
+      
       setConfirmModalVisible(true);
     } catch (error) {
-      console.error("❌ Error preparing template data:", error);
+      console.error("❌ Error preparing vehicle data:", error);
       message.error("Có lỗi xảy ra khi chuẩn bị dữ liệu!");
     } finally {
       setLoading(false);
     }
   };
 
-  // Confirm and submit template
-  const confirmCreateTemplate = async () => {
+  // Confirm and submit vehicle
+  const confirmCreateVehicle = async () => {
     try {
       setLoading(true);
       setConfirmModalVisible(false);
 
-      console.log("🚀 Submitting template data:", templateData);
+      const { _displayInfo, ...apiPayload } = vehicleData;
 
-      const result = await vehicleApi.createTemplateVehicle(templateData);
+      console.log("📤 [CreateTemplateVehicle] Calling createVehicle() with payload:", apiPayload);
+      
+      // ✅ ĐÚNG: Gọi API POST /ElectricVehicle/create-vehicle
+      const result = await vehicleApi.createVehicle(apiPayload);
 
-      if (result.success) {
-        message.success(result.message || "Tạo mẫu xe thành công!");
+      console.log("📥 [CreateTemplateVehicle] createVehicle() response:", result);
 
-        // Reset form
+      if (result.success || result.isSuccess) {
+        message.success(result.message || "✅ Tạo xe thành công!");
         form.resetFields();
-        setFileList([]);
-        setUploadedAttachments([]);
-
-        // Navigate back to vehicle management
-        setTimeout(() => {
-          navigate("/admin/vehicle-management");
-        }, 1500);
+        setCreateModalVisible(false);
+        setSelectedTemplate(null);
+        fetchAllVehicles();
       } else {
-        message.error(result.message || "Có lỗi xảy ra khi tạo mẫu xe!");
+        message.error(result.message || result.error || "❌ Có lỗi xảy ra!");
       }
     } catch (error) {
-      console.error("❌ Error creating template:", error);
-      message.error("Có lỗi xảy ra khi tạo mẫu xe!");
+      console.error("❌ [CreateTemplateVehicle] Error creating vehicle:", error);
+      message.error("Có lỗi xảy ra khi tạo xe!");
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle edit vehicle
+  const handleEditVehicle = (record) => {
+    setEditingVehicle(record);
+    form.setFieldsValue({
+      vin: record.vin,
+      status: record.status,
+      manufactureDate: record.manufactureDate,
+      importDate: record.importDate,
+      warrantyExpiryDate: record.warrantyExpiryDate,
+    });
+    setEditModalVisible(true);
+  };
+
+  // Submit edit
+  const handleSubmitEdit = async (values) => {
+    try {
+      setLoading(true);
+
+      const updatePayload = {
+        vin: values.vin,
+        status: values.status,
+        manufactureDate: values.manufactureDate || null,
+        importDate: values.importDate || null,
+        warrantyExpiryDate: values.warrantyExpiryDate || null,
+      };
+
+      const result = await vehicleApi.updateVehicle(editingVehicle.id, updatePayload);
+
+      if (result.success) {
+        message.success("Cập nhật xe thành công!");
+        setEditModalVisible(false);
+        form.resetFields();
+        fetchAllVehicles();
+      } else {
+        message.error(result.message || "Có lỗi xảy ra!");
+      }
+    } catch (error) {
+      console.error("❌ Error updating vehicle:", error);
+      message.error("Có lỗi xảy ra khi cập nhật xe!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Table columns
+  const columns = [
+    {
+      title: "STT",
+      key: "index",
+      width: 60,
+      render: (_, __, index) => index + 1,
+    },
+    {
+      title: "VIN",
+      dataIndex: "vin",
+      key: "vin",
+      width: 150,
+      render: (text) => <Text copyable strong style={{ color: "#1890ff" }}>{text}</Text>,
+    },
+    {
+      title: "Template",
+      key: "template",
+      render: (_, record) => {
+        const template = record.electricVehicleTemplate || {};
+        return (
+          <div>
+            <Text strong>{template.versionName || "N/A"}</Text>
+            <br />
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {template.modelName || "N/A"}
+            </Text>
+          </div>
+        );
+      },
+    },
+    {
+      title: "Kho",
+      dataIndex: "warehouseName",
+      key: "warehouse",
+      render: (text) => <Text>{text || "N/A"}</Text>,
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => {
+        const statusMap = {
+          1: { color: "success", text: "Khả dụng" },
+          2: { color: "processing", text: "Đã bán" },
+          3: { color: "warning", text: "Bảo trì" },
+          4: { color: "error", text: "Hỏng" },
+        };
+        const config = statusMap[status] || { color: "default", text: "N/A" };
+        return <Badge status={config.color} text={config.text} />;
+      },
+    },
+    {
+      title: "Ngày SX",
+      dataIndex: "manufactureDate",
+      key: "manufactureDate",
+      render: (date) => date ? new Date(date).toLocaleDateString("vi-VN") : "N/A",
+    },
+    {
+      title: "Thao tác",
+      key: "actions",
+      width: 100,
+      render: (_, record) => (
+        <Tooltip title="Chỉnh sửa">
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            size="small"
+            onClick={() => handleEditVehicle(record)}
+          />
+        </Tooltip>
+      ),
+    },
+  ];
+
   return (
     <Navbar>
-      <Spin spinning={loading} tip="Đang xử lý...">
-        <PageContainer
-          header={{
-            title: "Tạo mẫu xe điện",
-            subTitle: "Tạo template cho các dòng xe điện",
-            breadcrumb: {
-              items: [
-                { title: "Trang chủ" },
-                {
-                  title: "Quản lý xe điện",
-                  path: "/admin/vehicle-management",
-                },
-                { title: "Tạo mẫu xe" },
-              ],
-            },
-            extra: [
-              <Button
-                key="back"
-                icon={<ArrowLeftOutlined />}
-                onClick={() => navigate("/admin/vehicle-management")}
-              >
-                Quay lại
-              </Button>,
+      <PageContainer
+        header={{
+          title: "Tạo Xe Điện",
+          subTitle: "Tạo xe điện cụ thể từ template có sẵn",
+          breadcrumb: {
+            items: [
+              { title: "Trang chủ" },
+              { title: "Quản lý xe điện" },
+              { title: "Tạo xe điện" },
             ],
-          }}
-          content={
-            <Alert
-              message="Tạo mẫu xe điện"
-              description="Tạo template chung cho dòng xe, sau đó có thể tạo nhiều xe cụ thể từ template này."
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-          }
-        >
-          <Card>
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleCreateTemplate}
-              size="large"
+          },
+          extra: [
+            <Button
+              key="refresh"
+              icon={<ReloadOutlined />}
+              onClick={fetchAllVehicles}
+              loading={tableLoading}
             >
-              <Row gutter={24}>
-                {/* Version ID */}
-                <Col span={12}>
-                  <Form.Item
-                    label="Version ID"
-                    name="versionId"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập Version ID!" },
-                      {
-                        pattern:
-                          /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i,
-                        message: "Version ID phải là UUID hợp lệ!",
-                      },
-                    ]}
-                    extra="Định dạng UUID (ví dụ: 3fa85f64-5717-4562-b3fc-2c963f66afa6)"
-                  >
-                    <Input
-                      placeholder="Nhập Version ID (UUID)"
-                      style={{ fontFamily: "monospace" }}
-                    />
-                  </Form.Item>
-                </Col>
+              Làm mới
+            </Button>,
+            <Button
+              key="create"
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalVisible(true)}
+            >
+              Tạo xe điện mới
+            </Button>,
+          ],
+        }}
+      >
+        <Alert
+          message="Danh sách xe điện đã tạo"
+          description={`Hiển thị ${vehiclesList.length} xe. Mỗi xe có VIN riêng và được tạo từ template.`}
+          type="info"
+          showIcon
+          closable
+          className="mb-4"
+        />
 
-                {/* Color ID */}
-                <Col span={12}>
-                  <Form.Item
-                    label="Color ID"
-                    name="colorId"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập Color ID!" },
-                      {
-                        pattern:
-                          /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i,
-                        message: "Color ID phải là UUID hợp lệ!",
-                      },
-                    ]}
-                    extra="Định dạng UUID (ví dụ: 3fa85f64-5717-4562-b3fc-2c963f66afa6)"
-                  >
-                    <Input
-                      placeholder="Nhập Color ID (UUID)"
-                      style={{ fontFamily: "monospace" }}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              {/* Price */}
-              <Row gutter={24}>
-                <Col span={12}>
-                  <Form.Item
-                    label="Giá (VNĐ)"
-                    name="price"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập giá!" },
-                      {
-                        type: "number",
-                        min: 0,
-                        message: "Giá phải lớn hơn 0!",
-                      },
-                    ]}
-                  >
-                    <InputNumber
-                      style={{ width: "100%" }}
-                      placeholder="Nhập giá xe"
-                      formatter={(value) =>
-                        `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                      }
-                      parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-                      min={0}
-                      step={1000000}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              {/* Description */}
-              <Row gutter={24}>
-                <Col span={24}>
-                  <Form.Item
-                    label="Mô tả"
-                    name="description"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập mô tả!" },
-                      {
-                        max: 1000,
-                        message: "Mô tả không được quá 1000 ký tự!",
-                      },
-                    ]}
-                  >
-                    <TextArea
-                      rows={4}
-                      placeholder="Nhập mô tả chi tiết về mẫu xe điện này..."
-                      showCount
-                      maxLength={1000}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              {/* Upload Images */}
-              <Row gutter={24}>
-                <Col span={24}>
-                  <Form.Item label="Hình ảnh mẫu xe">
-                    <Upload.Dragger {...uploadProps}>
-                      <p className="ant-upload-drag-icon">
-                        <UploadOutlined
-                          style={{ fontSize: 48, color: "#1890ff" }}
-                        />
-                      </p>
-                      <p className="ant-upload-text">
-                        Kéo thả hình ảnh vào đây hoặc click để chọn
-                      </p>
-                      <p className="ant-upload-hint">
-                        Hỗ trợ upload nhiều file. Chỉ chấp nhận file hình ảnh
-                        (.jpg, .png, .gif)
-                        <br />
-                        Kích thước file tối đa: 5MB
-                      </p>
-                    </Upload.Dragger>
-
-                    {fileList.length > 0 && (
-                      <div style={{ marginTop: 16 }}>
-                        <Text strong>Đã chọn {fileList.length} file:</Text>
-                        <ul style={{ marginTop: 8, paddingLeft: 20 }}>
-                          {fileList.map((file) => (
-                            <li key={file.uid} style={{ marginBottom: 4 }}>
-                              <Text>{file.name}</Text>
-                              <Text type="secondary" style={{ marginLeft: 8 }}>
-                                ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                              </Text>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Divider />
-
-              {/* Action Buttons */}
-              <Row justify="end" gutter={16}>
-                <Col>
-                  <Button
-                    size="large"
-                    onClick={() => navigate("/admin/vehicle-management")}
-                  >
-                    Hủy bỏ
-                  </Button>
-                </Col>
-                <Col>
-                  <Button
-                    type="primary"
-                    size="large"
-                    htmlType="submit"
-                    icon={<CarOutlined />}
-                    loading={loading}
-                  >
-                    Tạo mẫu xe điện
-                  </Button>
-                </Col>
-              </Row>
-            </Form>
-          </Card>
-
-          {/* Confirmation Modal */}
-          <Modal
-            title={
-              <div style={{ textAlign: "center" }}>
-                <CheckCircleOutlined
-                  style={{ color: "#52c41a", fontSize: 24, marginRight: 8 }}
-                />
-                Xác nhận tạo mẫu xe điện
-              </div>
-            }
-            open={confirmModalVisible}
-            onOk={confirmCreateTemplate}
-            onCancel={() => setConfirmModalVisible(false)}
-            okText="Xác nhận tạo"
-            cancelText="Hủy bỏ"
-            okButtonProps={{
-              loading: loading,
-              size: "large",
-              type: "primary",
+        <Card>
+          <Table
+            columns={columns}
+            dataSource={vehiclesList}
+            rowKey="id"
+            loading={tableLoading}
+            scroll={{ x: 1200 }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `Tổng ${total} xe`,
             }}
-            cancelButtonProps={{ size: "large" }}
-            width={600}
-          >
-            <div style={{ padding: "20px 0" }}>
+            locale={{
+              emptyText: (
+                <div className="py-8 text-center">
+                  <CarOutlined style={{ fontSize: 48, color: "#ccc" }} />
+                  <p className="text-gray-500 mt-2">Chưa có xe nào</p>
+                  <Button type="primary" onClick={() => setCreateModalVisible(true)}>
+                    Tạo xe đầu tiên
+                  </Button>
+                </div>
+              ),
+            }}
+          />
+        </Card>
+
+        {/* Modal tạo xe mới */}
+        <Modal
+          title="Tạo xe điện cụ thể"
+          open={createModalVisible}
+          onCancel={() => {
+            setCreateModalVisible(false);
+            form.resetFields();
+            setSelectedTemplate(null);
+          }}
+          footer={null}
+          width={900}
+        >
+          <Form form={form} layout="vertical" onFinish={handleCreateVehicle}>
+            <Alert
+              message="Bước 1: Chọn Version và Color để tìm Template"
+              type="warning"
+              showIcon
+              className="mb-4"
+            />
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label="Chọn Version"
+                  name="versionId"
+                  rules={[{ required: true, message: "Vui lòng chọn version!" }]}
+                >
+                  <Select
+                    placeholder="Chọn version..."
+                    loading={loadingVersions}
+                    showSearch
+                    onChange={handleVersionOrColorChange}
+                  >
+                    {versions.map((version) => (
+                      <Option key={version.id} value={version.id}>
+                        {version.name || version.versionName} - {version.model?.name || 'N/A'}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Form.Item
+                  label="Chọn Màu sắc"
+                  name="colorId"
+                  rules={[{ required: true, message: "Vui lòng chọn màu!" }]}
+                >
+                  <Select
+                    placeholder="Chọn màu..."
+                    loading={loadingColors}
+                    showSearch
+                    onChange={handleVersionOrColorChange}
+                  >
+                    {colors.map((color) => (
+                      <Option key={color.id} value={color.id}>
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          <div
+                            style={{
+                              width: 16,
+                              height: 16,
+                              backgroundColor: color.hexCode || "#ccc",
+                              borderRadius: "50%",
+                              marginRight: 8,
+                              border: "1px solid #d9d9d9",
+                            }}
+                          />
+                          {color.name || color.colorName}
+                        </div>
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            {loadingTemplate && (
               <Alert
-                message="Thông tin mẫu xe sẽ được tạo"
+                message="Đang tìm template..."
                 type="info"
                 showIcon
-                style={{ marginBottom: 16 }}
+                icon={<Spin size="small" />}
+                className="mb-4"
               />
+            )}
 
-              {templateData && (
-                <div>
-                  <Row gutter={[16, 8]}>
-                    <Col span={8}>
-                      <Text strong>Version ID:</Text>
-                    </Col>
-                    <Col span={16}>
-                      <Text code style={{ fontSize: 12 }}>
-                        {templateData.versionId}
-                      </Text>
-                    </Col>
+            {selectedTemplate && (
+              <Alert
+                message="✅ Đã tìm thấy Template!"
+                description={
+                  <div>
+                    <p><strong>Template ID:</strong> <Text code>{selectedTemplate.id}</Text></p>
+                    <p><strong>Giá:</strong> {selectedTemplate.price?.toLocaleString('vi-VN')} ₫</p>
+                  </div>
+                }
+                type="success"
+                showIcon
+                className="mb-4"
+              />
+            )}
 
-                    <Col span={8}>
-                      <Text strong>Color ID:</Text>
-                    </Col>
-                    <Col span={16}>
-                      <Text code style={{ fontSize: 12 }}>
-                        {templateData.colorId}
-                      </Text>
-                    </Col>
+            <Divider />
 
-                    <Col span={8}>
-                      <Text strong>Giá:</Text>
-                    </Col>
-                    <Col span={16}>
-                      <Text strong style={{ color: "#f5222d" }}>
-                        {templateData.price?.toLocaleString()} VNĐ
-                      </Text>
-                    </Col>
+            <Alert
+              message="Bước 2: Nhập thông tin xe"
+              type="info"
+              showIcon
+              className="mb-4"
+            />
 
-                    <Col span={8}>
-                      <Text strong>Mô tả:</Text>
-                    </Col>
-                    <Col span={16}>
-                      <Text>{templateData.description}</Text>
-                    </Col>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label="Chọn Kho"
+                  name="warehouseId"
+                  rules={[{ required: true, message: "Vui lòng chọn kho!" }]}
+                >
+                  <Select
+                    placeholder="Chọn kho..."
+                    loading={loadingWarehouses}
+                    showSearch
+                  >
+                    {warehouses.map((warehouse) => (
+                      <Option key={warehouse.id} value={warehouse.id}>
+                        {warehouse.name || warehouse.warehouseName}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
 
-                    <Col span={8}>
-                      <Text strong>Hình ảnh:</Text>
-                    </Col>
-                    <Col span={16}>
-                      <Text>
-                        {templateData.attachmentKeys?.length || 0} file đã
-                        upload
-                      </Text>
-                    </Col>
-                  </Row>
-                </div>
-              )}
+              <Col span={12}>
+                <Form.Item
+                  label="VIN (17 ký tự)"
+                  name="vin"
+                  rules={[
+                    { required: true, message: "Vui lòng nhập VIN!" },
+                    { len: 17, message: "VIN phải có đúng 17 ký tự!" }
+                  ]}
+                >
+                  <Input placeholder="Nhập VIN" maxLength={17} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label="Trạng thái"
+                  name="status"
+                  initialValue={1}
+                >
+                  <Select>
+                    <Option value={1}>Khả dụng</Option>
+                    <Option value={2}>Đã bán</Option>
+                    <Option value={3}>Bảo trì</Option>
+                    <Option value={4}>Hỏng</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              <Col span={12}>
+                <Form.Item label="Ngày sản xuất" name="manufactureDate">
+                  <Input type="datetime-local" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Alert
+              message="Import Date và Warranty Date sẽ được set NULL"
+              type="info"
+              showIcon
+              className="mb-4"
+            />
+
+            <Divider />
+
+            <Row justify="end" gutter={16}>
+              <Col>
+                <Button onClick={() => {
+                  setCreateModalVisible(false);
+                  form.resetFields();
+                  setSelectedTemplate(null);
+                }}>
+                  Hủy
+                </Button>
+              </Col>
+              <Col>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  loading={loading}
+                  disabled={!selectedTemplate}
+                  icon={<CarOutlined />}
+                >
+                  Tạo Xe
+                </Button>
+              </Col>
+            </Row>
+          </Form>
+        </Modal>
+
+        {/* Modal xác nhận */}
+        <Modal
+          title={
+            <div className="text-center">
+              <CheckCircleOutlined className="text-green-500 text-2xl mr-2" />
+              Xác nhận tạo xe
             </div>
-          </Modal>
-        </PageContainer>
-      </Spin>
+          }
+          open={confirmModalVisible}
+          onOk={confirmCreateVehicle}
+          onCancel={() => setConfirmModalVisible(false)}
+          okText="Xác nhận tạo"
+          cancelText="Hủy"
+          okButtonProps={{ loading }}
+        >
+          {vehicleData && (
+            <div className="space-y-2">
+              <p><Text strong>Template ID:</Text> <Text code className="text-xs">{vehicleData.electricVehicleTemplateId}</Text></p>
+              <p><Text strong>Version:</Text> {vehicleData._displayInfo?.versionName}</p>
+              <p><Text strong>Màu:</Text> {vehicleData._displayInfo?.colorName}</p>
+              <p><Text strong>Kho:</Text> {vehicleData._displayInfo?.warehouseName}</p>
+              <p><Text strong>VIN:</Text> <Text code>{vehicleData.vin}</Text></p>
+              <Divider className="my-2" />
+              <Alert
+                message="Import Date và Warranty Date sẽ được set NULL"
+                type="warning"
+                showIcon
+              />
+            </div>
+          )}
+        </Modal>
+
+        {/* Modal chỉnh sửa */}
+        <Modal
+          title="Chỉnh sửa xe"
+          open={editModalVisible}
+          onCancel={() => {
+            setEditModalVisible(false);
+            form.resetFields();
+          }}
+          footer={null}
+          width={700}
+        >
+          <Form form={form} layout="vertical" onFinish={handleSubmitEdit}>
+            <Form.Item label="VIN" name="vin">
+              <Input disabled />
+            </Form.Item>
+
+            <Form.Item label="Trạng thái" name="status">
+              <Select>
+                <Option value={1}>Khả dụng</Option>
+                <Option value={2}>Đã bán</Option>
+                <Option value={3}>Bảo trì</Option>
+                <Option value={4}>Hỏng</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item label="Ngày sản xuất" name="manufactureDate">
+              <Input type="datetime-local" />
+            </Form.Item>
+
+            <Form.Item label="Ngày nhập khẩu" name="importDate">
+              <Input type="datetime-local" />
+            </Form.Item>
+
+            <Form.Item label="Ngày hết hạn bảo hành" name="warrantyExpiryDate">
+              <Input type="datetime-local" />
+            </Form.Item>
+
+            <Divider />
+
+            <Row justify="end" gutter={16}>
+              <Col>
+                <Button onClick={() => {
+                  setEditModalVisible(false);
+                  form.resetFields();
+                }}>
+                  Hủy
+                </Button>
+              </Col>
+              <Col>
+                <Button type="primary" htmlType="submit" loading={loading}>
+                  Cập nhật
+                </Button>
+              </Col>
+            </Row>
+          </Form>
+        </Modal>
+      </PageContainer>
     </Navbar>
   );
 }
