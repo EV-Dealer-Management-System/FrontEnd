@@ -44,10 +44,12 @@ export default function LoginPage() {
       message.error("Vui lòng nhập đầy đủ thông tin!");
       return;
     }
-
+     // Trim email và password
+    const cleanedEmail = String(email).trim();
+    const cleanedPassword = String(password).trim();
     try {
       setLoading(true);
-      const res = await login(email, password, autoLogin);
+      const res = await login(cleanedEmail, cleanedPassword, autoLogin);
 
       const tokenStr = res?.result?.accessToken;
       const refresh = res?.result?.refreshToken;

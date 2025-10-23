@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../../api/api';
 import { 
   PageContainer 
 } from '@ant-design/pro-components';
@@ -95,9 +94,6 @@ function BookingContract() {
     setDetailDrawerVisible(false);
     setSelectedContract(null);
     clearDetails();
-    // Reset SmartCA states
-    setSmartCAInfo(null);
-    setSelectedSmartCA(null);
     contractSigning.resetSigningState();
   };
     // Safe render status
