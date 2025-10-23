@@ -88,6 +88,10 @@ function CreateElectricVehicle() {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewImage, setPreviewImage] = useState("");
 
+  // Template data state
+  const [templateData, setTemplateData] = useState(null);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+
   useEffect(() => {
     loadAll();
   }, []);
@@ -344,6 +348,44 @@ function CreateElectricVehicle() {
       message.destroy("creatingVehicle");
       message.error(extractErrorMessage(err));
       console.error("CREATE VEHICLE ERROR:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ SỬA: Đổi tên hàm và gọi đúng API createTemplateVehicle()
+  const confirmCreateTemplate = async () => {
+    try {
+      setLoading(true);
+      setConfirmModalVisible(false);
+
+      console.log(
+        "📤 [CreateElectricVehicle] Calling createTemplateVehicle() with payload:",
+        templateData
+      );
+
+      // ✅ ĐÚNG: Gọi API POST /EVTemplate/create-template-vehicles
+      const result = await vehicleApi.createTemplateVehicle(templateData);
+
+      console.log(
+        "📥 [CreateElectricVehicle] createTemplateVehicle() response:",
+        result
+      );
+
+      if (result.success) {
+        message.success(result.message || "✅ Tạo template thành công!");
+        form.resetFields();
+        setFileList([]);
+        setCreateModalVisible(false);
+
+        // Reload danh sách templates nếu cần
+        // loadAllTemplates();
+      } else {
+        message.error(result.message || "❌ Có lỗi xảy ra khi tạo template!");
+      }
+    } catch (error) {
+      console.error("❌ [CreateElectricVehicle] Error creating template:", error);
+      message.error("Có lỗi xảy ra khi tạo template!");
     } finally {
       setLoading(false);
     }
