@@ -1,10 +1,10 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL:  'https://3509f5e8b17b.ngrok-free.app/api',
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     'Content-Type': 'application/json',
-     'ngrok-skip-browser-warning': 'true', // ✅  Bỏ qua cảnh báo trình duyệt
+     'ngrok-skip-browser-warning': 'true', 
   },
   timeout: 60000, 
 });
