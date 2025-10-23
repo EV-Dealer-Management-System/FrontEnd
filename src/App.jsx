@@ -39,6 +39,7 @@ import DealerStaff from "./Pages/DealerStaff/Main/DealerStaff";
 import GetAvailableEVInventory from "./Pages/DealerStaff/GetAvailableEVInventory/GetAvailableEVInventory";
 import CreateEVQuote from "./Pages/DealerStaff/CreateEVQuote/CreateEVQuote";
 import GetAllEVQuotes from "./Pages/DealerStaff/GetAllEVQuotes/GetAllEVQuotes";
+import EVVersionDetails from "./Pages/DealerStaff/EVVersionDetail/EVVersionDetails";
 import GetAllPromotion from "./Pages/Admin/GetAllPromotion/GetAllPromotion";
 import CreateEVPromotion from "./Pages/Admin/CreateEVPromotion/CreateEVPromotion";
 import TemplateEditorPage from "./Pages/Admin/TemplateEditor/TemplateEditorPage";
@@ -214,6 +215,7 @@ function App() {
                 />
                 <Route path="quotes/create-quote" element={<CreateEVQuote />} />
                 <Route path="quotes/all-quotes" element={<GetAllEVQuotes />} />
+                <Route path="ev/version-details" element={<EVVersionDetails />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ Dealer Staff */}
                 <Route
                   path="*"

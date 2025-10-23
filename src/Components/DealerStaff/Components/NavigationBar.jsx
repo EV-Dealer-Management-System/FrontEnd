@@ -121,12 +121,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <DatabaseOutlined />,
             component: "./VehicleCatalog",
           },
-          // {
-          //     path: "/dealer-staff/vehicles/compare",
-          //     name: "So sánh xe",
-          //     icon: <GlobalOutlined />,
-          //     component: "./CompareVehicles",
-          // },
+          {
+            path: "/dealer-staff/ev/version-details",
+            name: "Mẫu xe và chi tiết",
+            icon: <GlobalOutlined />,
+            component: "./EVVersionDetails",
+          },
         ],
       },
       {
