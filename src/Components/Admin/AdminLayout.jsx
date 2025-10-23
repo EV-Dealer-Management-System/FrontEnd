@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout } from 'antd';
+import { Layout, App } from 'antd';
 import NavigationBar from './Components/NavigationBar';
 
 const { Content } = Layout;
@@ -25,6 +25,7 @@ function AdminLayout({ children }) {
   }, []);
 
   return (
+    <App>
     <div className="min-h-screen bg-gray-50">
       <NavigationBar 
         collapsed={collapsed} 
@@ -52,6 +53,7 @@ function AdminLayout({ children }) {
         />
       )}
     </div>
+    </App>
   );
 }
 

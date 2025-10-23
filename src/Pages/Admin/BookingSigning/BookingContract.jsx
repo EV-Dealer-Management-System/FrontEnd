@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../../api/api';
 import { 
   PageContainer 
 } from '@ant-design/pro-components';
@@ -14,7 +15,8 @@ import {
   Col,
   Typography,
   message,
-  Alert
+  Alert,
+  notification
 } from 'antd';
 import { 
   EyeOutlined, 
@@ -62,17 +64,30 @@ function BookingContract() {
 
   // Hooks logic
   const { contracts, loading, filters, updateFilter, reload } = useFetchContracts();
-  const { detail, loading: detailLoading, canSign, signProcessId, fetchContractDetails, clearDetails, getPreviewUrl } = useContractDetails();
+  const { detail, loading: detailLoading, canSign, signProcessId, fetchContractDetails, clearDetails, getPreviewUrl, loadPdfPreview, pdfBlobUrl, pdfLoading } = useContractDetails();
   
   // Reuse Contract Signing system
   const contractSigning = useContractSigning();
   const contractService = ContractService();
 
   // Hàm xử lý mở chi tiết hợp đồng
-  const handleViewContract = async (contract) => {
-    setSelectedContract(contract);
-    setDetailDrawerVisible(true);
-    await fetchContractDetails(contract.id);
+  const handleViewContract = async (record) => {
+    try {
+      setDetailDrawerVisible(true);
+      setSelectedContract(record);
+      await fetchContractDetails(record.id);
+      
+      
+    } catch (error) {
+      console.log('Lỗi khi mở chi tiết hợp đồng:', error);
+      message.error('Lỗi khi tải chi tiết hợp đồng');
+      notification.error({
+      message: 'Lỗi tải hợp đồng',
+      description: 'Vui lòng kiểm tra kết nối hoặc thử lại.',
+    });
+      setDetailDrawerVisible(false);
+      setSelectedContract(null);
+    }
   };
 
   // Hàm đóng drawer chi tiết
@@ -85,6 +100,15 @@ function BookingContract() {
     setSelectedSmartCA(null);
     contractSigning.resetSigningState();
   };
+    // Safe render status
+    const SafeStatus = ({ value }) => {
+      if (!value) return <span>-</span>;
+      try {
+        return renderStatus(value);
+      } catch {
+        return <span>-</span>;
+      }
+    };
 
   // Hàm kiểm tra SmartCA cho Admin (userId cố định cho hãng)
   const handleSmartCAChecked = (smartCAData) => {
@@ -166,8 +190,20 @@ function BookingContract() {
     message.success(`Đã chọn chứng thư: ${certificate.commonName}`);
   };
 
-
-
+  // Hàm mở PDF Modal
+    const handleOpenPdfModal = async () => {
+      if (detail?.downloadUrl) {
+        // Gọi preview trước khi mở modal
+        const resultUrl = await loadPdfPreview(detail.downloadUrl);
+        if (resultUrl) {
+          setPdfModalVisible(true);
+        } else {
+          message.error('Không thể tải PDF để xem trước');
+        }
+      } else {
+        message.error('Không có đường dẫn PDF');
+      }
+    };
 
   // Render trạng thái hợp đồng
   const renderStatus = (status) => {
@@ -198,12 +234,6 @@ function BookingContract() {
       title: 'Chủ sở hữu',
       dataIndex: 'ownerName',
       key: 'ownerName',
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => renderStatus(status),
     },
     {
       title: 'Ngày tạo',
@@ -244,28 +274,24 @@ function BookingContract() {
       <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
         <Row gutter={16}>
           <Col xs={24} sm={12} md={8} lg={6}>
-            <Select
-              placeholder="Lọc theo trạng thái"
-              style={{ width: '100%' }}
-              value={filters.status}
-              onChange={(value) => updateFilter('status', value)}
-              allowClear
-            >
-              <Option value={4}>Chờ xử lý</Option>
-              <Option value={5}>Đang sửa</Option>
-              <Option value={6}>Đã chấp nhận</Option>
-              <Option value={-1}>Từ chối</Option>
-              <Option value={-2}>Đã xóa</Option>
-              <Option value={-3}>Hủy</Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={12} md={8} lg={6}>
             <Search
               placeholder="Tìm theo tên hoặc ID"
               value={filters.search}
               onChange={(e) => updateFilter('search', e.target.value)}
               allowClear
             />
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <Select
+              placeholder="Lọc theo ngày tạo"
+              value={filters.createdAt}
+              onChange={(value) => updateFilter('dateRange', value)}
+              allowClear
+            >
+              <Select.Option value="today">Hôm nay</Select.Option>
+              <Select.Option value="this_week">Tuần này</Select.Option>
+              <Select.Option value="this_month">Tháng này</Select.Option>
+            </Select>
           </Col>
           <Col xs={24} sm={24} md={8} lg={12} className="flex justify-end">
             <Button onClick={reload}>
@@ -341,7 +367,7 @@ function BookingContract() {
                   <div className="space-y-2 text-sm">
                     <div><Text strong>Số hợp đồng:</Text> {detail.no}</div>
                     <div><Text strong>Chủ đề:</Text> {detail.subject}</div>
-                    <div><Text strong>Trạng thái:</Text> {renderStatus(detail.status.value)}</div>
+                    <div><Text strong>Trạng thái:</Text> <SafeStatus value={detail.status.value} /></div>
                     <div><Text strong>Ngày tạo:</Text> {dayjs(detail.createdDate).format('DD/MM/YYYY HH:mm')}</div>
                   </div>
                 </div>
@@ -415,9 +441,10 @@ function BookingContract() {
                       type="primary"
                       size="small"
                       icon={<FilePdfOutlined />}
-                      onClick={() => setPdfModalVisible(true)}
+                      onClick={handleOpenPdfModal}
+                      loading={pdfLoading}
                     >
-                      Toàn màn hình
+                      Cửa Sổ Pop-up
                     </Button>
                   </Space>
                 </div>
@@ -426,7 +453,7 @@ function BookingContract() {
                   <div className="h-[540px] border rounded">
                     <PDFViewer
                       contractNo={detail.no || 'Booking'}
-                      pdfUrl={getPreviewUrl()}
+                      pdfUrl={getPreviewUrl() || pdfBlobUrl}
                       showAllPages={false}
                       scale={0.8}
                     />
@@ -477,7 +504,7 @@ function BookingContract() {
         visible={pdfModalVisible}
         onClose={() => setPdfModalVisible(false)}
         contractNo={selectedContract?.id?.substring(0, 8) || 'Booking'}
-        pdfUrl={detail?.downloadUrl}
+        pdfUrl={pdfBlobUrl || getPreviewUrl()}
         title={`Hợp đồng Booking - ${selectedContract?.name || 'N/A'}`}
       />
     </PageContainer>

@@ -159,7 +159,7 @@ const SmartCASelector = ({
       destroyOnHidden
     >
       {/* Custom CSS cho animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes glow {
           0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
           50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.4); }
