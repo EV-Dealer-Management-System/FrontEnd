@@ -44,6 +44,7 @@ import GetAllPromotion from "./Pages/Admin/GetAllPromotion/GetAllPromotion";
 import CreateEVPromotion from "./Pages/Admin/CreateEVPromotion/CreateEVPromotion";
 import TemplateEditorPage from "./Pages/Admin/TemplateEditor/TemplateEditorPage";
 import BookingContract from "./Pages/Admin/BookingSigning/BookingContract";
+import GetAllEVDealerPage from "./Pages/Admin/GetAllEVDealer/GetAllEVDealer";
 function App() {
   return (
     <BrowserRouter>
@@ -101,6 +102,7 @@ function App() {
                   path="inventory-management"
                   element={<InventoryManagement />}
                 />
+                <Route path="dealer/all-dealers" element={<GetAllEVDealerPage />} />
                 <Route
                   path="dealer/create-contract"
                   element={<CreateContract />}

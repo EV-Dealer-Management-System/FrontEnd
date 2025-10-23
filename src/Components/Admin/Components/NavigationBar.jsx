@@ -73,7 +73,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           //   component: "./CreateAccount",
           // },
           {
-            path: "/admin/dealer/list",
+            path: "/admin/dealer/all-dealers",
             name: "Danh sách đại lý",
             icon: <TeamOutlined />,
             component: "./DealerList",
