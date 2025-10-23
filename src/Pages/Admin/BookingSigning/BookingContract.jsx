@@ -94,9 +94,6 @@ function BookingContract() {
     setDetailDrawerVisible(false);
     setSelectedContract(null);
     clearDetails();
-    // Reset SmartCA states
-    setSmartCAInfo(null);
-    setSelectedSmartCA(null);
     contractSigning.resetSigningState();
   };
     // Safe render status
