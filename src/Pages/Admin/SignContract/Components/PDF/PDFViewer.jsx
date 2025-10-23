@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Spin, Button, Slider, message, Tooltip } from 'antd';
+import 'react-pdf/dist/Page/TextLayer.css';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
 import { 
   FilePdfOutlined, 
   ZoomInOutlined, 
@@ -34,6 +36,7 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false, s
   const [pinchDistance, setPinchDistance] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
   const [errorInfo, setErrorInfo] = useState(null);
+  const [isDocumentReady, setIsDocumentReady] = useState(false);
   
   // Phase 5: Advanced performance optimizations
   const documentRef = useRef(null);
@@ -513,127 +516,79 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false, s
       >
         {loading && (
           <div className="flex flex-col items-center">
-            <Spin size="large" tip="Đang tải PDF từ server..." />
+            <Spin size="large" tip="Đang tải PDF từ server..." fullscreen/>
           </div>
         )}
         
+        {/* ✅ Giai đoạn render Document + Page (đã thêm guard tránh crash worker) */}
         {!loading && pdfUrl && !errorInfo && (
           <Document
+            key={pdfUrl} // đảm bảo worker được re-init khi đổi file
             file={pdfUrl}
+            loading={<div className="text-center text-gray-500 p-4">⏳ Đang tải PDF...</div>}
             onLoadSuccess={({ numPages }) => {
               setNumPages(numPages);
               setErrorInfo(null);
             }}
-            // Phase 5: Enhanced error handling với fallback
-            onLoadError={(error) => {
-              console.error('Document load error:', error);
-              setPdfUrl(null);
+            onLoadError={(e) => {
+              console.error('❌ Lỗi load tài liệu:', e);
               setNumPages(null);
-              setErrorInfo({message:'PDF Không hợp lệ hoặc bị lỗi tải.'});
-              trackMemoryUsage();
+              setPdfUrl(null);
+              setErrorInfo({ message: 'Tập tin PDF không hợp lệ hoặc không thể tải.' });
             }}
-            loading={
-              <div className="text-center p-8">
-                <Spin size="large" tip="Đang render PDF..." />
-                {memoryUsage && (
-                  <div className="text-xs text-gray-400 mt-2">
-                    RAM: {memoryUsage.used}MB / {memoryUsage.total}MB
-                  </div>
-                )}
-              </div>
-            }
-            error={
-              <div className="text-center text-red-500 p-4">
-                <div className="mb-3">⚠️ Không thể hiển thị PDF</div>
-                {errorInfo && (
-                  <div className="text-sm text-gray-600 mb-3 max-w-md mx-auto">
-                    <div><strong>Lỗi:</strong> {errorInfo.message}</div>
-                    <div><strong>Đã thử:</strong> {errorInfo.retryCount + 1} lần</div>
-                    {errorInfo.networkInfo && (
-                      <div><strong>Mạng:</strong> {errorInfo.networkInfo.effectiveType}</div>
-                    )}
-                    {errorInfo.memoryInfo && (
-                      <div><strong>RAM:</strong> {errorInfo.memoryInfo.used}MB</div>
-                    )}
-                  </div>
-                )}
-                <div className="space-x-2">
-                  <Button 
-                    type="primary" 
-                    onClick={() => {
-                      if (typeof pdfUrl === 'string') {
-                        window.open(pdfUrl, '_blank');
-                      } else {
-                        const url = URL.createObjectURL(pdfUrl);
-                        window.open(url, '_blank');
-                      }
-                    }}
-                  >
-                    📄 Mở trong tab mới
-                  </Button>
-                  <Button 
-                    onClick={() => {
-                      setRetryCount(0);
-                      setErrorInfo(null);
-                      window.location.reload();
-                    }}
-                  >
-                    🔄 Tải lại
-                  </Button>
-                </div>
-              </div>
-            }
-            className="w-full flex justify-center"
-            // Phase 5: Performance tuning
-            ref={documentRef}
           >
-            {numPages ? (
-            showAllPages ? (
-              // Render tất cả trang - sử dụng currentScale thay vì fixed scale
-              <div className="w-full flex flex-col">
-                {Array.from(new Array(numPages), (el, index) => (
-                  <div key={`page_${index + 1}`} className="flex justify-center mb-4">
-                    <Page
-                      pageNumber={index + 1}
-                      scale={externalScale || 0.8} // Dùng external scale hoặc default 0.8
-                      className="shadow-lg border border-gray-200"
-                      renderAnnotationLayer={false}
-                      renderTextLayer={false}
-                      onLoadError={(error) => {
-                        console.error(`Page ${index + 1} load error:`, error);
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              // Render single page - chỉ dùng scale của react-pdf
-              <Page 
-                pageNumber={pageNumber} 
-                scale={getResponsiveScale}
-                className="shadow-lg"
-                // Phase 5: Performance optimizations
-                renderAnnotationLayer={false} // Tắt annotations để tiết kiệm memory
-                renderTextLayer={false} // Tắt text layer để render nhanh hơn
-                // Phase 5: Error handling cho từng page
-                onLoadError={(error) => {
-                  console.error(`Page ${pageNumber} load error:`, error);
-                  message.error(`Lỗi tải trang ${pageNumber}: ${error.message}`);
-                }}
-                onRenderSuccess={() => {
-                  // Track successful renders
-                  trackMemoryUsage();
-                }}
-              />
-            ) 
-          ): null}
+            {numPages > 0 && (
+              showAllPages ? (
+                Array.from({ length: numPages }, (_, index) => (
+                  <Page
+                    key={`page_${index + 1}`}
+                    pageNumber={index + 1}
+                    scale={getResponsiveScale}
+                    // Giữ text/annotation layer (đã import CSS bên trên)
+                    renderTextLayer
+                    renderAnnotationLayer
+                    loading={<div className="text-center text-gray-400 py-4">Đang kết xuất trang {index + 1}…</div>}
+                    onRenderError={(err) => {
+                      console.error(`Lỗi render trang ${index + 1}:`, err);
+                      message.error(`Không hiển thị được trang ${index + 1}`);
+                    }}
+                  />
+                ))
+              ) : (
+                <Page
+                  key={`page_${pageNumber}`}
+                  pageNumber={pageNumber}
+                  scale={getResponsiveScale}
+                  renderTextLayer
+                  renderAnnotationLayer
+                  loading={<div className="text-center text-gray-400 py-4">Đang kết xuất trang {pageNumber}…</div>}
+                  onRenderError={(err) => {
+                    console.error(`Lỗi render trang ${pageNumber}:`, err);
+                    message.error(`Không hiển thị được trang ${pageNumber}`);
+                  }}
+                />
+              )
+            )}
           </Document>
         )}
         
-        {!loading && !pdfUrl && (
+        {/* ✅ Thông báo lỗi nếu có lỗi */}
+        {errorInfo && (
+          <div className="text-center text-red-500 p-4">
+            <p>⚠ {errorInfo.message}</p>
+            <button
+              className="mt-2 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              onClick={() => window.location.reload()}
+            >
+              🔄 Tải lại
+            </button>
+          </div>
+        )}
+
+        {/* ✅ Nếu pdfUrl bị null do lỗi */}
+        {!loading && !pdfUrl && !errorInfo && (
           <div className="text-center text-gray-500 p-4">
-            <FilePdfOutlined className="text-4xl mb-2" />
-            <div>Không có PDF để hiển thị</div>
+            Không có tài liệu để hiển thị.
           </div>
         )}
       </div>
@@ -647,26 +602,13 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false, s
             disabled={pageNumber <= 1}
             size="small"
           >
-            Trang trước
+            Trang trước 
           </Button>
           
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">
-              Trang {pageNumber} / {numPages}
+              Trang   {pageNumber} / {numPages}
             </span>
-            {loadTime && (
-              <Tooltip title="Thời gian tải PDF">
-                <span className="text-xs text-gray-500">
-                  ⏱️ {Date.now() - loadTime}ms
-                </span>
-              </Tooltip>
-            )}
-            {/* Phase 5: Cache status indicator */}
-            <Tooltip title="PDF được tải từ cache">
-              <span className="text-xs text-green-600">
-                💾 Cached
-              </span>
-            </Tooltip>
           </div>
           
           <Button 

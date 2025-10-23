@@ -43,7 +43,6 @@ import GetAllPromotion from "./Pages/Admin/GetAllPromotion/GetAllPromotion";
 import CreateEVPromotion from "./Pages/Admin/CreateEVPromotion/CreateEVPromotion";
 import TemplateEditorPage from "./Pages/Admin/TemplateEditor/TemplateEditorPage";
 import BookingContract from "./Pages/Admin/BookingSigning/BookingContract";
-import BookingManagementPage from "./Pages/DealerManager/BookingManagement/BookingManagementPage";
 function App() {
   return (
     <BrowserRouter>
@@ -162,7 +161,7 @@ function App() {
                   path="*"
                   element={<Navigate to="/dealer-manager" replace />}
                 />
-                <Route path="ev/booking-management" element={<BookingManagementPage />} />
+                
               </Routes>
             </DealerManagerRoute>
           }

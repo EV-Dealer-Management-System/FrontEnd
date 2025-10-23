@@ -63,7 +63,7 @@ function AddSmartCA({ visible, onCancel, onSuccess, contractInfo }) {
       confirmLoading={loading}
       okText="Thêm"
       cancelText="Hủy"
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical">
         <Form.Item

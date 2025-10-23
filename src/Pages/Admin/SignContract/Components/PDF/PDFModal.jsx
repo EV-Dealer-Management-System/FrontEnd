@@ -21,6 +21,7 @@ function PDFModal({ visible, onClose, contractNo, pdfUrl, title }) {
   const [numPages, setNumPages] = useState(null);
   const [scale, setScale] = useState(1.0);
   const [loading, setLoading] = useState(true);
+ 
 
   // Xử lý đóng modal
   const handleClose = () => {
@@ -183,7 +184,7 @@ function PDFModal({ visible, onClose, contractNo, pdfUrl, title }) {
               <div className="w-full max-w-2xl px-4">
                 {loading && (
                   <div className="flex justify-center items-center h-64">
-                    <Spin size="large" tip="Đang tải PDF..." />
+                    <Spin size="large" fullscreen tip="Đang tải PDF..." />
                   </div>
                 )}
 
