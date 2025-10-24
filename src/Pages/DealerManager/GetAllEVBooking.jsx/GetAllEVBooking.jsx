@@ -31,6 +31,8 @@ import BookingTable from "./Components/BookingTable";
 import BookingDetailDrawer from "./Components/BookingDetailDrawer";
 import StatusDistributionChart from "./Components/StatusDistributionChart";
 import TrendChart from "./Components/TrendChart";
+import {ConfigProvider} from "antd";
+import viVN from 'antd/lib/locale/vi_VN';
 
 const { Content } = Layout;
 
@@ -502,11 +504,12 @@ function GetAllEVBooking() {
               />
             </ProCard>
 
-            {/* Booking Table */}
-            <ProCard
-              title="Danh Sách Booking"
-              bordered
-              headerBordered
+            <ConfigProvider locale={viVN}>
+              {/* Booking Table */}
+              <ProCard
+                title="Danh Sách Booking"
+                bordered
+                headerBordered
               extra={<Tag color="blue">{filteredBookings.length} booking</Tag>}
             >
               <BookingTable
@@ -517,6 +520,7 @@ function GetAllEVBooking() {
                 onStatusUpdate={fetchBookings}
               />
             </ProCard>
+            </ConfigProvider>
           </PageContainer>
         </Content>
       </Layout>
