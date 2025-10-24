@@ -50,6 +50,7 @@ const contractList = () => {
       const params = {
         pageNumber: 1,
         pageSize: 10000,
+        eContractStatus: 1,
         econtractType: 1, // Loại booking
       };
 
@@ -114,4 +115,5 @@ const contractList = () => {
     reload
   };
 };
-return contractList;
+
+export default contractList;
