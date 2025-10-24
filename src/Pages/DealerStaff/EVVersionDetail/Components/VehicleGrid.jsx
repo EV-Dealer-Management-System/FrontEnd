@@ -1,6 +1,6 @@
 import React from "react";
 import { Row, Col } from "antd";
-import VehicleCard from "../components/VehicleCard";
+import VehicleCard from "../Components/VehicleCard";
 
 function VehicleGrid({ vehicles, formatPriceShort, onViewDetails }) {
   return (
