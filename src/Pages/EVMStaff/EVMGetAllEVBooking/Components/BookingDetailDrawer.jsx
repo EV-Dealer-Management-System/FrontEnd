@@ -115,29 +115,17 @@ const BookingDetailDrawer = ({
 
   // Lấy icon cho status
   const getStatusIcon = (status) => {
-    const statusMap = {
-      0: "pending",
-      1: "approved",
-      2: "rejected",
-      3: "cancelled",
-      4: "completed",
-    };
-    const statusValue =
-      typeof status === "number"
-        ? statusMap[status]
-        : typeof status === "string"
-        ? status.toLowerCase()
-        : "";
-
+    // Mapping theo BookingStatus enum: Draft=0, Pending=1, Approved=2, Rejected=3, Cancelled=4, Completed=5
     const iconMap = {
-      pending: <ClockCircleOutlined style={{ color: "#faad14" }} />,
-      approved: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
-      rejected: <CloseCircleOutlined style={{ color: "#ff4d4f" }} />,
-      cancelled: <CloseCircleOutlined style={{ color: "#8c8c8c" }} />,
-      completed: <CheckCircleOutlined style={{ color: "#1890ff" }} />,
+      0: <SyncOutlined style={{ color: "#8c8c8c" }} />,       // Draft
+      1: <ClockCircleOutlined style={{ color: "#fa8c16" }} />, // Pending
+      2: <CheckCircleOutlined style={{ color: "#52c41a" }} />, // Approved
+      3: <CloseCircleOutlined style={{ color: "#ff4d4f" }} />, // Rejected
+      4: <CloseCircleOutlined style={{ color: "#8c8c8c" }} />, // Cancelled
+      5: <CheckCircleOutlined style={{ color: "#1890ff" }} />, // Completed
     };
 
-    return iconMap[statusValue] || <ClockCircleOutlined />;
+    return iconMap[status] || <ClockCircleOutlined />;
   };
 
   return (
