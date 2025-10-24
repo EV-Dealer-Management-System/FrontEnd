@@ -65,6 +65,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <FileAddOutlined />,
             component: "",
           },
+          {
+            path: "/evm-staff/contracts/view-all-dealer-contracts",
+            name: "Quản lý hợp đồng Đại lý",
+            icon: <FileTextOutlined />,
+            component: "./GetAllContract",
+          },
           // {
           //     path: "/evm-staff/contracts/edit",
           //     name: "Chỉnh sửa hợp đồng",
