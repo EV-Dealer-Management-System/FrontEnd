@@ -358,14 +358,9 @@ const CreateContract = () => {
         try {
           setConfirming(true);
 
-          const payload = {
-            eContractId: String(contractId),
-            positionA: String(finalPositionA),
-            positionB: String(finalPositionB),
-            pageSign: Number(finalPageSign)
-          };
-
-          const response = await api.post('/EContract/ready-dealer-contracts', payload, {
+          const EContractId = contractId;
+          const response = await api.post('/EContract/ready-dealer-contracts', { EContractId }, 
+          {
             headers: { 'Content-Type': 'application/json' }
           });
 

@@ -73,17 +73,23 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: "./Orders",
           },
           {
-            path: "/dealer/sales/create-order",
-            name: "Tạo đơn hàng mới",
-            icon: <UserAddOutlined />,
-            component: "./CreateOrder",
+            path: "/dealer-manager/ev/all-ev-quotes",
+            name: "Đơn báo giá xe",
+            icon: <DollarOutlined />,
+            component: "./EVQuotes",
           },
-          {
-            path: "/dealer/sales/customers",
-            name: "Quản lý khách hàng",
-            icon: <TeamOutlined />,
-            component: "./Customers",
-          },
+          // {
+          //   path: "/dealer/sales/create-order",
+          //   name: "Tạo đơn hàng mới",
+          //   icon: <UserAddOutlined />,
+          //   component: "./CreateOrder",
+          // },
+          // {
+          //   path: "/dealer/sales/customers",
+          //   name: "Quản lý khách hàng",
+          //   icon: <TeamOutlined />,
+          //   component: "./Customers",
+          // },
         ],
       },
       {
@@ -109,6 +115,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <GlobalOutlined />,
             component: "./InventoryHistory",
           },
+        
         ],
       },
       {

@@ -3,6 +3,7 @@ import { PageContainer } from '@ant-design/pro-components';
 import { message } from 'antd';
 import AdminLayout from '../../../Components/Admin/AdminLayout';
 import { getAllPromotion } from '../../../App/EVMAdmin/EVPromotion/GetAllPromotion';
+import { DeletePromotion } from '../../../App/EVMAdmin/EVPromotion/DeletePromotion';
 
 // Import các components đã tách
 import StatisticsCards from './Components/StatisticsCards';
@@ -11,6 +12,7 @@ import PageHeader from './Components/PageHeader';
 import LoadingSpinner from './Components/LoadingSpinner';
 import ErrorDisplay from './Components/ErrorDisplay';
 import UpdatePromotionForm from './Components/UpdatePromotionForm';
+import DeleteConfirmModal from './Components/DeleteConfirmModal';
 
 function GetAllPromotion() {
     const [promotions, setPromotions] = useState([]);
@@ -18,6 +20,9 @@ function GetAllPromotion() {
     const [error, setError] = useState(null);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
     const [selectedPromotion, setSelectedPromotion] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [promotionToDelete, setPromotionToDelete] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Fetch promotions data
     const fetchPromotions = async () => {
@@ -27,6 +32,7 @@ function GetAllPromotion() {
             const response = await getAllPromotion();
 
             if (response.isSuccess) {
+                console.log('Promotions fetched:', response.result);
                 setPromotions(response.result || []);
             } else {
                 const errorMsg = response.message || 'Không thể tải danh sách khuyến mãi';
@@ -122,6 +128,46 @@ function GetAllPromotion() {
         message.info('Chức năng xem chi tiết đang được phát triển');
     };
 
+    // Handle delete promotion
+    const handleDelete = (promotion) => {
+        console.log('Delete button clicked for promotion:', promotion);
+        setPromotionToDelete(promotion);
+        setShowDeleteModal(true);
+    };
+
+    // Handle confirm delete
+    const handleConfirmDelete = async () => {
+        if (!promotionToDelete) return;
+
+        try {
+            setDeleteLoading(true);
+            console.log('Calling DeletePromotion API with ID:', promotionToDelete.id);
+
+            const response = await DeletePromotion(promotionToDelete.id);
+            console.log('Delete response:', response);
+
+            if (response.isSuccess) {
+                message.success('Xóa khuyến mãi thành công!');
+                setShowDeleteModal(false);
+                setPromotionToDelete(null);
+                fetchPromotions(); // Refresh data
+            } else {
+                message.error(response.message || 'Không thể xóa khuyến mãi');
+            }
+        } catch (error) {
+            console.error('Error deleting promotion:', error);
+            message.error('Lỗi khi xóa khuyến mãi. Vui lòng thử lại sau.');
+        } finally {
+            setDeleteLoading(false);
+        }
+    };
+
+    // Handle cancel delete
+    const handleCancelDelete = () => {
+        setShowDeleteModal(false);
+        setPromotionToDelete(null);
+    };
+
     // Handle update success
     const handleUpdateSuccess = () => {
         fetchPromotions(); // Refresh data
@@ -179,6 +225,7 @@ function GetAllPromotion() {
                         getPromotionStatus={getPromotionStatus}
                         onEdit={handleEdit}
                         onView={handleView}
+                        onDelete={handleDelete}
                     />
                 </div>
 
@@ -188,6 +235,17 @@ function GetAllPromotion() {
                     onCancel={handleCloseUpdateModal}
                     onSuccess={handleUpdateSuccess}
                     promotionData={selectedPromotion}
+                />
+
+                {/* Delete Confirmation Modal */}
+                <DeleteConfirmModal
+                    visible={showDeleteModal}
+                    onCancel={handleCancelDelete}
+                    onConfirm={handleConfirmDelete}
+                    promotionData={promotionToDelete}
+                    loading={deleteLoading}
+                    formatDate={formatDate}
+                    formatCurrency={formatCurrency}
                 />
             </PageContainer>
         </AdminLayout>

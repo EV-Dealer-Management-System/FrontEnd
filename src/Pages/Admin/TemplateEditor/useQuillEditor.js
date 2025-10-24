@@ -17,7 +17,11 @@ const quillFormats = [
 ];
 
 // === Tiền/Xử lý HTML (tuỳ chỉnh theo bạn) ===
-const preprocessHtmlForQuill = (html = '') => String(html);
+const preprocessHtmlForQuill = (html = '') => {
+  let clean= String(html);
+  clean = clean.replace(/<div[^>]*class=["'][^"']*sign[^"']*["'][\s\S]*?<\/div>/gi, '');
+  return clean;
+};
 const postprocessHtmlFromQuill = (html = '') => String(html);
 
 // === debounce đơn giản ===

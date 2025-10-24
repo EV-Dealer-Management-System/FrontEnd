@@ -66,60 +66,50 @@ function BookingTable({
 
   // Hiển thị trạng thái booking với style nâng cao
   const getStatusTag = (status) => {
-    // Chuyển đổi status về dạng chuẩn
-    let statusValue = "";
-    if (typeof status === "number") {
-      const numberStatusMap = {
-        0: "pending",
-        1: "approved",
-        2: "rejected",
-        3: "cancelled",
-        4: "completed",
-      };
-      statusValue = numberStatusMap[status] || "";
-    } else if (typeof status === "string") {
-      statusValue = status.toLowerCase();
-    } else {
-      statusValue = "";
-    }
-
+    // Mapping theo BookingStatus enum: Draft=0, Pending=1, Approved=2, Rejected=3, Cancelled=4, Completed=5
     const statusMap = {
-      pending: {
+      0: {
+        color: "#8c8c8c",
+        bg: "#fafafa",
+        text: "Bản Nháp",
+        icon: <SyncOutlined />,
+      },
+      1: {
         color: "#fa8c16",
         bg: "#fff7e6",
         text: "Chờ Duyệt",
         icon: <ClockCircleOutlined />,
       },
-      approved: {
+      2: {
         color: "#52c41a",
         bg: "#f6ffed",
         text: "Đã Duyệt",
         icon: <CheckCircleOutlined />,
       },
-      rejected: {
+      3: {
         color: "#ff4d4f",
         bg: "#fff1f0",
-        text: "Từ Chối",
+        text: "Đã Từ Chối",
         icon: <CloseCircleOutlined />,
       },
-      cancelled: {
+      4: {
         color: "#8c8c8c",
         bg: "#fafafa",
         text: "Đã Hủy",
         icon: <CloseCircleOutlined />,
       },
-      completed: {
+      5: {
         color: "#1890ff",
         bg: "#e6f7ff",
-        text: "Hoàn Thành",
+        text: "Đã Hoàn Thành",
         icon: <CheckCircleOutlined />,
       },
     };
 
-    const statusInfo = statusMap[statusValue] || {
+    const statusInfo = statusMap[status] || {
       color: "#d9d9d9",
       bg: "#fafafa",
-      text: "N/A",
+      text: "Unknown",
       icon: null,
     };
 
@@ -258,7 +248,7 @@ function BookingTable({
       fixed: "right",
       render: (_, record) => {
         const isUpdating = updatingStatus[record.id];
-        const isPending = record.status === 0 || record.status === "pending";
+        const isDraft = record.status === 0; // Status Draft = 0
 
         return (
           <Space size={8}>
@@ -276,21 +266,20 @@ function BookingTable({
               Chi tiết
             </Button>
 
-            {isPending && (
+            {isDraft && (
               <Button
                 type="primary"
-                icon={<AuditOutlined />}
+                danger
+                icon={<CloseCircleOutlined />}
                 onClick={() => showReviewModal(record)}
                 loading={isUpdating}
                 size="middle"
                 style={{
                   borderRadius: 6,
                   fontWeight: 500,
-                  backgroundColor: "#1890ff",
-                  borderColor: "#1890ff",
                 }}
               >
-                Hủy Đơn
+               Xác Nhận
               </Button>
             )}
           </Space>
@@ -332,8 +321,8 @@ function BookingTable({
         headerTitle={false}
         size="middle"
         rowClassName={(record, index) => {
-          const isPending = record.status === 0 || record.status === "pending";
-          if (isPending) {
+          const isDraft = record.status === 0; // Status Draft = 0
+          if (isDraft) {
             return "highlight-pending-row";
           }
           return index % 2 === 0 ? "table-row-even" : "table-row-odd";
@@ -352,10 +341,10 @@ function BookingTable({
         booking={reviewModal.booking}
         onClose={closeReviewModal}
         onApprove={() =>
-          handleUpdateStatus(reviewModal.booking?.id, 3, "Đồng Ý")
+          handleUpdateStatus(reviewModal.booking?.id, 1, "Đồng Ý")
         }
         onReject={() =>
-          handleUpdateStatus(reviewModal.booking?.id, 0, "Từ chối")
+          handleUpdateStatus(reviewModal.booking?.id, 4, "Từ chối")
         }
         loading={updatingStatus[reviewModal.booking?.id]}
       />

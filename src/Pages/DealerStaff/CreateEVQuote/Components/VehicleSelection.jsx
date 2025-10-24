@@ -1,434 +1,550 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import {
-    ProCard,
-    ProFormSelect,
-    ProForm,
-    ProFormDigit,
-    ProDescriptions,
-    StatisticCard
-} from '@ant-design/pro-components';
+  ProCard,
+  ProFormSelect,
+  ProForm,
+  ProFormDigit,
+} from "@ant-design/pro-components";
 import {
-    Typography,
-    Row,
-    Col,
-    Spin,
-    Empty,
-    Button,
-    Badge,
-    Tag,
-    Space,
-    Tooltip
-} from 'antd';
-import {
-    CarOutlined,
-    PlusOutlined,
-    CheckCircleOutlined,
-    InfoCircleOutlined,
-    ShoppingCartOutlined,
-    ThunderboltOutlined,
-    BgColorsOutlined
-} from '@ant-design/icons';
+  Typography,
+  Row,
+  Col,
+  Spin,
+  Empty,
+  Tag,
+  Space,
+  message,
+  Divider,
+} from "antd";
+import { CarOutlined, ThunderboltOutlined } from "@ant-design/icons";
+import { getEVVersionById } from "../../../../App/DealerStaff/EVQuotesManagement/Partials/GetEVVersionByID";
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 function VehicleSelection({
-    inventory,
-    loadingInventory,
-    selectedItems,
-    onSelectionChange
+  inventory,
+  loadingInventory,
+  selectedItems,
+  onSelectionChange,
+  quantity,
+  onQuantityChange,
 }) {
-    const [selectedModel, setSelectedModel] = useState(null);
-    const [selectedVersion, setSelectedVersion] = useState(null);
+  const [selectedModel, setSelectedModel] = useState(null);
+  const [selectedVersion, setSelectedVersion] = useState(null);
+  const [versionSpecs, setVersionSpecs] = useState(null);
+  const [loadingSpecs, setLoadingSpecs] = useState(false);
 
-    // Group inventory by model
-    const groupedByModel = useMemo(() => {
-        return inventory.reduce((acc, item) => {
-            if (!acc[item.modelId]) {
-                acc[item.modelId] = {
-                    modelId: item.modelId,
-                    modelName: item.modelName,
-                    versions: {}
-                };
-            }
-
-            if (!acc[item.modelId].versions[item.versionId]) {
-                acc[item.modelId].versions[item.versionId] = {
-                    versionId: item.versionId,
-                    versionName: item.versionName,
-                    colors: []
-                };
-            }
-
-            acc[item.modelId].versions[item.versionId].colors.push({
-                colorId: item.colorId,
-                colorName: item.colorName,
-                quantity: item.quantity
-            });
-
-            return acc;
-        }, {});
-    }, [inventory]);
-
-    const models = Object.values(groupedByModel);
-    const versions = selectedModel ? Object.values(groupedByModel[selectedModel]?.versions || {}) : [];
-    const colors = selectedVersion ? versions.find(v => v.versionId === selectedVersion)?.colors || [] : [];
-
-    // Handle model selection
-    const handleModelChange = (modelId) => {
-        setSelectedModel(modelId);
-        setSelectedVersion(null);
-        onSelectionChange({
-            versionId: null,
-            colorId: null
-        });
-    };
-
-    // Handle version selection
-    const handleVersionChange = (versionId) => {
-        setSelectedVersion(versionId);
-        onSelectionChange({
-            versionId: versionId,
-            colorId: null
-        });
-    };
-
-    // Handle color selection
-    const handleColorChange = (colorId) => {
-        onSelectionChange({
-            versionId: selectedVersion,
-            colorId: colorId
-        });
-    };
-
-
-
-    // Get selected items info
-    const selectedInfo = useMemo(() => {
-        if (!selectedModel || !selectedVersion || !selectedItems.colorId) return null;
-
-        const model = groupedByModel[selectedModel];
-        const version = model?.versions[selectedVersion];
-        const color = version?.colors.find(c => c.colorId === selectedItems.colorId);
-
-        return {
-            modelName: model?.modelName,
-            versionName: version?.versionName,
-            colorName: color?.colorName,
-            quantity: color?.quantity || 0
+  // Group inventory by model
+  const groupedByModel = useMemo(() => {
+    return inventory.reduce((acc, item) => {
+      if (!acc[item.modelId]) {
+        acc[item.modelId] = {
+          modelId: item.modelId,
+          modelName: item.modelName,
+          versions: {},
         };
-    }, [selectedModel, selectedVersion, selectedItems.colorId, groupedByModel]);
+      }
 
+      if (!acc[item.modelId].versions[item.versionId]) {
+        acc[item.modelId].versions[item.versionId] = {
+          versionId: item.versionId,
+          versionName: item.versionName,
+          colors: [],
+        };
+      }
 
+      acc[item.modelId].versions[item.versionId].colors.push({
+        colorId: item.colorId,
+        colorName: item.colorName,
+        quantity: item.quantity,
+      });
 
-    if (loadingInventory) {
-        return (
-            <ProCard className="min-h-96">
-                <div className="flex flex-col items-center justify-center py-16">
-                    <Spin size="large" />
-                    <p className="mt-4 text-gray-500 text-base">Đang tải thông tin kho xe điện...</p>
-                </div>
-            </ProCard>
-        );
+      return acc;
+    }, {});
+  }, [inventory]);
+
+  const models = Object.values(groupedByModel);
+  const versions = selectedModel
+    ? Object.values(groupedByModel[selectedModel]?.versions || {})
+    : [];
+  const colors = selectedVersion
+    ? versions.find((v) => v.versionId === selectedVersion)?.colors || []
+    : [];
+
+  // Handle model selection
+  const handleModelChange = (modelId) => {
+    setSelectedModel(modelId);
+    setSelectedVersion(null);
+    setVersionSpecs(null);
+    onSelectionChange({
+      versionId: null,
+      colorId: null,
+    });
+  };
+
+  // Handle version selection
+  const handleVersionChange = async (versionId) => {
+    setSelectedVersion(versionId);
+    onSelectionChange({
+      versionId: versionId,
+      colorId: null,
+    });
+
+    // Fetch version specifications
+    if (versionId) {
+      try {
+        setLoadingSpecs(true);
+        const response = await getEVVersionById(versionId);
+        if (response.isSuccess) {
+          setVersionSpecs(response.result);
+        } else {
+          message.error("Không thể tải thông số kỹ thuật");
+          setVersionSpecs(null);
+        }
+      } catch (error) {
+        console.error("Error fetching version specs:", error);
+        message.error("Lỗi khi tải thông số kỹ thuật");
+        setVersionSpecs(null);
+      } finally {
+        setLoadingSpecs(false);
+      }
+    } else {
+      setVersionSpecs(null);
     }
+  };
 
-    if (!inventory.length) {
-        return (
-            <ProCard>
-                <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={
-                        <div className="text-center">
-                            <p className="text-gray-500 text-base mb-2">Không có xe điện trong kho</p>
-                            <p className="text-gray-400 text-sm">Vui lòng liên hệ quản lý để nhập thêm xe vào kho</p>
-                        </div>
-                    }
-                />
-            </ProCard>
-        );
-    }
+  // Handle color selection
+  const handleColorChange = (colorId) => {
+    onSelectionChange({
+      versionId: selectedVersion,
+      colorId: colorId,
+    });
+  };
 
-    return (
-        <div className="max-w-4xl mx-auto">
-            <ProCard
-                title={
-                    <div className="flex items-center gap-2">
-                        <CarOutlined className="text-blue-500" />
-                        <span className="text-lg font-semibold">Chi tiết đặt xe</span>
-                    </div>
-                }
-                className="shadow-sm"
-                extra={
-                    <Space>
-                        {/* <Badge count={selectedItems.colorId ? 1 : 0} showZero={false}>
-                            <Tag icon={<ShoppingCartOutlined />} color="blue">
-                                Xe #{selectedItems.colorId || '1'}
-                            </Tag>
-                        </Badge> */}
-                        <Tooltip title="Thông tin chi tiết về xe đã chọn">
-                            <InfoCircleOutlined className="text-gray-400" />
-                        </Tooltip>
-                    </Space>
-                }
-            >
-                <ProForm
-                    layout="horizontal"
-                    labelCol={{ span: 4 }}
-                    wrapperCol={{ span: 20 }}
-                    submitter={false}
-                    size="large"
-                >
-                    <Row gutter={[24, 16]}>
-                        <Col span={12}>
-                            <ProFormSelect
-                                label={
-                                    <Space>
-                                        <CarOutlined className="text-blue-500" />
-                                        <span className="text-red-500">* Mẫu xe</span>
-                                    </Space>
-                                }
-                                name="model"
-                                placeholder="Chọn mẫu xe điện"
-                                options={models.map(model => ({
-                                    label: (
-                                        <div className="flex justify-between items-center py-1">
-                                            <Space>
-                                                <CarOutlined className="text-blue-500" />
-                                                <span className="font-medium">{model.modelName}</span>
-                                            </Space>
-                                            <Tag color="green" size="small">Có sẵn</Tag>
-                                        </div>
-                                    ),
-                                    value: model.modelId
-                                }))}
-                                fieldProps={{
-                                    value: selectedModel,
-                                    onChange: handleModelChange,
-                                    showSearch: true,
-                                    filterOption: (input, option) =>
-                                        models.find(m => m.modelId === option.value)?.modelName
-                                            ?.toLowerCase().includes(input.toLowerCase()),
-                                    style: { borderRadius: '8px' }
-                                }}
-                                rules={[{ required: true, message: 'Vui lòng chọn mẫu xe!' }]}
-                            />
-                        </Col>
-                        <Col span={12}>
-                            <ProFormSelect
-                                label={
-                                    <Space>
-                                        <ThunderboltOutlined className="text-orange-500" />
-                                        <span className="text-red-500">* Phiên bản</span>
-                                    </Space>
-                                }
-                                name="version"
-                                placeholder="Chọn phiên bản xe"
-                                options={versions.map(version => ({
-                                    label: (
-                                        <div className="flex justify-between items-center py-1">
-                                            <Space>
-                                                <ThunderboltOutlined className="text-orange-500" />
-                                                <span className="font-medium">{version.versionName}</span>
-                                            </Space>
-                                            <Tag color="blue" size="small">2025</Tag>
-                                        </div>
-                                    ),
-                                    value: version.versionId
-                                }))}
-                                fieldProps={{
-                                    value: selectedVersion,
-                                    onChange: handleVersionChange,
-                                    showSearch: true,
-                                    filterOption: (input, option) =>
-                                        versions.find(v => v.versionId === option.value)?.versionName
-                                            ?.toLowerCase().includes(input.toLowerCase()),
-                                    style: { borderRadius: '8px' }
-                                }}
-                                disabled={!selectedModel}
-                                rules={[{ required: true, message: 'Vui lòng chọn phiên bản!' }]}
-                            />
-                        </Col>
-                    </Row>
+  // Get selected items info
+  const selectedInfo = useMemo(() => {
+    if (!selectedModel || !selectedVersion || !selectedItems.colorId)
+      return null;
 
-                    <Row gutter={[24, 16]}>
-                        <Col span={12}>
-                            <ProFormSelect
-                                label={
-                                    <Space>
-                                        <BgColorsOutlined className="text-purple-500" />
-                                        <span className="text-red-500">* Màu xe</span>
-                                    </Space>
-                                }
-                                name="color"
-                                placeholder="Chọn màu sắc xe"
-                                options={colors.map(color => ({
-                                    label: (
-                                        <div className="flex justify-between items-center py-1">
-                                            <div className="flex items-center gap-2">
-                                                <div
-                                                    className="w-4 h-4 rounded-full border-2 border-gray-300 shadow-sm"
-                                                    style={{
-                                                        backgroundColor: color.colorName === 'Đen Bóng' ? '#000' :
-                                                            color.colorName === 'Trắng' ? '#fff' :
-                                                                color.colorName === 'Đỏ' ? '#ff0000' :
-                                                                    color.colorName === 'Xanh' ? '#0000ff' : '#ccc'
-                                                    }}
-                                                />
-                                                <span className="font-medium">{color.colorName}</span>
-                                            </div>
-                                            {/* <Tag
-                                                color={color.quantity > 0 ? 'success' : 'error'}
-                                                size="small"
-                                            >
-                                                {color.quantity} xe
-                                            </Tag> */}
-                                        </div>
-                                    ),
-                                    value: color.colorId,
-                                    disabled: color.quantity === 0
-                                }))}
-                                fieldProps={{
-                                    value: selectedItems.colorId,
-                                    onChange: handleColorChange,
-                                    showSearch: true,
-                                    filterOption: (input, option) =>
-                                        colors.find(c => c.colorId === option.value)?.colorName
-                                            ?.toLowerCase().includes(input.toLowerCase()),
-                                    style: { borderRadius: '8px' }
-                                }}
-                                disabled={!selectedVersion}
-                                rules={[{ required: true, message: 'Vui lòng chọn màu xe!' }]}
-                            />
-                        </Col>
-                        <Col span={12}>
-                            <ProFormDigit
-                                label={
-                                    <Space>
-                                        <ShoppingCartOutlined className="text-green-500" />
-                                        <span className="text-red-500">* Số lượng</span>
-                                    </Space>
-                                }
-                                name="quantity"
-                                placeholder="Nhập số lượng xe"
-                                min={1}
-                                max={selectedInfo?.quantity || 1}
-                                fieldProps={{
-                                    precision: 0,
-                                    style: {
-                                        width: '100%',
-                                        borderRadius: '8px'
-                                    },
-                                    controls: true,
-                                    changeOnWheel: true
-                                }}
-                                rules={[
-                                    { required: true, message: 'Vui lòng nhập số lượng!' },
-                                    { type: 'number', min: 1, message: 'Số lượng phải lớn hơn 0!' }
-                                ]}
-                            />
-                        </Col>
-                    </Row>
-
-                    {/* Trạng thái kho hàng */}
-                    {selectedInfo && (
-                        <Row gutter={16} className="mt-6">
-                            <Col span={24}>
-                                <StatisticCard
-                                    statistic={{
-                                        title: 'Tình trạng kho hàng',
-                                        value: selectedInfo.quantity,
-                                        suffix: 'xe có sẵn',
-                                        icon: <CheckCircleOutlined className="text-green-500" />,
-                                        valueStyle: { color: '#52c41a', fontSize: '20px' },
-                                        description: (
-                                            <Space>
-                                                <Tag color="success" icon={<CheckCircleOutlined />}>
-                                                    Sẵn có
-                                                </Tag>
-                                                <span className="text-gray-500">
-                                                    {selectedInfo.modelName} - {selectedInfo.versionName} - {selectedInfo.colorName}
-                                                </span>
-                                            </Space>
-                                        )
-                                    }}
-                                    className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg shadow-sm"
-                                />
-                            </Col>
-                        </Row>
-                    )}
-
-                    {/* Thông số kỹ thuật */}
-                    {/* {selectedInfo && (
-                        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                            <h4 className="font-semibold text-blue-700 mb-3">Thông số kỹ thuật</h4>
-                            <Row gutter={[24, 12]}>
-                                <Col span={8}>
-                                    <div className="text-sm">
-                                        <div className="text-gray-500">⚡ Công suất</div>
-                                        <div className="font-medium">3000 W</div>
-                                    </div>
-                                </Col>
-                                <Col span={8}>
-                                    <div className="text-sm">
-                                        <div className="text-gray-500">⏱️ Pin</div>
-                                        <div className="font-medium">72 V</div>
-                                    </div>
-                                </Col>
-                                <Col span={8}>
-                                    <div className="text-sm">
-                                        <div className="text-gray-500">🏁 Tốc độ</div>
-                                        <div className="font-medium">85 km/h</div>
-                                    </div>
-                                </Col>
-                                <Col span={8}>
-                                    <div className="text-sm">
-                                        <div className="text-gray-500">🔋 Tầm hoạt động</div>
-                                        <div className="font-medium">120 km</div>
-                                    </div>
-                                </Col>
-                                <Col span={8}>
-                                    <div className="text-sm">
-                                        <div className="text-gray-500">⚖️ Trọng lượng</div>
-                                        <div className="font-medium">78 kg</div>
-                                    </div>
-                                </Col>
-                                <Col span={8}>
-                                    <div className="text-sm">
-                                        <div className="text-gray-500">📏 Chiều cao</div>
-                                        <div className="font-medium">1120 cm</div>
-                                    </div>
-                                </Col>
-                                <Col span={24}>
-                                    <div className="text-sm">
-                                        <div className="text-gray-500">📝 Năm sản xuất</div>
-                                        <div className="font-medium">2025</div>
-                                    </div>
-                                </Col>
-                            </Row>
-
-                            <div className="mt-4 p-3 bg-white rounded border">
-                                <div className="text-sm text-gray-600">
-                                    📋 <strong>Mô tả:</strong>
-                                    <div className="mt-1 italic">
-                                        Phiên bản cao cấp của E-Scooter, pin lithium 72V động cơ mạnh mẽ.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )} */}
-
-                    {/* Nút thêm xe */}
-                    <div className="mt-6 text-center">
-                        <Button
-                            type="dashed"
-                            icon={<PlusOutlined />}
-                            size="large"
-                            className="w-full max-w-md"
-                        >
-                            + Thêm xe
-                        </Button>
-                    </div>
-                </ProForm>
-            </ProCard>
-        </div>
+    const model = groupedByModel[selectedModel];
+    const version = model?.versions[selectedVersion];
+    const color = version?.colors.find(
+      (c) => c.colorId === selectedItems.colorId
     );
-} export default VehicleSelection;
+
+    return {
+      modelName: model?.modelName,
+      versionName: version?.versionName,
+      colorName: color?.colorName,
+      quantity: color?.quantity || 0,
+    };
+  }, [selectedModel, selectedVersion, selectedItems.colorId, groupedByModel]);
+
+  if (loadingInventory) {
+    return (
+      <ProCard className="min-h-96">
+        <div className="flex flex-col items-center justify-center py-16">
+          <Spin size="large" />
+          <p className="mt-4 text-gray-500 text-base">
+            Đang tải thông tin kho xe điện...
+          </p>
+        </div>
+      </ProCard>
+    );
+  }
+
+  if (!inventory.length) {
+    return (
+      <ProCard>
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={
+            <div className="text-center">
+              <p className="text-gray-500 text-base mb-2">
+                Không có xe điện trong kho
+              </p>
+              <p className="text-gray-400 text-sm">
+                Vui lòng liên hệ quản lý để nhập thêm xe vào kho
+              </p>
+            </div>
+          }
+        />
+      </ProCard>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Vehicle Card */}
+      <ProCard
+        title={
+          <Space>
+            <CarOutlined style={{ color: "#1890ff" }} />
+            <Text strong>Xe #1</Text>
+          </Space>
+        }
+        bordered
+        headerBordered
+      >
+        <ProForm layout="vertical" submitter={false}>
+          {/* Row 1: Mẫu xe và Phiên bản */}
+          <Row gutter={16}>
+            <Col span={12}>
+              <ProFormSelect
+                label={
+                  <span>
+                    <span style={{ color: "red" }}>* </span>
+                    Mẫu xe
+                  </span>
+                }
+                name="model"
+                placeholder="E-Scooter Pro Max"
+                showSearch
+                options={models.map((model) => ({
+                  label: model.modelName,
+                  value: model.modelId,
+                }))}
+                fieldProps={{
+                  value: selectedModel,
+                  onChange: handleModelChange,
+                }}
+                rules={[{ required: true, message: "Vui lòng chọn mẫu xe!" }]}
+              />
+            </Col>
+            <Col span={12}>
+              <ProFormSelect
+                label={
+                  <span>
+                    <span style={{ color: "red" }}>* </span>
+                    Phiên bản
+                  </span>
+                }
+                name="version"
+                placeholder="E-Scooter Pro Max 2025"
+                showSearch
+                disabled={!selectedModel}
+                options={versions.map((version) => ({
+                  label: version.versionName,
+                  value: version.versionId,
+                }))}
+                fieldProps={{
+                  value: selectedVersion,
+                  onChange: handleVersionChange,
+                }}
+                rules={[
+                  { required: true, message: "Vui lòng chọn phiên bản!" },
+                ]}
+              />
+            </Col>
+          </Row>
+
+          {/* Row 2: Màu xe và Số lượng */}
+          <Row gutter={16}>
+            <Col span={12}>
+              <ProFormSelect
+                label={
+                  <span>
+                    <span style={{ color: "red" }}>* </span>
+                    Màu xe
+                  </span>
+                }
+                name="color"
+                placeholder="Chọn phiên bản trước"
+                showSearch
+                disabled={!selectedVersion}
+                options={colors.map((color) => ({
+                  label: color.colorName,
+                  value: color.colorId,
+                  disabled: color.quantity === 0,
+                }))}
+                fieldProps={{
+                  value: selectedItems.colorId,
+                  onChange: handleColorChange,
+                }}
+                rules={[{ required: true, message: "Vui lòng chọn màu xe!" }]}
+              />
+              {!selectedVersion && (
+                <Text type="danger" style={{ fontSize: 12 }}>
+                  Vui lòng chọn màu xe
+                </Text>
+              )}
+            </Col>
+            <Col span={12}>
+              <ProFormDigit
+                label={
+                  <span>
+                    <span style={{ color: "red" }}>* </span>
+                    Số lượng
+                  </span>
+                }
+                name="quantity"
+                placeholder="Nhập số lượng"
+                min={1}
+                max={selectedInfo?.quantity || 999}
+                disabled={!selectedItems.colorId}
+                fieldProps={{
+                  precision: 0,
+                  value: quantity,
+                  onChange: onQuantityChange,
+                }}
+                rules={[
+                  { required: true, message: "Vui lòng nhập số lượng!" },
+                  {
+                    type: "number",
+                    min: 1,
+                    message: "Số lượng phải lớn hơn 0!",
+                  },
+                ]}
+              />
+              {selectedInfo && selectedInfo.quantity > 0 && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: "8px 12px",
+                    backgroundColor: "#e6f7ff",
+                    border: "1px solid #91d5ff",
+                    borderRadius: 6,
+                    textAlign: "center",
+                  }}
+                >
+                  <Space size={2}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        color: "#0050b3",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Còn {selectedInfo.quantity} xe trong kho hàng
+                    </Text>
+                  </Space>
+                </div>
+              )}
+            </Col>
+          </Row>
+
+          {/* Thông số kỹ thuật */}
+          {selectedVersion && (
+            <>
+              {loadingSpecs ? (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <Spin size="large" />
+                  <div style={{ marginTop: 16, color: "#8c8c8c" }}>
+                    Đang tải thông số kỹ thuật...
+                  </div>
+                </div>
+              ) : versionSpecs ? (
+                <ProCard
+                  title={
+                    <Title level={5} style={{ margin: 0, color: "#1890ff" }}>
+                      Thông số kỹ thuật
+                    </Title>
+                  }
+                  bordered
+                  style={{
+                    marginTop: 24,
+                    backgroundColor: "#f0f5ff",
+                  }}
+                  bodyStyle={{ padding: "20px 24px" }}
+                >
+                  <Row gutter={[24, 20]}>
+                    {/* Công suất */}
+                    <Col span={12}>
+                      <Space
+                        direction="vertical"
+                        size={4}
+                        style={{ width: "100%" }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          ⚡ Công suất
+                        </Text>
+                        <Tag
+                          color="orange"
+                          style={{
+                            fontSize: 14,
+                            padding: "6px 16px",
+                            margin: 0,
+                            borderRadius: 6,
+                          }}
+                        >
+                          {versionSpecs.motorPower} W
+                        </Tag>
+                      </Space>
+                    </Col>
+
+                    {/* Pin */}
+                    <Col span={12}>
+                      <Space
+                        direction="vertical"
+                        size={4}
+                        style={{ width: "100%" }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          🔋 Pin
+                        </Text>
+                        <Tag
+                          color="green"
+                          style={{
+                            fontSize: 14,
+                            padding: "6px 16px",
+                            margin: 0,
+                            borderRadius: 6,
+                          }}
+                        >
+                          {versionSpecs.batteryCapacity} V
+                        </Tag>
+                      </Space>
+                    </Col>
+
+                    {/* Tốc độ */}
+                    <Col span={12}>
+                      <Space
+                        direction="vertical"
+                        size={4}
+                        style={{ width: "100%" }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          🏁 Tốc độ
+                        </Text>
+                        <Tag
+                          color="red"
+                          style={{
+                            fontSize: 14,
+                            padding: "6px 16px",
+                            margin: 0,
+                            borderRadius: 6,
+                          }}
+                        >
+                          {versionSpecs.topSpeed} km/h
+                        </Tag>
+                      </Space>
+                    </Col>
+
+                    {/* Tầm hoạt động */}
+                    <Col span={12}>
+                      <Space
+                        direction="vertical"
+                        size={4}
+                        style={{ width: "100%" }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          🔌 Tầm hoạt động
+                        </Text>
+                        <Tag
+                          color="blue"
+                          style={{
+                            fontSize: 14,
+                            padding: "6px 16px",
+                            margin: 0,
+                            borderRadius: 6,
+                          }}
+                        >
+                          {versionSpecs.rangePerCharge} km
+                        </Tag>
+                      </Space>
+                    </Col>
+
+                    {/* Trọng lượng */}
+                    <Col span={12}>
+                      <Space
+                        direction="vertical"
+                        size={4}
+                        style={{ width: "100%" }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          ⚖️ Trọng lượng
+                        </Text>
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#262626",
+                          }}
+                        >
+                          {versionSpecs.weight} kg
+                        </div>
+                      </Space>
+                    </Col>
+
+                    {/* Chiều cao */}
+                    <Col span={12}>
+                      <Space
+                        direction="vertical"
+                        size={4}
+                        style={{ width: "100%" }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          📏 Chiều cao
+                        </Text>
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: "#262626",
+                          }}
+                        >
+                          {versionSpecs.height} cm
+                        </div>
+                      </Space>
+                    </Col>
+
+                    {/* Năm sản xuất */}
+                    <Col span={24}>
+                      <Space
+                        direction="vertical"
+                        size={4}
+                        style={{ width: "100%" }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          📅 Năm sản xuất
+                        </Text>
+                        <Tag
+                          color="purple"
+                          style={{
+                            fontSize: 14,
+                            padding: "6px 16px",
+                            margin: 0,
+                            borderRadius: 6,
+                          }}
+                        >
+                          {versionSpecs.productionYear}
+                        </Tag>
+                      </Space>
+                    </Col>
+                  </Row>
+
+                  {/* Mô tả */}
+                  {versionSpecs.description && (
+                    <>
+                      <Divider style={{ margin: "20px 0" }} />
+                      <Space
+                        direction="vertical"
+                        size={8}
+                        style={{ width: "100%" }}
+                      >
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          📝 Mô tả:
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontStyle: "italic",
+                            color: "#595959",
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          {versionSpecs.description}
+                        </Text>
+                      </Space>
+                    </>
+                  )}
+                </ProCard>
+              ) : null}
+            </>
+          )}
+        </ProForm>
+      </ProCard>
+    </div>
+  );
+}
+export default VehicleSelection;

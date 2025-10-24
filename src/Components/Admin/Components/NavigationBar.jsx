@@ -73,7 +73,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           //   component: "./CreateAccount",
           // },
           {
-            path: "/admin/dealer/list",
+            path: "/admin/dealer/all-dealers",
             name: "Danh sách đại lý",
             icon: <TeamOutlined />,
             component: "./DealerList",
@@ -97,6 +97,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           //   icon: <LineChartOutlined />,
           //   component: "./DealerPerformance",
           // },
+          {
+            path: "/admin/booking-signing",
+            name: "Hợp đồng đặt xe",
+            icon: <FileTextOutlined />,
+            component: "./BookingContract",
+          }
         ],
       },
       {

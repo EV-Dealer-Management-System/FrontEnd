@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-
+import React from "react";
 function getRoleFromToken(token) {
   try {
     const d = jwtDecode(token);

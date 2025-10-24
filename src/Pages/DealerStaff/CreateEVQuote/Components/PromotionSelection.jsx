@@ -1,181 +1,248 @@
-import React, { useMemo } from 'react';
+import React, { useMemo } from "react";
+import { ProCard } from "@ant-design/pro-components";
 import {
-    ProCard,
-    ProFormSelect,
-    ProDescriptions
-} from '@ant-design/pro-components';
+  Tag,
+  Empty,
+  Spin,
+  Typography,
+  Select,
+  Space,
+  Row,
+  Col,
+  Divider,
+} from "antd";
 import {
-    Tag,
-    Empty,
-    Spin,
-    Typography
-} from 'antd';
-import {
-    GiftOutlined,
-    PercentageOutlined,
-    DollarOutlined,
-    CheckCircleOutlined
-} from '@ant-design/icons';
+  GiftOutlined,
+  PercentageOutlined,
+  DollarOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+} from "@ant-design/icons";
 
 const { Text } = Typography;
+const { Option } = Select;
 
 function PromotionSelection({
-    promotions,
-    loadingPromotions,
-    selectedPromotionId,
-    onPromotionChange
+  promotions,
+  loadingPromotions,
+  selectedPromotionId,
+  onPromotionChange,
 }) {
-    // Format tiền tệ
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
-    };
+  // Format tiền tệ
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("vi-VN").format(amount) + " VNĐ";
+  };
 
-    // Lọc khuyến mãi đang hoạt động
-    const activePromotions = useMemo(() => {
-        const now = new Date();
+  // Lọc khuyến mãi đang hoạt động
+  const activePromotions = useMemo(() => {
+    const now = new Date();
 
-        return promotions.filter(promotion => {
-            if (!promotion.isActive) return false;
+    return promotions.filter((promotion) => {
+      if (!promotion.isActive) return false;
 
-            const start = new Date(promotion.startDate);
-            const end = new Date(promotion.endDate);
+      const start = new Date(promotion.startDate);
+      const end = new Date(promotion.endDate);
 
-            return now >= start && now <= end;
-        });
-    }, [promotions]);
+      return now >= start && now <= end;
+    });
+  }, [promotions]);
 
-    // Tạo options cho ProFormSelect
-    const promotionOptions = useMemo(() => {
-        return activePromotions.map(promotion => ({
-            label: (
-                <div className="flex justify-between items-center py-1">
-                    <div className="flex-1">
-                        <div className="font-medium text-gray-900">{promotion.name}</div>
-                        <div className="text-xs text-gray-500">{promotion.description}</div>
-                    </div>
-                    <div className="ml-2">
-                        {promotion.discountType === 0 ? (
-                            <Tag color="green" icon={<DollarOutlined />}>
-                                {formatCurrency(promotion.fixedAmount)}
-                            </Tag>
-                        ) : (
-                            <Tag color="blue" icon={<PercentageOutlined />}>
-                                {promotion.percentage}%
-                            </Tag>
-                        )}
-                    </div>
-                </div>
-            ),
-            value: promotion.id,
-            promotion: promotion
-        }));
-    }, [activePromotions]);
+  // Khuyến mãi đã chọn
+  const selectedPromotion = useMemo(() => {
+    if (!selectedPromotionId) return null;
+    return activePromotions.find((p) => p.id === selectedPromotionId);
+  }, [activePromotions, selectedPromotionId]);
 
-    // Khuyến mãi đã chọn
-    const selectedPromotion = useMemo(() => {
-        if (!selectedPromotionId) return null;
-        return activePromotions.find(p => p.id === selectedPromotionId);
-    }, [activePromotions, selectedPromotionId]);
-
-    if (loadingPromotions) {
-        return (
-            <ProCard>
-                <div className="text-center py-8">
-                    <Spin size="large" tip="Đang tải khuyến mãi..." />
-                </div>
-            </ProCard>
-        );
-    }
-
+  if (loadingPromotions) {
     return (
-        <ProCard
-            title={
-                <div className="flex items-center gap-2">
-                    <GiftOutlined className="text-orange-500" />
-                    <span>Chọn Khuyến Mãi</span>
-                    <Tag color="blue">{activePromotions.length} có sẵn</Tag>
-                </div>
-            }
-            className="mb-4"
-        >
-            {activePromotions.length === 0 ? (
-                <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="Không có khuyến mãi nào đang hoạt động"
-                />
-            ) : (
-                <div className="space-y-4">
-                    <ProFormSelect
-                        name="promotionId"
-                        placeholder="Chọn khuyến mãi (tùy chọn)"
-                        options={promotionOptions}
-                        fieldProps={{
-                            value: selectedPromotionId,
-                            onChange: onPromotionChange,
-                            allowClear: true,
-                            showSearch: true,
-                            size: 'large',
-                            filterOption: (input, option) =>
-                                option?.promotion?.name?.toLowerCase().includes(input.toLowerCase())
-                        }}
-                        rules={[]}
-                    />
-
-                    {/* Hiển thị thông tin khuyến mãi đã chọn */}
-                    {selectedPromotion && (
-                        <ProCard
-                            size="small"
-                            className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200"
-                        >
-                            <ProDescriptions
-                                column={1}
-                                size="small"
-                                dataSource={selectedPromotion}
-                                columns={[
-                                    {
-                                        title: '🎁 Khuyến mãi được chọn',
-                                        dataIndex: 'name',
-                                        render: (text) => (
-                                            <Text strong className="text-orange-900 text-base">
-                                                {text}
-                                            </Text>
-                                        )
-                                    },
-                                    {
-                                        title: 'Mô tả',
-                                        dataIndex: 'description',
-                                        render: (text) => (
-                                            <Text className="text-orange-700">
-                                                {text}
-                                            </Text>
-                                        )
-                                    },
-                                    {
-                                        title: 'Giá trị giảm',
-                                        dataIndex: 'discountType',
-                                        render: (type, record) => (
-                                            <div className="flex items-center gap-2">
-                                                <CheckCircleOutlined className="text-green-500" />
-                                                {type === 0 ? (
-                                                    <Tag color="green" icon={<DollarOutlined />} className="text-sm">
-                                                        Giảm {formatCurrency(record.fixedAmount)}
-                                                    </Tag>
-                                                ) : (
-                                                    <Tag color="blue" icon={<PercentageOutlined />} className="text-sm">
-                                                        Giảm {record.percentage}%
-                                                    </Tag>
-                                                )}
-                                            </div>
-                                        )
-                                    }
-                                ]}
-                            />
-                        </ProCard>
-                    )}
-                </div>
-            )}
-        </ProCard>
+      <ProCard>
+        <div style={{ textAlign: "center", padding: "40px 0" }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 16, color: "#8c8c8c" }}>
+            Đang tải khuyến mãi...
+          </div>
+        </div>
+      </ProCard>
     );
+  }
+
+  return (
+    <ProCard
+      title={
+        <Space>
+          <GiftOutlined style={{ color: "#fa8c16" }} />
+          <Text strong>Chọn khuyến mãi</Text>
+        </Space>
+      }
+      extra={<Tag color="blue">{activePromotions.length} chương trình</Tag>}
+      bordered
+      headerBordered
+    >
+      {activePromotions.length === 0 ? (
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="Không có khuyến mãi nào đang hoạt động"
+        />
+      ) : (
+        <Space direction="vertical" size="large" style={{ width: "100%" }}>
+          {/* Select dropdown */}
+          <div>
+            <Select
+              placeholder="Chọn chương trình khuyến mãi (tùy chọn)"
+              value={selectedPromotionId}
+              onChange={onPromotionChange}
+              allowClear
+              showSearch
+              size="large"
+              style={{ width: "100%" }}
+              filterOption={(input, option) =>
+                option.searchtext.toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              {activePromotions.map((promotion) => (
+                <Option
+                  key={promotion.id}
+                  value={promotion.id}
+                  searchtext={promotion.name}
+                >
+                  <Space
+                    style={{ width: "100%", justifyContent: "space-between" }}
+                  >
+                    <Text strong style={{ fontSize: 14 }}>
+                      {promotion.name}
+                    </Text>
+                    {promotion.discountType === 0 ? (
+                      <Tag color="green">
+                        {formatCurrency(promotion.fixedAmount)}
+                      </Tag>
+                    ) : (
+                      <Tag color="blue" icon={<PercentageOutlined />}>
+                        {promotion.percentage}%
+                      </Tag>
+                    )}
+                  </Space>
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Thông tin khuyến mãi đã chọn */}
+          {selectedPromotion ? (
+            <>
+              <Divider style={{ margin: 0 }} />
+              <div
+                style={{
+                  padding: "16px",
+                  backgroundColor: "#fff7e6",
+                  border: "1px solid #ffd591",
+                  borderRadius: 8,
+                }}
+              >
+                <Space
+                  direction="vertical"
+                  size="middle"
+                  style={{ width: "100%" }}
+                >
+                  {/* Tên khuyến mãi */}
+                  <div>
+                    <Space>
+                      <CheckCircleOutlined
+                        style={{ color: "#52c41a", fontSize: 16 }}
+                      />
+                      <Text strong style={{ fontSize: 15, color: "#d46b08" }}>
+                        Khuyến mãi được áp dụng
+                      </Text>
+                    </Space>
+                  </div>
+
+                  {/* Chi tiết */}
+                  <Row gutter={[16, 12]}>
+                    <Col span={24}>
+                      <Space direction="vertical" size={2}>
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          Tên chương trình
+                        </Text>
+                        <Text strong style={{ fontSize: 14 }}>
+                          🎁 {selectedPromotion.name}
+                        </Text>
+                      </Space>
+                    </Col>
+                    <Col span={24}>
+                      <Space direction="vertical" size={2}>
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          Mô tả
+                        </Text>
+                        <Text style={{ fontSize: 14 }}>
+                          {selectedPromotion.description}
+                        </Text>
+                      </Space>
+                    </Col>
+                    <Col span={24}>
+                      <Space direction="vertical" size={2}>
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          Giá trị giảm giá
+                        </Text>
+                        <div>
+                          {selectedPromotion.discountType === 0 ? (
+                            <Tag
+                              color="green"
+                              icon={<DollarOutlined />}
+                              style={{
+                                fontSize: 14,
+                                padding: "6px 16px",
+                                borderRadius: 6,
+                              }}
+                            >
+                              Giảm{" "}
+                              {formatCurrency(selectedPromotion.fixedAmount)}
+                            </Tag>
+                          ) : (
+                            <Tag
+                              color="blue"
+                              icon={<PercentageOutlined />}
+                              style={{
+                                fontSize: 14,
+                                padding: "6px 16px",
+                                borderRadius: 6,
+                              }}
+                            >
+                              Giảm {selectedPromotion.percentage}%
+                            </Tag>
+                          )}
+                        </div>
+                      </Space>
+                    </Col>
+                  </Row>
+                </Space>
+              </div>
+            </>
+          ) : (
+            <div
+              style={{
+                padding: "16px",
+                backgroundColor: "#f5f5f5",
+                border: "1px dashed #d9d9d9",
+                borderRadius: 8,
+                textAlign: "center",
+              }}
+            >
+              <Space direction="vertical" size={4}>
+                <CloseCircleOutlined
+                  style={{ fontSize: 24, color: "#bfbfbf" }}
+                />
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  Chưa chọn khuyến mãi
+                </Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Báo giá sẽ sử dụng giá gốc
+                </Text>
+              </Space>
+            </div>
+          )}
+        </Space>
+      )}
+    </ProCard>
+  );
 }
 
 export default PromotionSelection;

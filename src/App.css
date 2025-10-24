@@ -48,7 +48,26 @@
 
 .custom-table .ant-table-thead > tr > th {
   background-color: #fafafa;
-  font-weight: 600;
+}
+
+/* Custom styles for Booking Details Table */
+.custom-booking-table .ant-table-tbody > tr:nth-child(even) > td {
+  background-color: #f0f9ff !important;
+}
+
+.custom-booking-table .ant-table-tbody > tr:nth-child(odd) > td {
+  background-color: white !important;
+}
+
+.custom-booking-table .ant-table-tbody > tr:hover > td {
+  background-color: #dbeafe !important;
+}
+
+.custom-booking-table .ant-table-thead > tr > th {
+  background-color: #f8fafc !important;
+  border-bottom: 2px solid #e5e7eb !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
 }
 
 /* Vehicle Management specific styles */
@@ -108,23 +127,38 @@
   line-height: 1;
 }
 
+/* Custom table styles for modals */
+.ant-descriptions-item-label {
+  background-color: #fafafa;
+}
+
+.ant-table-thead > tr > th {
+  background-color: #f8fafc;
+  font-weight: 600;
+  color: #374151;
+}
+
+.ant-table-summary {
+  background-color: #eff6ff;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .custom-table .ant-table-tbody > tr > td {
     padding: 8px 4px;
     font-size: 12px;
   }
-  
+
   .custom-table .ant-table-thead > tr > th {
     padding: 8px 4px;
     font-size: 12px;
   }
-  
+
   .vehicle-modal {
     margin: 0;
     padding: 0;
   }
-  
+
   .vehicle-modal .ant-modal-content {
     border-radius: 0;
   }

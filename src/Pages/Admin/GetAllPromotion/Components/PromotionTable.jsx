@@ -7,6 +7,7 @@ import {
     CalendarOutlined,
     EditOutlined,
     EyeOutlined,
+    DeleteOutlined,
     ClockCircleOutlined,
     CheckCircleOutlined,
     StopOutlined
@@ -20,7 +21,8 @@ function PromotionTable({
     formatDate,
     getPromotionStatus,
     onEdit,
-    onView
+    onView,
+    onDelete
 }) {
 
     const columns = [
@@ -148,7 +150,7 @@ function PromotionTable({
         {
             title: 'Thao tác',
             key: 'actions',
-            width: 100,
+            width: 140,
             fixed: 'right',
             align: 'center',
             render: (_, record) => (
@@ -171,6 +173,18 @@ function PromotionTable({
                             className="text-green-600 hover:text-green-700 hover:bg-green-50 border-0 rounded-lg"
                         />
                     </Tooltip>
+                    <Tooltip title="Xóa khuyến mãi">
+                        <Button
+                            type="text"
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() => {
+                                console.log('Delete button clicked!', record);
+                                onDelete && onDelete(record);
+                            }}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-0 rounded-lg"
+                        />
+                    </Tooltip>
                 </Space>
             ),
         },
@@ -180,7 +194,7 @@ function PromotionTable({
         <Card
             title={
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">     
+                    <div className="flex items-center gap-3">
                         <div>
                             <Title level={4} className="m-0 text-gray-900">
                                 Danh sách khuyến mãi
