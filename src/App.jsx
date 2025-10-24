@@ -45,6 +45,7 @@ import CreateEVPromotion from "./Pages/Admin/CreateEVPromotion/CreateEVPromotion
 import TemplateEditorPage from "./Pages/Admin/TemplateEditor/TemplateEditorPage";
 import BookingContract from "./Pages/Admin/BookingSigning/BookingContract";
 import GetAllEVDealerPage from "./Pages/Admin/GetAllEVDealer/GetAllEVDealer";
+import ViewAllContract from "./Pages/EVMStaff/GetAllContract/ViewAllContract";
 function App() {
   return (
     <BrowserRouter>
@@ -189,12 +190,17 @@ function App() {
                   path="contracts/create-contract"
                   element={<CreateContract />}
                 />
+                <Route
+                  path="contracts/view-all-dealer-contracts"
+                  element={<ViewAllContract />}
+                />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ EVM Staff */}
                 <Route
                   path="*"
                   element={<Navigate to="/evm-staff" replace />}
                 />
               </Routes>
+                
             </EVMStaffRoute>
           }
         />

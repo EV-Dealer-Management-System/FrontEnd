@@ -36,8 +36,6 @@ import { createAccountApi } from '../../../App/EVMAdmin/DealerContract/CreateDea
 import { PDFUpdateService } from '../../../App/Home/PDFconfig/PDFUpdate';
 import EVMStaffLayout from '../../../Components/EVMStaff/EVMStaffLayout';
 
-const FIXED_USER_ID = "18858";
-
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { Content } = Layout;
@@ -344,9 +342,9 @@ const CreateContract = () => {
       return;
     }
 
-    const finalPositionA = positionA || originalPositionA || "18,577,188,667";
-    const finalPositionB = positionB || originalPositionB || "406,577,576,667";
-    const finalPageSign = pageSign || originalPageSign || 9;
+    const finalPositionA = positionA || originalPositionA;
+    const finalPositionB = positionB || originalPositionB;
+    const finalPageSign = pageSign || originalPageSign;
 
     modal.confirm({
       title: 'Xác nhận hợp đồng',
@@ -359,8 +357,9 @@ const CreateContract = () => {
           setConfirming(true);
 
           const EContractId = contractId;
-          const response = await api.post('/EContract/ready-dealer-contracts', { EContractId }, 
+          const response = await api.post('/EContract/ready-dealer-contracts', null, 
           {
+            params: { eContractid: EContractId },
             headers: { 'Content-Type': 'application/json' }
           });
 
