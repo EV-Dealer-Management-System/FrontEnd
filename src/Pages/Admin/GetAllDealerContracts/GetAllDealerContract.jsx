@@ -15,6 +15,8 @@ function GetAllDealerContractPage() {
     const [error, setError] = useState(null);
     const [selectedContract, setSelectedContract] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [evcToken, setEvcToken] = useState(null);
+    const [evcUserId, setEvcUserId] = useState(null);
 
     // Load danh sách hợp đồng khi component mount
     useEffect(() => {
