@@ -65,126 +65,18 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         name: "Báo giá",
         icon: <ShoppingCartOutlined />,
         routes: [
-            {
-                path: "/dealer-staff",
-                name: "Tổng quan",
-                icon: <DashboardOutlined />,
-                component: "./Dashboard",
-            },
-            {
-                path: "/dealer-staff/quotes",
-                name: "Báo giá",
-                icon: <ShoppingCartOutlined />,
-                routes: [
-                    {
-                        path: "/dealer-staff/quotes/create-quote",
-                        name: "Tạo báo giá",
-                        icon: <FileTextOutlined />,
-                        component: "./CreateQuote",
-                    },
-                    {
-                        path: "/dealer-staff/sales/all-quotes",
-                        name: "Danh sách báo giá",
-                        icon: <PlusOutlined />,
-                        component: "./AllQuotes",
-                    },
-                    // {
-                    //     path: "/dealer-staff/quotes/all-quotes",
-                    //     name: "Đơn hàng của tôi",
-                    //     icon: <ShoppingCartOutlined />,
-                    //     component: "./MyOrders",
-                    // },
-                ],
-            },
-            {
-                path: "/dealer-staff/customers",
-                name: "Khách hàng",
-                icon: <TeamOutlined />,
-                routes: [
-                    {
-                        path: "/dealer-staff/customers/list",
-                        name: "Danh sách khách hàng",
-                        icon: <TeamOutlined />,
-                        component: "./CustomerList",
-                    },
-                    {
-                        path: "/dealer-staff/customers/add",
-                        name: "Thêm khách hàng",
-                        icon: <UserAddOutlined />,
-                        component: "./AddCustomer",
-                    },
-                    {
-                        path: "/dealer-staff/customers/test-drive",
-                        name: "Lịch lái thử",
-                        icon: <CarOutlined />,
-                        component: "./TestDrive",
-                    },
-                ],
-            },
-            {
-                path: "/dealer-staff/ev",
-                name: "Kho xe đại lý",
-                icon: <CarOutlined />,
-                routes: [
-                    {
-                        path: "/dealer-staff/ev/inventory",
-                        name: "Số lượng xe trong kho",
-                        icon: <DatabaseOutlined />,
-                        component: "./VehicleCatalog",
-                    },
-                    // {
-                    //     path: "/dealer-staff/vehicles/compare",
-                    //     name: "So sánh xe",
-                    //     icon: <GlobalOutlined />,
-                    //     component: "./CompareVehicles",
-                    // },
-                ],
-            },
-            {
-                path: "/dealer-staff/reports",
-                name: "Báo cáo",
-                icon: <BarChartOutlined />,
-                routes: [
-                    {
-                        path: "/dealer-staff/reports/my-sales",
-                        name: "Doanh số của tôi",
-                        icon: <LineChartOutlined />,
-                        component: "./MySalesReport",
-                    },
-                    {
-                        path: "/dealer-staff/reports/commission",
-                        name: "Hoa hồng",
-                        icon: <DollarOutlined />,
-                        component: "./CommissionReport",
-                    },
-                ],
-            },
-            {
-                path: "/dealer-staff/settings",
-                name: "Cài đặt",
-                icon: <SettingOutlined />,
-                component: "./Settings",
-                routes: [
-                    {
-                        path: "/dealer-staff/settings/profile",
-                        name: "Thông tin cá nhân",
-                        icon: <SolutionOutlined />,
-                        component: "./Profile",
-                    },
-                    {
-                        path: "/dealer-staff/settings/change-password",
-                        name: "Đổi mật khẩu",
-                        icon: <SolutionOutlined />,
-                        component: "./ChangePassword",
-                    },
-                ],
-            },
-            {
-                path: "/",
-                name: "Đăng Xuất",
-                icon: <LogoutOutlined />,
-                component: "./Logout",
-            },
+          {
+            path: "/dealer-staff/quotes/create-quote",
+            name: "Tạo báo giá",
+            icon: <FileTextOutlined />,
+            component: "./CreateQuote",
+          },
+          {
+            path: "/dealer-staff/quotes/all-quotes",
+            name: "Danh sách báo giá",
+            icon: <PlusOutlined />,
+            component: "./AllQuotes",
+          },
         ],
       },
       {
