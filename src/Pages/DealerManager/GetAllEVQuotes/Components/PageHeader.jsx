@@ -25,17 +25,17 @@ function getPageHeaderConfig({ totalQuotes = 0, onRefresh, onCreateNew }) {
         ),
         extra: (
             <Space>
-                <Button icon={<ReloadOutlined />} onClick={onRefresh}>
+                {/* <Button icon={<ReloadOutlined />} onClick={onRefresh}>
                     Làm mới
-                </Button>
-                <Button
+                </Button> */}
+                {/* <Button
                     type="primary"
                     icon={<PlusOutlined />}
                     onClick={onCreateNew}
                     className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
                 >
                     Tạo báo giá mới
-                </Button>
+                </Button> */}
             </Space>
         ),
     };

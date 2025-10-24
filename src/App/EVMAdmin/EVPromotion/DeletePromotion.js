@@ -1,7 +1,7 @@
 import api from "../../../api/api";
 export const DeletePromotion = async (promotionId) => {
   try {
-    const response = await api.put(
+    const response = await api.delete(
       `/Promotion/delete-promotion/${promotionId}`
     );
 

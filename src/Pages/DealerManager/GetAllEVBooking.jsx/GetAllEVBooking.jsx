@@ -156,11 +156,12 @@ function GetAllEVBooking() {
 
     const stats = {
       total: bookings.length,
-      pending: bookings.filter((b) => getStatus(b) === 0).length,
-      approved: bookings.filter((b) => getStatus(b) === 1).length,
-      rejected: bookings.filter((b) => getStatus(b) === 2).length,
-      cancelled: bookings.filter((b) => getStatus(b) === 3).length,
-      completed: bookings.filter((b) => getStatus(b) === 4).length,
+      draft: bookings.filter((b) => getStatus(b) === 0).length,      // Draft = 0
+      pending: bookings.filter((b) => getStatus(b) === 1).length,    // Pending = 1
+      approved: bookings.filter((b) => getStatus(b) === 2).length,   // Approved = 2
+      rejected: bookings.filter((b) => getStatus(b) === 3).length,   // Rejected = 3
+      cancelled: bookings.filter((b) => getStatus(b) === 4).length,  // Cancelled = 4
+      completed: bookings.filter((b) => getStatus(b) === 5).length,  // Completed = 5
       totalVehicles: bookings.reduce(
         (sum, b) => sum + (b.totalQuantity || 0),
         0
@@ -185,10 +186,11 @@ function GetAllEVBooking() {
   // Dữ liệu cho biểu đồ phân bố trạng thái
   const statusChartData = useMemo(() => {
     return [
+      { type: "Bản Nháp", value: statistics.draft, color: "#8c8c8c" },
       { type: "Chờ Duyệt", value: statistics.pending, color: "#fa8c16" },
       { type: "Đã Duyệt", value: statistics.approved, color: "#52c41a" },
       { type: "Hoàn Thành", value: statistics.completed, color: "#1890ff" },
-      { type: "Đã Từ Chối", value: statistics.rejected, color: "#ff4d4f" },
+      { type: "Từ Chối", value: statistics.rejected, color: "#ff4d4f" },
     ].filter((item) => item.value > 0);
   }, [statistics]);
 
@@ -245,37 +247,19 @@ function GetAllEVBooking() {
 
   // Hiển thị trạng thái booking
   const getStatusTag = (status) => {
-    let statusValue = "";
-    if (status === null || status === undefined) {
-      statusValue = "";
-    } else if (typeof status === "number") {
-      const numberStatusMap = {
-        0: "pending",
-        1: "approved",
-        2: "rejected",
-        3: "cancelled",
-        4: "completed",
-      };
-      statusValue = numberStatusMap[status] || "";
-    } else if (typeof status === "string") {
-      statusValue = status.toLowerCase();
-    } else if (typeof status === "object" && status.value !== undefined) {
-      statusValue = String(status.value).toLowerCase();
-    } else {
-      statusValue = String(status).toLowerCase();
-    }
-
+    // Mapping theo BookingStatus enum: Draft=0, Pending=1, Approved=2, Rejected=3, Cancelled=4, Completed=5
     const statusMap = {
-      pending: { color: "orange", text: "Chờ xác nhận" },
-      approved: { color: "green", text: "Đã phê duyệt" },
-      rejected: { color: "red", text: "Đã từ chối" },
-      cancelled: { color: "default", text: "Đã hủy" },
-      completed: { color: "blue", text: "Hoàn thành" },
+      0: { color: "default", text: "Bản Nháp" },
+      1: { color: "orange", text: "Chờ Duyệt" },
+      2: { color: "green", text: "Đã Duyệt" },
+      3: { color: "red", text: "Từ Chối" },
+      4: { color: "default", text: "Đã Hủy" },
+      5: { color: "blue", text: "Hoàn Thành" },
     };
 
-    const statusInfo = statusMap[statusValue] || {
+    const statusInfo = statusMap[status] || {
       color: "default",
-      text: status || "Không xác định",
+      text: "Không xác định",
     };
     return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
   };
@@ -303,14 +287,15 @@ function GetAllEVBooking() {
         if (!matchesSearch) return false;
       }
 
-      // Filter by active tab (status)
+      // Filter by active tab (status) - Updated mapping theo enum BookingStatus
       if (activeTab && activeTab !== "all") {
         const statusMap = {
-          pending: 0,
-          approved: 1,
-          rejected: 2,
-          cancelled: 3,
-          completed: 4,
+          draft: 0,      // Draft = 0
+          pending: 1,    // Pending = 1 
+          approved: 2,   // Approved = 2
+          rejected: 3,   // Rejected = 3
+          cancelled: 4,  // Cancelled = 4
+          completed: 5,  // Completed = 5
         };
         const filterStatusValue = statusMap[activeTab];
         const bookingStatus =
@@ -471,7 +456,7 @@ function GetAllEVBooking() {
               </ProCard>
               <ProCard colSpan={8} bordered>
                 <Statistic
-                  title="Đã Phê Duyệt"
+                  title="Đã Duyệt"
                   value={statistics.approved}
                   valueStyle={{ color: "#52c41a" }}
                   prefix={<CheckCircleOutlined />}
