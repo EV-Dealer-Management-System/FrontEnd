@@ -277,8 +277,8 @@ export const vehicleApi = {
       if (!vehicleData.warehouseId) {
         throw new Error("❌ warehouseId is required!");
       }
-      if (!vehicleData.vin) {
-        throw new Error("❌ vin is required!");
+      if (!vehicleData.vinList || !Array.isArray(vehicleData.vinList) || vehicleData.vinList.length === 0) {
+        throw new Error("❌ vinList is required and must be a non-empty array!");
       }
 
       const response = await api.post(
