@@ -1,5 +1,6 @@
-import React, {useState, useEffect, use} from "react";
-import { Table, Tag, Select, Input, DatePicker, Space, Spin, notification, Button } from "antd";
+import React, {useState, useEffect} from "react";
+import { Table, Tag, Select, Input, DatePicker, Space, Spin, notification, Button, App } from "antd";
+import { ReloadOutlined } from "@ant-design/icons";
 import useFetchContracts from "../../../App/EVMStaff/Contract/GetAllContract.js";
 import dayjs from "dayjs";
 import viVN from 'antd/lib/locale/vi_VN';
@@ -8,22 +9,37 @@ import EVMStaffLayout from "../../../Components/EVMStaff/EVMStaffLayout.jsx";
 import PDFModalForConfirm from "./Component/PDFModalForConfirm.jsx";
 import useConfirmContract  from "../../../App/EVMStaff/Contract/ConfirmContract.js";
 import contracDetail from "../../../App/EVMStaff/Contract/GetContractDetail.js";
+import getPdfPreview from "../../../App/EVMStaff/Contract/GetPreviewPDF.js";
 const { RangePicker } = DatePicker;
 
 function ViewAllContract() {
-  const { contracts, loading, updateFilter } = useFetchContracts();
+  const { contracts, loading, updateFilter, refetch } = useFetchContracts();
   const [filteredContracts, setFilteredContracts] = useState([]);
   // Modal state
   const [isModalOpen, setIsModalOpen]= useState(false);
   const [selected, setSelected]= useState (null);
   const [pdfUrl, setPdfUrl]= useState(null);
 
+  
+  const {notification, message } = App.useApp();
+
+  //hook reload danh sach
+  const reloadContracts = async () => {
+    console.debug('Reloading contracts list...');
+    if(refetch) {
+      await refetch();
+      message.success('Danh sách hợp đồng đã được làm mới');
+    } else {
+      updateFilter('refreshAt', Date.now());
+      message.success('Danh sách hợp đồng đã được làm mới');
+    }
+  };  
 
     //hook confirm
     const {
       handleConfirmContract,
       loading: confirming,
-    } = useConfirmContract();
+    } = useConfirmContract(selected);
 
     // Cập nhật filteredContracts khi contracts thay đổi
     useEffect(() => {
@@ -49,16 +65,19 @@ function ViewAllContract() {
     const handleViewContract = async (contractId) => {
       try {
         setSelected(contractId);
+        setIsModalOpen(true);
+        setPdfUrl(null); // Reset pdfUrl trước khi tải mới
         const detail = await contracDetail.getContractById(contractId);
-        const url = detail?.data?.downloadUrl;
-        if(!url) {
+        const urlBlob = await getPdfPreview(detail?.data?.downloadUrl);
+        if(!urlBlob) {
           notification.error({
             message: 'Lỗi',
             description: 'Hợp đồng không có file PDF.',
           });
+          setIsModalOpen(false);
           return;
         }
-        setPdfUrl(url);
+        setPdfUrl(urlBlob);
         setIsModalOpen(true);
       } catch (error) {
         notification.error({
@@ -67,6 +86,7 @@ function ViewAllContract() {
           duration: 4,
           placement: 'topRight',
         });
+        setIsModalOpen(false);
       }
     };
 
@@ -75,7 +95,14 @@ function ViewAllContract() {
       <ConfigProvider locale={viVN}>
       <div style={{ padding: 24, background: '#fff' }}>
         <Space style={{ marginBottom: 16 }}>
-          <Select
+          <Button 
+          type="primary"
+          onClick={reloadContracts}
+          icon={<ReloadOutlined />}
+          >
+            Làm mới Danh sách
+          </Button>
+          {/* <Select
             placeholder="Lọc theo trạng thái"
             style={{ width: 200 }}
             onChange={handleStatusChange}
@@ -84,7 +111,7 @@ function ViewAllContract() {
             <Select.Option value={1}>Đang chờ</Select.Option>
             <Select.Option value={2}>Đã hoàn thành</Select.Option>
             <Select.Option value={3}>Đã hủy</Select.Option>
-          </Select>
+          </Select> */}
           <Input
             placeholder="Tìm kiếm theo tên hoặc mã hợp đồng"
             onChange={handleSearchChange}
@@ -107,19 +134,28 @@ function ViewAllContract() {
           <Table.Column title="Thao tác" key="action" render={(text, record) => (
             <Space size="middle">
               <Button onClick={() => {
-                handleConfirmContract(record);
+                handleViewContract(record.id);
               }}>Xem chi tiết</Button>
             </Space>
           )} />
         </Table>
+        <App>
         <PDFModalForConfirm
           visible={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           pdfUrl={pdfUrl}
-          contractId={selected?.id}
-          confirming={confirming}
+          contractId={selected}
+          confirmLoading={confirming}
           onConfirm={handleConfirmContract}
+          contractNo={selected}
+          title={`Xác nhận hợp đồng ${selected}`}
+          onSuccess={() => {
+            console.debug("[ViewAll] Hợp Đồng xác nhận xong -> Reload danh sách");
+            setIsModalOpen(false);
+            reloadContracts();
+          }}
         />
+        </App>
       </div>
     </ConfigProvider>
     </EVMStaffLayout>

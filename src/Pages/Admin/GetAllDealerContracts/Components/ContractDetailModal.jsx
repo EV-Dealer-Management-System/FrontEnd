@@ -490,6 +490,7 @@ function ContractDetailModal({ visible, contractId, onClose }) {
                 smartCAData={smartCAData}
                 loading={smartCALoading}
                 isExistingSmartCA={true}
+                userId={evcUserId}
             />
         </Modal>
     );

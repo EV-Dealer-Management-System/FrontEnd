@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Button, message, Spin } from 'antd';
 import { 
   DownloadOutlined, 
@@ -18,11 +18,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-function PDFModalForConfirm ({ visible, onClose, contractNo, pdfUrl, title, onConfirm, confirmLoading }) {
+function PDFModalForConfirm ({ visible, onClose, contractId, contractNo, pdfUrl, title, onSuccess}) {
   const [numPages, setNumPages] = useState(null);
   const [scale, setScale] = useState(1.0);
   const [loading, setLoading] = useState(true);
- 
+  const effectiveId = contractId;
+  const { handleConfirmContract, loading: confirmLoading } = useConfirmContract(effectiveId, onSuccess);
 
   // Xử lý đóng modal
   const handleClose = () => {
@@ -79,6 +80,15 @@ function PDFModalForConfirm ({ visible, onClose, contractNo, pdfUrl, title, onCo
     setNumPages(numPages);
     setLoading(false);
   }
+
+  // Khi modal mở
+  useEffect(() => {
+    console.debug('PDFModalForConfirm visibility changed:', visible);
+  if (visible) {
+    setLoading(true);
+  }
+  
+}, [visible]);
 
   return (
     <Modal
@@ -164,8 +174,19 @@ function PDFModalForConfirm ({ visible, onClose, contractNo, pdfUrl, title, onCo
               <Button 
                 type="text" 
                 icon={<CheckCircleOutlined />} 
-                onClick={onConfirm}
+                onClick={
+                  () => {
+                    console.debug('Confirm button clicked');
+                    handleConfirmContract();
+                  }
+                }
+                loading={confirmLoading}
                 className="text-white hover:bg-white/20 border-0"
+                style={{
+                backgroundColor: '#16a34a', // xanh lá đậm (có thể đổi)
+                borderColor: '#16a34a',
+                color: '#fff'
+              }}
                 disabled={confirmLoading}
                 >
                 Xác nhận

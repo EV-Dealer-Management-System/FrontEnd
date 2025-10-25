@@ -4,12 +4,15 @@ export const SignContract = () => {
   // Hàm lấy access token cho EVC
   const getAccessTokenForEVC = async () => {
     try {
-      const { data } = await api.get('/EContract/get-access-token-for-evc');
-      const payload = data?.data;
+      const res = await api.get('/EContract/get-access-token-for-evc');
+      const payload = res?.data?.data;
       if(!payload?.accessToken) {
         throw new Error("Không nhận được token từ EVC");
       }
-      return payload;
+      return { 
+        accessToken: payload.accessToken,
+        userId: payload.userId
+      };
     } catch (error) {
       console.error("Lỗi khi lấy access token:", error);
       throw error;
