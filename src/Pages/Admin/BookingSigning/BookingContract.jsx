@@ -280,7 +280,7 @@ function BookingContract() {
           <Col xs={24} sm={12} md={8} lg={6}>
             <Select
               placeholder="Lọc theo ngày tạo"
-              value={filters.createdAt}
+              value={filters.dateRange}
               onChange={(value) => updateFilter('dateRange', value)}
               allowClear
             >
@@ -304,15 +304,17 @@ function BookingContract() {
           dataSource={contracts}
           rowKey="id"
           loading={loading}
+          scroll={false}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total) => `Tổng ${total} hợp đồng`,
           }}
+          style={{ whiteSpace: 'normal', wordWrap: 'break-word' }}
         />
       </div>
-</ConfigProvider>
+      </ConfigProvider>
       {/* Contract Detail Drawer */}
       <Drawer
         title="Chi tiết hợp đồng Booking"

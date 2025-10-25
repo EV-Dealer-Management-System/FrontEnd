@@ -7,7 +7,6 @@ import {
   SettingOutlined,
   TeamOutlined,
   ShopOutlined,
-  CarOutlined,
   BarChartOutlined,
   LogoutOutlined,
   FileAddOutlined,
@@ -16,6 +15,7 @@ import {
   BankOutlined,
   AuditOutlined,
   ContainerOutlined,
+  ThunderboltOutlined
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 const { Text } = Typography;
@@ -125,7 +125,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           {
             path: "/evm-staff/settings/change-password",
             name: "Đổi mật khẩu",
-            icon: <CarOutlined />,
+            icon: <ThunderboltOutlined />,
             component: "./ChangePassword",
           },
         ],
@@ -169,7 +169,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           collapsedWidth={64}
           logo={
             <div className="flex items-center gap-2">
-              <CarOutlined className="text-2xl text-blue-500" />
+              <ThunderboltOutlined className="text-2xl text-blue-500" />
               {!collapsed && (
                 <Text strong className="text-lg text-gray-800">
                   EVM Staff Portal

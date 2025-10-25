@@ -8,7 +8,6 @@ import {
   SettingOutlined,
   TeamOutlined,
   ShopOutlined,
-  CarOutlined,
   BarChartOutlined,
   BellOutlined,
   LogoutOutlined,
@@ -23,6 +22,7 @@ import {
   ShoppingCartOutlined,
   DollarOutlined,
   PlusOutlined,
+  ThunderboltOutlined
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -99,7 +99,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           {
             path: "/dealer-staff/customers/test-drive",
             name: "Lịch lái thử",
-            icon: <CarOutlined />,
+            icon: <ThunderboltOutlined />,
             component: "./TestDrive",
           },
         ],
@@ -107,7 +107,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
       {
         path: "/dealer-staff/ev",
         name: "Kho xe đại lý",
-        icon: <CarOutlined />,
+        icon: <ThunderboltOutlined />,
         routes: [
           {
             path: "/dealer-staff/ev/inventory",

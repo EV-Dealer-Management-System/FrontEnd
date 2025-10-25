@@ -22,6 +22,7 @@ import {
   LineChartOutlined,
   GlobalOutlined,
   QuestionCircleOutlined,
+  ThunderboltFilled
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -108,7 +109,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
       {
         path: "/admin/vehicle",
         name: "Quản lý xe điện",
-        icon: <CarOutlined />,
+        icon: <ThunderboltFilled />,
         routes: [
           {
             path: "/admin/vehicle-management",
@@ -265,7 +266,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           collapsedWidth={64}
           logo={
             <div className="flex items-center gap-2">
-              <CarOutlined className="text-2xl text-blue-500" />
+              <ThunderboltFilled className="text-2xl text-blue-500" />
               {!collapsed && (
                 <Text strong className="text-lg text-gray-800">
                   EV Management System
