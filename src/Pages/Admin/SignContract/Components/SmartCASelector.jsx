@@ -97,24 +97,34 @@ const SmartCASelector = ({
       console.log('=== SELECTING SMARTCA ===');
       console.log('Selected certificate:', selectedCertificate);
       console.log('ContractService available:', !!contractService);
-      console.log('UserId:', userId);
+      console.log('UserId (prop):', userId);
       
       let result;
+      const smartCAOwnerName = selectedCertificate.commonName || selectedCertificate.name || null;
+      const smartCAId = String(selectedCertificate.id);
       
+      const effectiveUserId = userId;
+      console.log('Using UserId:', effectiveUserId);
+      if (!effectiveUserId) {
+        message.error('UserId không hợp lệ để cập nhật SmartCA.');
+        setUpdating(false);
+        return;
+      }
       // Determine which service to use based on available props
-      if (contractService && userId) {
+      if (contractService && effectiveUserId) {
         // Customer case: use contractService with userId
         result = await contractService.handleUpdateSmartCA(
-          selectedCertificate.id,
-          userId,
-          selectedCertificate.commonName || selectedCertificate.name
+          smartCAId,
+          effectiveUserId,
+          smartCAOwnerName
         );
       } else {
         // Admin case: use smartCAService with fixed admin ID
-        const smartCAId = String(selectedCertificate.id);
-        const smartCAOwnerName = selectedCertificate.commonName || selectedCertificate.name || null;
-        
-        result = await smartCAService.handleUpdateSmartCA(smartCAId, smartCAOwnerName);
+        result = await smartCAService.handleUpdateSmartCA(
+          smartCAId,
+          effectiveUserId,
+          smartCAOwnerName
+        );
       }
       
       if (result.success) {

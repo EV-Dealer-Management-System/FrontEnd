@@ -30,9 +30,7 @@ function ContractPage() {
   // PDF viewer - Phase 4: Sử dụng PDFModal với blob handling
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [previewBlobUrl, setPreviewBlobUrl] = useState(null);
-  
+  const [pdfLoading, setPdfLoading] = useState(false);  
   // New states cho blob handling như CreateContract
   const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
@@ -52,27 +50,6 @@ function ContractPage() {
   const [showSmartCASelector, setShowSmartCASelector] = useState(false);
   const [showExistingSmartCASelector, setShowExistingSmartCASelector] = useState(false);
   const [selectedSmartCA, setSelectedSmartCA] = useState(null);
-
-  // Chi tiết hợp đồng
-  const handleViewContract = async (record) => {
-    try {
-      setIsDrawerOpen(true);
-      await loadContractDetails(record.id);
-
-    // 🔽 Sau khi có thông tin hợp đồng, bắt đầu load PDF
-    const blobOrUrl = await getPreviewUrl(); // có thể trả blob hoặc string
-    let finalUrl = blobOrUrl;
-
-    // Nếu là Blob -> chuyển thành ObjectURL
-    if (blobOrUrl instanceof Blob) {
-      finalUrl = URL.createObjectURL(blobOrUrl);
-    }
-
-    setPreviewBlobUrl(finalUrl);
-  } catch (err) {
-    console.error('Lỗi khi tải hợp đồng hoặc PDF:', err);
-  }
-};
 
   // Revoke PDF preview URL
   const revokePdfPreviewUrl = useCallback(() => {
@@ -621,7 +598,7 @@ function ContractPage() {
           visible={pdfModalVisible}
           onClose={() => setPdfModalVisible(false)}
           contractNo={`${contractInfo?.processId?.slice(0, 8) || 'HĐ'}...`}
-          pdfUrl={previewBlobUrl}
+          pdfUrl={getPdfDisplayUrl()}
           title={`Hợp đồng ${contractInfo?.processId?.slice(0, 8) || 'HĐ'}...`}
         />
 

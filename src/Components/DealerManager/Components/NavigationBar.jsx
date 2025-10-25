@@ -8,7 +8,6 @@ import {
   SettingOutlined,
   TeamOutlined,
   ShopOutlined,
-  CarOutlined,
   BarChartOutlined,
   BellOutlined,
   LogoutOutlined,
@@ -22,6 +21,7 @@ import {
   QuestionCircleOutlined,
   ShoppingCartOutlined,
   DollarOutlined,
+  ThunderboltOutlined
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -95,7 +95,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
       {
         path: "/dealer/inventory",
         name: "Kho xe",
-        icon: <CarOutlined />,
+        icon: <ThunderboltOutlined />,
         routes: [
           {
             path: "/dealer-manager/ev/inventory",

@@ -27,7 +27,7 @@ export const SmartCAService = () => {
   };
 
   // Thêm SmartCA cho user - Token trong query params như API spec
-  const handleAddSmartCA = async ({ userId, userName, serialNumber, accessToken }) => {
+  const handleAddSmartCA = async ({ userId, userName, serialNumber }) => {
     try {
       const requestBody = {
         userId: userId,
@@ -123,13 +123,19 @@ export const SmartCAService = () => {
   };
 
   // Cập nhật SmartCA được chọn - API mới  
-  const handleUpdateSmartCA = async (smartCAId, smartCAOwnerName = null, userIdParam = null) => {
+  const handleUpdateSmartCA = async (smartCAId, userId, smartCAOwnerName = null) => {
     try {
       console.log('=== UPDATE SMARTCA API CALL ===');
-      
+      if (!smartCAId) {
+        return { success: false, error: 'SmartCAId không hợp lệ khi cập nhật SmartCA.' };
+      }
+      if (!userId) {
+        console.error('❌ userId bị null hoặc undefined khi gọi handleUpdateSmartCA');
+        return { success: false, error: 'UserId không hợp lệ khi cập nhật SmartCA.' };
+      }
       const requestPayload = {
         id: String(smartCAId),            // Đảm bảo ID là string
-        userId: String(userIdParam),                  // ID hãng
+        userId: String(userId),                  // ID hãng
         isSetDefault: true,               // Mặc định true
         name: smartCAOwnerName || null    // Tên chủ SmartCA hoặc null
       };
@@ -146,11 +152,12 @@ export const SmartCAService = () => {
       
       console.log('Update SmartCA response:', response.data);
       
-      if (response.status === 200) {
+      const ok = response.status === 200 && (response.data?.success ?? true);
+      if (ok) {
         return {
           success: true,
           data: response.data,
-          message: 'Cập nhật SmartCA thành công'
+          message: response.data.messages?.[0] || 'Cập nhật SmartCA thành công!'
         };
       }
       

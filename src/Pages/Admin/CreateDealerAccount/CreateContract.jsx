@@ -184,7 +184,7 @@ const CreateContract = () => {
   const handleProvinceChange = async (provinceCode) => {
     if (!provinceCode) {
       setWards([]);
-      form.setFieldsValue({ ward: undefined });
+      form.setFieldsValue({ ward: undefined , regionDealer: ''});
       return;
     }
 
@@ -202,6 +202,14 @@ const CreateContract = () => {
       }
 
       form.setFieldsValue({ ward: undefined });
+
+      // Tự động điền regionDealer dựa trên province đã chọn
+      const selectedProvince = provinces.find(p => p.code === provinceCode);
+      if (selectedProvince?.codename) {
+        form.setFieldsValue({ regionDealer: selectedProvince.codename.toUpperCase() });
+      } else {
+        form.setFieldsValue({ regionDealer: '' });
+      }
     } catch (error) {
       message.error('Không thể tải danh sách phường/xã/quận/huyện');
       console.error('Error loading wards/districts:', error);
@@ -748,8 +756,11 @@ const CreateContract = () => {
                   rules={[]}
                 >
                   <Input
-                    placeholder="Nhập khu vực đại lý (có thể bỏ trống)"
-                    className="rounded-lg"
+                    readOnly
+                    disabled
+                    placeholder="Khu vực đại lý"
+                    className="rounded-lg bg-gray-100 cursor-not-allowed"
+                    style={{ color: '#000', fontWeight: 500 }}
                   />
                 </FormField>
 

@@ -32,39 +32,12 @@ function ContractTable({ onView }) {
     // Cấu hình các cột cho bảng
     const columns = [
         {
-            title: 'Số hợp đồng',
-            dataIndex: 'id',
-            key: 'id',
-            width: 250,
-            render: (contractId) => (
-                <Tooltip title={contractId}>
-                    <Space>
-                        <FileTextOutlined className="text-blue-500" />
-                        <span className="font-mono text-xs">{String(contractId).slice(0, 8)}...</span>
-                    </Space>
-                </Tooltip>
-            ),
-        },
-        {
             title: 'Tên hợp đồng',
             dataIndex: 'name',
             key: 'name',
             width: 300,
             render: (name) => (
                 <span className="text-gray-700 font-medium">{name}</span>
-            ),
-        },
-        {
-            title: 'Template ID',
-            dataIndex: 'templateId',
-            key: 'templateId',
-            width: 200,
-            render: (templateId) => (
-                <Tooltip title={templateId}>
-                    <span className="font-mono text-xs text-gray-500">
-                        {String(templateId).slice(0, 8)}...
-                    </span>
-                </Tooltip>
             ),
         },
         {
@@ -80,26 +53,26 @@ function ContractTable({ onView }) {
         },
         {
             title: 'Người tạo',
-            dataIndex: 'createdBy',
-            key: 'createdBy',
+            dataIndex: 'createdName',
+            key: 'createdName',
             width: 200,
-            render: (createdBy) => (
-                <Tooltip title={createdBy}>
+            render: (createdName) => (
+                <Tooltip title={createdName}>
                     <span className="font-mono text-xs text-gray-600">
-                        {String(createdBy).slice(0, 8)}...
+                        {String(createdName)}
                     </span>
                 </Tooltip>
             ),
         },
         {
             title: 'Chủ sở hữu',
-            dataIndex: 'ownerBy',
-            key: 'ownerBy',
+            dataIndex: 'ownerName',
+            key: 'ownerName',
             width: 200,
-            render: (ownerBy) => (
-                <Tooltip title={ownerBy}>
+            render: (ownerName) => (
+                <Tooltip title={ownerName}>
                     <span className="font-mono text-xs text-gray-600">
-                        {String(ownerBy).slice(0, 8)}...
+                        {String(ownerName)}...
                     </span>
                 </Tooltip>
             ),
@@ -119,17 +92,6 @@ function ContractTable({ onView }) {
                     minute: '2-digit',
                 });
             },
-        },
-        {
-            title: 'Storage URL',
-            dataIndex: 'storageUrl',
-            key: 'storageUrl',
-            width: 120,
-            render: (storageUrl) => (
-                <Tag color={storageUrl ? 'green' : 'default'}>
-                    {storageUrl ? 'Có file' : 'Chưa có'}
-                </Tag>
-            ),
         },
         {
             title: 'Thao tác',
@@ -164,6 +126,22 @@ function ContractTable({ onView }) {
 
     return (
         <div>
+            <style>
+                {`
+                .contract-table .ant-table {
+                    table-layout: auto !important;
+                    width: 100%;
+                }
+                .contract-table .ant-table-cell {
+                    white-space: normal !important;
+                    word-break: break-word !important;
+                    text-overflow: ellipsis;
+                }
+                .contract-table {
+                    overflow-x: auto;
+                }
+                `}
+            </style>
             <div className="mb-4 px-4 py-2 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg border flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-700 flex items-center">
                     <CheckCircleOutlined className="mr-2 text-green-500" />
@@ -177,6 +155,7 @@ function ContractTable({ onView }) {
                     Tải lại
                 </Button>
             </div>
+            <div className="contract-table" >
             <Table
                 columns={columns}
                 dataSource={contracts}
@@ -188,11 +167,11 @@ function ContractTable({ onView }) {
                     showQuickJumper: true,
                     showTotal: (total) => `Tổng ${total} hợp đồng sẵn sàng`,
                 }}
-                scroll={{ x: 1600 }}
                 bordered
                 size="middle"
                 className="shadow-sm"
             />
+            </div>
         </div>
     );
 }

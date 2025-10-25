@@ -6,7 +6,6 @@ const api = axios.create({
     'Content-Type': 'application/json',
      'ngrok-skip-browser-warning': 'true', 
   },
-  timeout: 60000, 
 });
 api.interceptors.request.use(
   function (config) {
