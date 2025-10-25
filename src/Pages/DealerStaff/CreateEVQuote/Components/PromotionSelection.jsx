@@ -27,26 +27,85 @@ function PromotionSelection({
   loadingPromotions,
   selectedPromotionId,
   onPromotionChange,
+  modelId,
+  versionId,
 }) {
   // Format tiền tệ
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN").format(amount) + " VNĐ";
   };
 
-  // Lọc khuyến mãi đang hoạt động
+  // Lọc khuyến mãi đang hoạt động và theo model/version
   const activePromotions = useMemo(() => {
     const now = new Date();
 
-    return promotions.filter((promotion) => {
+    console.log("Debug PromotionSelection:", {
+      modelId,
+      versionId,
+      promotionsCount: promotions.length,
+      allPromotions: promotions
+    });
+
+
+    const validPromotions = promotions.filter((promotion) => {
+
       if (!promotion.isActive) return false;
+
 
       const start = new Date(promotion.startDate);
       const end = new Date(promotion.endDate);
-
       return now >= start && now <= end;
     });
-  }, [promotions]);
 
+    // Nếu có modelId và versionId, kiểm tra xem có khuyến mãi cụ thể không
+    if (modelId && versionId) {
+      // Tìm khuyến mãi cụ thể cho model và version
+      const specificPromotions = validPromotions.filter((promotion) => {
+        return promotion.modelId === modelId && promotion.versionId === versionId;
+      });
+
+      console.log("Specific promotions found:", specificPromotions.length);
+
+      // Nếu có khuyến mãi cụ thể, hiển thị tất cả khuyến mãi
+      if (specificPromotions.length > 0) {
+        console.log("Found specific promotions - showing all promotions");
+        return validPromotions;
+      }
+
+      // Nếu không có khuyến mãi cụ thể, chỉ hiển thị khuyến mãi tổng quát (modelId và versionId null)
+      const generalPromotions = validPromotions.filter((promotion) => {
+        return (promotion.modelId === null || promotion.modelId === undefined) &&
+          (promotion.versionId === null || promotion.versionId === undefined);
+      });
+
+      console.log("No specific promotions - showing only general promotions:", generalPromotions.length);
+      return generalPromotions;
+    }
+
+    return validPromotions;
+  }, [promotions, modelId, versionId]);
+
+  // Tạo thông báo về trạng thái lọc
+  const getFilterMessage = () => {
+    if (modelId && versionId) {
+      // Kiểm tra xem có khuyến mãi cụ thể không
+      const specificPromotions = promotions.filter((promotion) => {
+        if (!promotion.isActive) return false;
+        const start = new Date(promotion.startDate);
+        const end = new Date(promotion.endDate);
+        const now = new Date();
+        if (!(now >= start && now <= end)) return false;
+        return promotion.modelId === modelId && promotion.versionId === versionId;
+      });
+
+      if (specificPromotions.length > 0) {
+        return "Tất cả khuyến mãi";
+      } else {
+        return "Khuyến mãi tổng quát";
+      }
+    }
+    return "Tất cả khuyến mãi đang hoạt động";
+  };
   // Khuyến mãi đã chọn
   const selectedPromotion = useMemo(() => {
     if (!selectedPromotionId) return null;
@@ -74,14 +133,23 @@ function PromotionSelection({
           <Text strong>Chọn khuyến mãi</Text>
         </Space>
       }
-      extra={<Tag color="blue">{activePromotions.length} chương trình</Tag>}
+      extra={
+        <Space>
+          <Tag color="blue">{activePromotions.length} chương trình</Tag>
+          <Tag color="orange">{getFilterMessage()}</Tag>
+        </Space>
+      }
       bordered
       headerBordered
     >
       {activePromotions.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="Không có khuyến mãi nào đang hoạt động"
+          description={
+            modelId && versionId
+              ? "Không có khuyến mãi tổng quát nào"
+              : "Không có khuyến mãi nào đang hoạt động"
+          }
         />
       ) : (
         <Space direction="vertical" size="large" style={{ width: "100%" }}>

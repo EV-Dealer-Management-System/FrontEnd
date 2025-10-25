@@ -118,9 +118,9 @@ function CreateEVQuote() {
 
     return vehicleItem
       ? {
-          ...vehicleItem,
-          maxQuantity: vehicleItem.quantity,
-        }
+        ...vehicleItem,
+        maxQuantity: vehicleItem.quantity,
+      }
       : null;
   }, [inventory, selectedItems]);
 
@@ -302,8 +302,8 @@ function CreateEVQuote() {
           vehicleName: quoteDetail?.version
             ? `${quoteDetail.version.modelName} - ${quoteDetail.version.versionName}`
             : selectedVehicleInfo
-            ? `${selectedVehicleInfo.modelName} - ${selectedVehicleInfo.versionName}`
-            : "",
+              ? `${selectedVehicleInfo.modelName} - ${selectedVehicleInfo.versionName}`
+              : "",
           colorName:
             quoteDetail?.color?.colorName ||
             (selectedVehicleInfo ? selectedVehicleInfo.colorName : ""),
@@ -401,6 +401,8 @@ function CreateEVQuote() {
               loadingPromotions={loadingPromotions}
               selectedPromotionId={selectedPromotionId}
               onPromotionChange={handlePromotionChange}
+              modelId={selectedVehicleInfo?.modelId}
+              versionId={selectedItems.versionId}
             />
           </Card>
         );
@@ -416,10 +418,10 @@ function CreateEVQuote() {
               selectedVehicle={
                 selectedVehicleInfo
                   ? {
-                      modelName: selectedVehicleInfo.modelName,
-                      versionName: selectedVehicleInfo.versionName,
-                      colorName: selectedVehicleInfo.colorName,
-                    }
+                    modelName: selectedVehicleInfo.modelName,
+                    versionName: selectedVehicleInfo.versionName,
+                    colorName: selectedVehicleInfo.colorName,
+                  }
                   : null
               }
               selectedPromotion={selectedPromotionInfo}
@@ -433,10 +435,10 @@ function CreateEVQuote() {
               selectedVehicle={
                 selectedVehicleInfo
                   ? {
-                      modelName: selectedVehicleInfo.modelName,
-                      versionName: selectedVehicleInfo.versionName,
-                      colorName: selectedVehicleInfo.colorName,
-                    }
+                    modelName: selectedVehicleInfo.modelName,
+                    versionName: selectedVehicleInfo.versionName,
+                    colorName: selectedVehicleInfo.colorName,
+                  }
                   : null
               }
               quantity={quantity}
@@ -596,34 +598,31 @@ function CreateEVQuote() {
                     {steps.map((step, index) => (
                       <div
                         key={index}
-                        className={`flex items-center gap-3 p-2 rounded-lg ${
-                          index === currentStep
+                        className={`flex items-center gap-3 p-2 rounded-lg ${index === currentStep
                             ? "bg-blue-50 border border-blue-200"
                             : index < currentStep
-                            ? "bg-green-50"
-                            : "bg-gray-50"
-                        }`}
+                              ? "bg-green-50"
+                              : "bg-gray-50"
+                          }`}
                       >
                         <div
-                          className={`text-lg ${
-                            index === currentStep
+                          className={`text-lg ${index === currentStep
                               ? "text-blue-600"
                               : index < currentStep
-                              ? "text-green-600"
-                              : "text-gray-400"
-                          }`}
+                                ? "text-green-600"
+                                : "text-gray-400"
+                            }`}
                         >
                           {step.icon}
                         </div>
                         <div>
                           <div
-                            className={`font-medium ${
-                              index === currentStep
+                            className={`font-medium ${index === currentStep
                                 ? "text-blue-800"
                                 : index < currentStep
-                                ? "text-green-800"
-                                : "text-gray-600"
-                            }`}
+                                  ? "text-green-800"
+                                  : "text-gray-600"
+                              }`}
                           >
                             {step.title}
                           </div>
