@@ -22,6 +22,7 @@ import {
   QuestionCircleOutlined,
   ShoppingCartOutlined,
   DollarOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -81,6 +82,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             name: "Quản lý khách hàng",
             icon: <TeamOutlined />,
             component: "./Customers",
+          },
+          {
+            path: "/dealer-manager/sales/schedule-test-drive",
+            name: "Quản lý lịch lái thử",
+            icon: <CalendarOutlined />,
+            component: "./ScheduleTestDrive",
           },
         ],
       },

@@ -17,6 +17,7 @@ import GetAllDealerContractPage from "./Pages/Admin/GetAllDealerContracts/GetAll
 import DealerManager from "./Pages/DealerManager/DealerManager";
 import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
 import GetAllEVBooking from "./Pages/DealerManager/GetAllEVBooking.jsx/GetAllEVBooking";
+import ScheduleTestDrive from "./Pages/DealerManager/ScheduleTestDrive/ScheduleTestDrive";
 import DealerManagerRoute from "./Router/DealerManagerRoute";
 import AdminRoute from "./Router/AdminRoute";
 import DealerStaffRoute from "./Router/DealerStaffRoute";
@@ -124,6 +125,7 @@ function App() {
                 <Route path="ev/ev-booking" element={<EVBooking />} />
                 <Route path="ev/all-ev-booking" element={<GetAllEVBooking />} />
                 <Route path="ev/inventory" element={<GetAllEVInventory />} />
+                <Route path="sales/schedule-test-drive" element={<ScheduleTestDrive />} />
                 <Route path="staff/staff-list" element={<DealerStaffList />} />
                 <Route path="settings/change-password" element={<ChangePasswordDealerManager />} />
                 <Route path="staff/create-dealer-staff-account" element={<CreateDealerAccount />} />
