@@ -8,6 +8,8 @@ import {
   DollarOutlined,
   CalendarOutlined,
 } from "@ant-design/icons";
+import { ConfigProvider } from "antd";
+import viVN from "antd/lib/locale/vi_VN";
 
 const { Search } = Input;
 const { Option } = Select;
@@ -63,30 +65,6 @@ function QuotesTable({
           </span>
         </Tooltip>
       ),
-    },
-    {
-      title: "Thông tin xe",
-      key: "vehicle",
-      width: 250,
-      render: (_, record) => {
-        const firstDetail = record.quoteDetails[0];
-        return (
-          <div className="space-y-1">
-            <div className="font-semibold text-gray-800">
-              {firstDetail.version.modelName}
-            </div>
-            <div className="text-sm text-gray-500">
-              {firstDetail.version.versionName}
-            </div>
-            <Tag color="blue">{firstDetail.color.colorName}</Tag>
-            {record.quoteDetails.length > 1 && (
-              <Tag color="purple">
-                +{record.quoteDetails.length - 1} sản phẩm
-              </Tag>
-            )}
-          </div>
-        );
-      },
     },
     {
       title: "Số lượng",
@@ -169,18 +147,6 @@ function QuotesTable({
       onFilter: (value, record) => record.status === value,
     },
     {
-      title: "Ghi chú",
-      dataIndex: "note",
-      key: "note",
-      width: 150,
-      ellipsis: true,
-      render: (note) => (
-        <Tooltip title={note}>
-          <span className="text-gray-600">{note || "-"}</span>
-        </Tooltip>
-      ),
-    },
-    {
       title: "Thao tác",
       key: "action",
       width: 100,
@@ -200,6 +166,7 @@ function QuotesTable({
   ];
 
   return (
+    <ConfigProvider locale={viVN}>
     <ProCard
       title={
         <div className="flex items-center gap-2">
@@ -241,7 +208,6 @@ function QuotesTable({
           pageSize: pageSize,
           total: filteredQuotes.length,
           showSizeChanger: true,
-          showQuickJumper: true,
           showTotal: (total) => `Tổng ${total} báo giá`,
           onChange: (page, size) => {
             setCurrentPage(page);
@@ -249,13 +215,13 @@ function QuotesTable({
           },
           pageSizeOptions: ["10", "20", "50", "100"],
         }}
-        scroll={{ x: 1500 }}
         className="custom-table"
         rowClassName={(record, index) =>
           index % 2 === 0 ? "bg-gray-50" : "bg-white"
         }
       />
     </ProCard>
+    </ConfigProvider>
   );
 }
 

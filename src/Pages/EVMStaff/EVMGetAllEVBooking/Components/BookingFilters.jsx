@@ -6,6 +6,8 @@ import {
     FilterOutlined,
     ClearOutlined,
 } from "@ant-design/icons";
+import {ConfigProvider} from "antd";
+import viVN from 'antd/lib/locale/vi_VN';
 
 const { RangePicker } = DatePicker;
 
@@ -31,6 +33,7 @@ function BookingFilters({
     ];
 
     return (
+        <ConfigProvider locale={viVN}>
         <Row gutter={[16, 16]} align="middle">
             {/* Thanh tìm kiếm */}
             <Col xs={24} md={12} lg={12}>
@@ -60,14 +63,6 @@ function BookingFilters({
             <Col xs={24} md={6} lg={4}>
                 <Space className="w-full" style={{ justifyContent: "flex-end" }}>
                     <Button
-                        icon={<ClearOutlined />}
-                        onClick={onReset}
-                        disabled={!searchText && !dateRange}
-                        size="large"
-                    >
-                        Xóa
-                    </Button>
-                    <Button
                         type="primary"
                         icon={<ReloadOutlined spin={loading} />}
                         onClick={onReload}
@@ -79,6 +74,7 @@ function BookingFilters({
                 </Space>
             </Col>
         </Row>
+        </ConfigProvider>
     );
 }
 

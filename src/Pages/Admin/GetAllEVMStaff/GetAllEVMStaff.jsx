@@ -6,6 +6,8 @@ import AdminLayout from '../../../Components/Admin/AdminLayout';
 import { EVMStaffAccountService } from '../../../App/EVMAdmin/EVMStaffAccount/GetAllEVMStaff';
 import FilterBar from './Components/FilterBar';
 import StaffTable from './Components/StaffTable';
+import {ConfigProvider} from "antd";
+import viVN from 'antd/lib/locale/vi_VN';
 
 function GetAllEVMStaff() {
     const [staffList, setStaffList] = useState([]);
@@ -70,7 +72,9 @@ function GetAllEVMStaff() {
     };
 
     return (
+        
         <AdminLayout>
+            <ConfigProvider locale={viVN}>
             <PageContainer
                 header={{
                     title: (
@@ -127,6 +131,7 @@ function GetAllEVMStaff() {
                     loading={loading}
                 />
             </PageContainer>
+            </ConfigProvider>
         </AdminLayout>
     );
 }

@@ -147,16 +147,19 @@ function BookingTable({
       title: "Mã Booking",
       dataIndex: "id",
       key: "id",
-      width: 220,
+      width: 100,
       copyable: true,
       ellipsis: true,
       fixed: "left",
       render: (text) => {
+        const fullId = text || "N/A";
         const displayId =
-          text && typeof text === "string" ? text.split("-")[0] : text || "N/A";
+          typeof fullId === "string"
+          ? fullId.slice(0, 8) + "..."
+          : fullId;
 
         return (
-          <Tooltip title={text || "N/A"}>
+          <Tooltip title={fullId}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Tag
                 color="blue"
@@ -243,7 +246,7 @@ function BookingTable({
     {
       title: "Thao Tác",
       key: "actions",
-      width: 240,
+      width: 120,
       align: "center",
       fixed: "right",
       render: (_, record) => {
@@ -290,7 +293,19 @@ function BookingTable({
 
   return (
     <>
+      <style>
+        {`
+          .booking-table .ant-table {
+            table-layout: auto !important;
+          }
+          .booking-table .ant-table-cell {
+            white-space: normal !important;
+            word-break: break-word !important;
+          }
+        `}
+      </style>
       <ProTable
+        className="booking-table"
         columns={columns}
         dataSource={dataSource}
         loading={loading}
@@ -316,7 +331,6 @@ function BookingTable({
           size: "default",
           style: { marginTop: 16 },
         }}
-        scroll={{ x: 1100 }}
         cardBordered={false}
         headerTitle={false}
         size="middle"
