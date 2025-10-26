@@ -24,7 +24,7 @@ function SmartCAStatusChecker({ userId, contractService, onChecked }) {
       .finally(() => setLoading(false));
   }, [userId, contractService, onChecked]);
 
-  if (loading) return <Spin tip="Đang kiểm tra SmartCA..." />;
+  if (loading) return <Spin tip="Đang kiểm tra SmartCA..." fullscreen/>;
   if (error) return <Alert type="error" message={error} showIcon />;
   return null; // Không render gì, chỉ trả về dữ liệu qua callback
 }

@@ -13,7 +13,8 @@ export const locationApi = {
         console.log('Loaded provinces from primary API:', response.data.result.length);
         return response.data.result.map(province => ({
           code: province.code,
-          name: province.name
+          name: province.name,
+          codename: province.codename,
         }));
       }
       

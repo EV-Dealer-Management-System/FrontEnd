@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { Modal, Descriptions, Tag, Space, Spin, Button, message } from 'antd';
 import {
     FileTextOutlined,
@@ -18,6 +18,7 @@ import AppVerifyModal from '../../SignContract/Components/AppVerifyModal';
 import AddSmartCA from '../../SignContract/Components/AddSmartCA';
 import SmartCASelector from '../../SignContract/Components/SmartCASelector';
 import { SmartCAService } from '../../../../App/EVMAdmin/SignContractEVM/SmartCA';
+import { SignContract } from '../../../../App/EVMAdmin/SignContractEVM/SignContractEVM';
 
 // Component hiển thị chi tiết hợp đồng trong modal
 function ContractDetailModal({ visible, contractId, onClose }) {
@@ -29,9 +30,33 @@ function ContractDetailModal({ visible, contractId, onClose }) {
     const [showSmartCASelector, setShowSmartCASelector] = useState(false);
     const [smartCAData, setSmartCAData] = useState(null);
     const [smartCALoading, setSmartCALoading] = useState(false);
+
+    // EVC token và userId
+    const [evcToken, setEvcToken] = useState(null);
+    const [evcUserId, setEvcUserId] = useState(null);
+    const [loadingEVC, setLoadingEVC] = useState(true);
+    const [errorEVC, setErrorEVC] = useState(null);
     
     const smartCAService = SmartCAService();
-    const FIXED_USER_ID = "18858"; // ID cứng của hãng
+    
+    //hook lấy EVC token và userId khi modal mở
+    useEffect(() => {
+        if(!visible) return;
+        const fetchEVC = async () => {
+            try {
+                const signService = SignContract();
+                const { accessToken, userId } = await signService.getAccessTokenForEVC();
+                setEvcToken(accessToken);
+                setEvcUserId(userId);
+            } catch (error) {
+                console.error('Lỗi khi lấy EVC token và userId:', error);
+                setErrorEVC('Không thể lấy token EVC');
+            }finally {
+                setLoadingEVC(false);
+            }
+        }; 
+        fetchEVC();
+    }, [visible]);
 
     // Hook quản lý ký hợp đồng
     const {
@@ -109,14 +134,31 @@ function ContractDetailModal({ visible, contractId, onClose }) {
             message.error('Không tìm thấy thông tin tiến trình ký hợp đồng');
             return;
         }
+
+        // Kiểm tra EVC User ID
+        if(!evcUserId)  {
+            try {
+                setSmartCALoading(true);
+                const { userId } = await SignContract().getAccessTokenForEVC();
+                if(!userId) {
+                    throw new Error("Không nhận được EVC User ID");
+                }
+                setEvcUserId(userId);
+            } catch (error) {
+                console.error('Lỗi khi lấy EVC User ID:', error);
+                setErrorEVC('Không thể lấy EVC User ID');
+            }finally {
+                setSmartCALoading(false);
+            }
+        }
         
         // Bước 1: Check SmartCA status
         setSmartCALoading(true);
         try {
             console.log('=== CHECKING SMARTCA STATUS BEFORE SIGNING ===');
-            console.log('User ID:', FIXED_USER_ID);
-            
-            const smartCAResult = await smartCAService.handleCheckSmartCA(FIXED_USER_ID);
+            console.log('User ID:', evcUserId);
+
+            const smartCAResult = await smartCAService.handleCheckSmartCA(evcUserId);
             console.log('SmartCA check result:', smartCAResult);
             
             if (smartCAResult.success) {
@@ -437,7 +479,7 @@ function ContractDetailModal({ visible, contractId, onClose }) {
                 visible={showAddSmartCAModal}
                 onCancel={() => setShowAddSmartCAModal(false)}
                 onSuccess={handleAddSmartCASuccess}
-                contractInfo={{ userId: FIXED_USER_ID }}
+                contractInfo={{ userId: evcUserId }}
             />
 
             {/* Modal chọn SmartCA */}
@@ -448,6 +490,7 @@ function ContractDetailModal({ visible, contractId, onClose }) {
                 smartCAData={smartCAData}
                 loading={smartCALoading}
                 isExistingSmartCA={true}
+                userId={evcUserId}
             />
         </Modal>
     );

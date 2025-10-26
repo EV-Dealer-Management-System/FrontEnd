@@ -30,8 +30,7 @@ function ContractPage() {
   // PDF viewer - Phase 4: Sử dụng PDFModal với blob handling
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  
+  const [pdfLoading, setPdfLoading] = useState(false);  
   // New states cho blob handling như CreateContract
   const [pdfBlob, setPdfBlob] = useState(null);
   const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
@@ -52,6 +51,7 @@ function ContractPage() {
   const [showExistingSmartCASelector, setShowExistingSmartCASelector] = useState(false);
   const [selectedSmartCA, setSelectedSmartCA] = useState(null);
 
+  // Revoke PDF preview URL
   const revokePdfPreviewUrl = useCallback(() => {
     setPdfPreviewUrl(prevUrl => {
       if (prevUrl) {

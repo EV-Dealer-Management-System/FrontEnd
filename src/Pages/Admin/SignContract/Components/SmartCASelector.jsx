@@ -97,24 +97,34 @@ const SmartCASelector = ({
       console.log('=== SELECTING SMARTCA ===');
       console.log('Selected certificate:', selectedCertificate);
       console.log('ContractService available:', !!contractService);
-      console.log('UserId:', userId);
+      console.log('UserId (prop):', userId);
       
       let result;
+      const smartCAOwnerName = selectedCertificate.commonName || selectedCertificate.name || null;
+      const smartCAId = String(selectedCertificate.id);
       
+      const effectiveUserId = userId;
+      console.log('Using UserId:', effectiveUserId);
+      if (!effectiveUserId) {
+        message.error('UserId không hợp lệ để cập nhật SmartCA.');
+        setUpdating(false);
+        return;
+      }
       // Determine which service to use based on available props
-      if (contractService && userId) {
+      if (contractService && effectiveUserId) {
         // Customer case: use contractService with userId
         result = await contractService.handleUpdateSmartCA(
-          selectedCertificate.id,
-          userId,
-          selectedCertificate.commonName || selectedCertificate.name
+          smartCAId,
+          effectiveUserId,
+          smartCAOwnerName
         );
       } else {
         // Admin case: use smartCAService with fixed admin ID
-        const smartCAId = String(selectedCertificate.id);
-        const smartCAOwnerName = selectedCertificate.commonName || selectedCertificate.name || null;
-        
-        result = await smartCAService.handleUpdateSmartCA(smartCAId, smartCAOwnerName);
+        result = await smartCAService.handleUpdateSmartCA(
+          smartCAId,
+          effectiveUserId,
+          smartCAOwnerName
+        );
       }
       
       if (result.success) {
@@ -156,10 +166,10 @@ const SmartCASelector = ({
         </Button>
       ]}
       width={800}
-      destroyOnClose
+      destroyOnHidden
     >
       {/* Custom CSS cho animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes glow {
           0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
           50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.4); }

@@ -135,13 +135,6 @@ const ResetPassword = () => {
             </div>
           </Space>
         </ProCard>
-
-        <div style={{ textAlign: "center", marginTop: "24px" }}>
-          <Text type="secondary">
-            Chưa có tài khoản?{" "}
-            <Link onClick={() => navigate("/register")}>Đăng ký ngay</Link>
-          </Text>
-        </div>
       </div>
 
       {/* Modal thông báo thành công */}

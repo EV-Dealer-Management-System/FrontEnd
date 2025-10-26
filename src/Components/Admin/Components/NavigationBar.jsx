@@ -22,6 +22,7 @@ import {
   LineChartOutlined,
   GlobalOutlined,
   QuestionCircleOutlined,
+  ThunderboltFilled
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -43,6 +44,8 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
     localStorage.removeItem("jwt_token");
     // Xóa thông tin user nếu có
     localStorage.removeItem("user");
+    localStorage.removeItem("userFullName");
+    localStorage.removeItem("refresh_token");
     // Hiển thị thông báo logout thành công
     message.success("Đăng xuất thành công!");
     // Chuyển về trang login
@@ -71,17 +74,17 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           //   component: "./CreateAccount",
           // },
           {
-            path: "/admin/dealer/list",
+            path: "/admin/dealer/all-dealers",
             name: "Danh sách đại lý",
             icon: <TeamOutlined />,
             component: "./DealerList",
           },
-          {
-            path: "/admin/dealer/create-contract",
-            name: "Tạo hợp đồng đại lý",
-            icon: <FileTextOutlined />,
-            component: "./CreateContract",
-          },
+          // {
+          //   path: '/admin/dealer/create-contract',
+          //   name: 'Tạo hợp đồng đại lý',
+          //   icon: <FileTextOutlined />,
+          //   component: './CreateContract',
+          // },
           {
             path: "/admin/dealer/contracts",
             name: "Hợp đồng đại lý",
@@ -95,12 +98,18 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           //   icon: <LineChartOutlined />,
           //   component: "./DealerPerformance",
           // },
+          {
+            path: "/admin/booking-signing",
+            name: "Hợp đồng đặt xe",
+            icon: <FileTextOutlined />,
+            component: "./BookingContract",
+          }
         ],
       },
       {
         path: "/admin/vehicle",
         name: "Quản lý xe điện",
-        icon: <CarOutlined />,
+        icon: <ThunderboltFilled />,
         routes: [
           {
             path: "/admin/vehicle-management",
@@ -257,7 +266,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           collapsedWidth={64}
           logo={
             <div className="flex items-center gap-2">
-              <CarOutlined className="text-2xl text-blue-500" />
+              <ThunderboltFilled className="text-2xl text-blue-500" />
               {!collapsed && (
                 <Text strong className="text-lg text-gray-800">
                   EV Management System

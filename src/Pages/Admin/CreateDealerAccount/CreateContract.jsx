@@ -34,9 +34,7 @@ import ContractViewer from '../SignContract/Components/ContractViewer';
 import PDFEdit from '../SignContract/Components/PDF/PDFEdit/PDFEditMain';
 import { createAccountApi } from '../../../App/EVMAdmin/DealerContract/CreateDealerContract';
 import { PDFUpdateService } from '../../../App/Home/PDFconfig/PDFUpdate';
-import AdminLayout from '../../../Components/Admin/AdminLayout';
-
-const FIXED_USER_ID = "18858";
+import EVMStaffLayout from '../../../Components/EVMStaff/EVMStaffLayout';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -186,7 +184,7 @@ const CreateContract = () => {
   const handleProvinceChange = async (provinceCode) => {
     if (!provinceCode) {
       setWards([]);
-      form.setFieldsValue({ ward: undefined });
+      form.setFieldsValue({ ward: undefined , regionDealer: ''});
       return;
     }
 
@@ -204,6 +202,14 @@ const CreateContract = () => {
       }
 
       form.setFieldsValue({ ward: undefined });
+
+      // Tự động điền regionDealer dựa trên province đã chọn
+      const selectedProvince = provinces.find(p => p.code === provinceCode);
+      if (selectedProvince?.codename) {
+        form.setFieldsValue({ regionDealer: selectedProvince.codename.toUpperCase() });
+      } else {
+        form.setFieldsValue({ regionDealer: '' });
+      }
     } catch (error) {
       message.error('Không thể tải danh sách phường/xã/quận/huyện');
       console.error('Error loading wards/districts:', error);
@@ -344,9 +350,9 @@ const CreateContract = () => {
       return;
     }
 
-    const finalPositionA = positionA || originalPositionA || "18,577,188,667";
-    const finalPositionB = positionB || originalPositionB || "406,577,576,667";
-    const finalPageSign = pageSign || originalPageSign || 9;
+    const finalPositionA = positionA || originalPositionA;
+    const finalPositionB = positionB || originalPositionB;
+    const finalPageSign = pageSign || originalPageSign;
 
     modal.confirm({
       title: 'Xác nhận hợp đồng',
@@ -358,14 +364,10 @@ const CreateContract = () => {
         try {
           setConfirming(true);
 
-          const payload = {
-            eContractId: String(contractId),
-            positionA: String(finalPositionA),
-            positionB: String(finalPositionB),
-            pageSign: Number(finalPageSign)
-          };
-
-          const response = await api.post('/EContract/ready-dealer-contracts', payload, {
+          const EContractId = contractId;
+          const response = await api.post('/EContract/ready-dealer-contracts', null, 
+          {
+            params: { eContractid: EContractId },
             headers: { 'Content-Type': 'application/json' }
           });
 
@@ -461,7 +463,7 @@ const CreateContract = () => {
   };
 
   return (
-    <AdminLayout>
+    <EVMStaffLayout>
       <div className="max-w-6xl mx-auto px-4">
         <Card 
           className="shadow-2xl rounded-2xl mb-8 overflow-hidden border-0"
@@ -754,8 +756,11 @@ const CreateContract = () => {
                   rules={[]}
                 >
                   <Input
-                    placeholder="Nhập khu vực đại lý (có thể bỏ trống)"
-                    className="rounded-lg"
+                    readOnly
+                    disabled
+                    placeholder="Khu vực đại lý"
+                    className="rounded-lg bg-gray-100 cursor-not-allowed"
+                    style={{ color: '#000', fontWeight: 500 }}
                   />
                 </FormField>
 
@@ -882,7 +887,7 @@ const CreateContract = () => {
           />
         </App>
       </div>
-    </AdminLayout>
+    </EVMStaffLayout>
   );
 };
 

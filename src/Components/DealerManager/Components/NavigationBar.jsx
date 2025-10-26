@@ -8,7 +8,6 @@ import {
   SettingOutlined,
   TeamOutlined,
   ShopOutlined,
-  CarOutlined,
   BarChartOutlined,
   BellOutlined,
   LogoutOutlined,
@@ -23,6 +22,7 @@ import {
   ShoppingCartOutlined,
   DollarOutlined,
   CalendarOutlined,
+  ThunderboltOutlined
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -44,6 +44,8 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
     localStorage.removeItem("jwt_token");
     // Xóa thông tin user nếu có
     localStorage.removeItem("user");
+    localStorage.removeItem("userFullName");
+    localStorage.removeItem("refresh_token");
     // Hiển thị thông báo logout thành công
     message.success("Đăng xuất thành công!");
     // Chuyển về trang login
@@ -89,12 +91,29 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <CalendarOutlined />,
             component: "./ScheduleTestDrive",
           },
+            path: "/dealer-manager/ev/all-ev-quotes",
+            name: "Đơn báo giá xe",
+            icon: <DollarOutlined />,
+            component: "./EVQuotes",
+          },
+          // {
+          //   path: "/dealer/sales/create-order",
+          //   name: "Tạo đơn hàng mới",
+          //   icon: <UserAddOutlined />,
+          //   component: "./CreateOrder",
+          // },
+          // {
+          //   path: "/dealer/sales/customers",
+          //   name: "Quản lý khách hàng",
+          //   icon: <TeamOutlined />,
+          //   component: "./Customers",
+          // },
         ],
       },
       {
         path: "/dealer/inventory",
         name: "Kho xe",
-        icon: <CarOutlined />,
+        icon: <ThunderboltOutlined />,
         routes: [
           {
             path: "/dealer-manager/ev/inventory",
@@ -114,6 +133,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <GlobalOutlined />,
             component: "./InventoryHistory",
           },
+        
         ],
       },
       {
@@ -130,6 +150,25 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           {
             path: "/dealer-manager/staff/create-dealer-staff-account",
             name: "Tạo tài khoản nhân viên",
+            icon: <LineChartOutlined />,
+            component: "./StaffPerformance",
+          },
+        ],
+      },
+       {
+        path: "/dealer-manager/customers",
+        name: "Quản lý khách hàng",
+        icon: <TeamOutlined />,
+        routes: [
+          {
+            path: "/dealer-manager/customers/get-all-customers",
+            name: "Danh sách khách hàng",
+            icon: <TeamOutlined />,
+            component: "./CustomerList",
+          },
+          {
+            path: "/dealer-manager/customers/create-customer",
+            name: "Tạo khách hàng mới",
             icon: <LineChartOutlined />,
             component: "./StaffPerformance",
           },

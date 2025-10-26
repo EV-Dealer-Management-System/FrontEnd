@@ -4,8 +4,15 @@ export const SignContract = () => {
   // Hàm lấy access token cho EVC
   const getAccessTokenForEVC = async () => {
     try {
-      const response = await api.get('/EContract/get-access-token-for-evc');
-      return response.data;
+      const res = await api.get('/EContract/get-access-token-for-evc');
+      const payload = res?.data?.data;
+      if(!payload?.accessToken) {
+        throw new Error("Không nhận được token từ EVC");
+      }
+      return { 
+        accessToken: payload.accessToken,
+        userId: payload.userId
+      };
     } catch (error) {
       console.error("Lỗi khi lấy access token:", error);
       throw error;
@@ -14,7 +21,7 @@ export const SignContract = () => {
 
   const handleSignContract = async (contractData) => {
     try {
-      const token = await getAccessTokenForEVC();
+      const {accessToken} = await getAccessTokenForEVC();
 
       if (!contractData.signatureImage) {
         throw new Error("Vui lòng tạo chữ ký trước khi ký hợp đồng");
@@ -55,7 +62,7 @@ export const SignContract = () => {
       // Token được gửi như query parameter theo API doc
       const response = await api.post('/EContract/sign-process', requestBody, {
         params: {
-          token: token
+          token: accessToken
         }
       });
       return response.data;
