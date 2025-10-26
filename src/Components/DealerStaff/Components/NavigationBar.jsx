@@ -85,13 +85,13 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         icon: <TeamOutlined />,
         routes: [
           {
-            path: "/dealer-staff/customers/list",
+            path: "/dealer-staff/customers/get-all-ev-customers",
             name: "Danh sách khách hàng",
             icon: <TeamOutlined />,
-            component: "./CustomerList",
+            component: "./GetAllEVCustomer",
           },
           {
-            path: "/dealer-staff/customers/add",
+            path: "/dealer-staff/customers/create-ev-customer",
             name: "Thêm khách hàng",
             icon: <UserAddOutlined />,
             component: "./AddCustomer",

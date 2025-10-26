@@ -137,6 +137,25 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           },
         ],
       },
+       {
+        path: "/dealer-manager/customers",
+        name: "Quản lý khách hàng",
+        icon: <TeamOutlined />,
+        routes: [
+          {
+            path: "/dealer-manager/customers/get-all-customers",
+            name: "Danh sách khách hàng",
+            icon: <TeamOutlined />,
+            component: "./CustomerList",
+          },
+          {
+            path: "/dealer-manager/customers/create-customer",
+            name: "Tạo khách hàng mới",
+            icon: <LineChartOutlined />,
+            component: "./StaffPerformance",
+          },
+        ],
+      },
       {
         path: "/dealer/reports",
         name: "Báo cáo & Thống kê",

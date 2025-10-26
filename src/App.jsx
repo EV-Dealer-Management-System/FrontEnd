@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
-import React from "react";  
+import React from "react";
 import LoginPage from "./Pages/Home/Login/LoginPage";
 import LoginSuccess from "./Pages/Home/Login/LoginSuccess";
 import RegisterPage from "./Pages/Home/Register/RegisterPage";
@@ -46,6 +46,10 @@ import TemplateEditorPage from "./Pages/Admin/TemplateEditor/TemplateEditorPage"
 import BookingContract from "./Pages/Admin/BookingSigning/BookingContract";
 import GetAllEVDealerPage from "./Pages/Admin/GetAllEVDealer/GetAllEVDealer";
 import ViewAllContract from "./Pages/EVMStaff/GetAllContract/ViewAllContract";
+import GetAllCustomer from "./Pages/DealerManager/GetAllCustomer/GetAllCustomer";
+import CreateEVCustomer from "./Pages/DealerStaff/CreateEVCustomer/CreateEVCustomer";
+import GetAllEVCustomer from "./Pages/DealerStaff/GetAllEVCustomer/GetAllEVCustomer";
+import PaymentResponse from "./Pages/Payment/PaymentResponse";
 function App() {
   return (
     <BrowserRouter>
@@ -55,6 +59,14 @@ function App() {
           element={
             <PublicRoute>
               <LoginPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/Checkout"
+          element={
+            <PublicRoute>
+              <PaymentResponse />
             </PublicRoute>
           }
         />
@@ -103,7 +115,10 @@ function App() {
                   path="inventory-management"
                   element={<InventoryManagement />}
                 />
-                <Route path="dealer/all-dealers" element={<GetAllEVDealerPage />} />
+                <Route
+                  path="dealer/all-dealers"
+                  element={<GetAllEVDealerPage />}
+                />
                 <Route
                   path="dealer/create-contract"
                   element={<CreateContract />}
@@ -149,9 +164,16 @@ function App() {
                 <Route path="" element={<DealerManager />} />
                 <Route path="ev/ev-booking" element={<EVBooking />} />
                 <Route path="ev/all-ev-booking" element={<GetAllEVBooking />} />
-                <Route path="ev/all-ev-quotes" element={<GetAllEVQuotesDealerManager />} />
+                <Route
+                  path="ev/all-ev-quotes"
+                  element={<GetAllEVQuotesDealerManager />}
+                />
                 <Route path="ev/inventory" element={<GetAllEVInventory />} />
                 <Route path="staff/staff-list" element={<DealerStaffList />} />
+                <Route
+                  path="customers/get-all-customers"
+                  element={<GetAllCustomer />}
+                />
                 <Route
                   path="settings/change-password"
                   element={<ChangePasswordDealerManager />}
@@ -165,7 +187,6 @@ function App() {
                   path="*"
                   element={<Navigate to="/dealer-manager" replace />}
                 />
-                
               </Routes>
             </DealerManagerRoute>
           }
@@ -200,7 +221,6 @@ function App() {
                   element={<Navigate to="/evm-staff" replace />}
                 />
               </Routes>
-                
             </EVMStaffRoute>
           }
         />
@@ -222,7 +242,18 @@ function App() {
                 />
                 <Route path="quotes/create-quote" element={<CreateEVQuote />} />
                 <Route path="quotes/all-quotes" element={<GetAllEVQuotes />} />
-                <Route path="ev/version-details" element={<EVVersionDetails />} />
+                <Route
+                  path="ev/version-details"
+                  element={<EVVersionDetails />}
+                />
+                <Route
+                  path="customers/create-ev-customer"
+                  element={<CreateEVCustomer />}
+                />
+                <Route
+                  path="customers/get-all-ev-customers"
+                  element={<GetAllEVCustomer />}
+                />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ Dealer Staff */}
                 <Route
                   path="*"
