@@ -149,6 +149,34 @@ function VehicleManagement() {
     };
   };
 
+  // Hàm lấy màu hex từ tên màu
+  const getColorHexByName = (colorName) => {
+    if (!colorName) return "#cccccc"; // Default gray
+    
+    // Map một số màu phổ biến
+    const colorMap = {
+      'đỏ': '#DC143C',
+      'đen': '#000000',
+      'trắng': '#FFFFFF',
+      'xanh': '#006994',
+      'bạc': '#C0C0C0',
+      'xám': '#808080',
+      'vàng': '#FFD700',
+      'cam': '#FF4500',
+      'tím': '#663399',
+      'hồng': '#FF69B4',
+      'nâu': '#8B4513',
+    };
+    
+    for (const [key, value] of Object.entries(colorMap)) {
+      if (colorName.toLowerCase().includes(key)) {
+        return value;
+      }
+    }
+    
+    return "#cccccc"; // Default gray if not found
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <NavigationBar collapsed={collapsed} onCollapse={setCollapsed} />
@@ -329,7 +357,7 @@ function VehicleManagement() {
                                           className="inline-block w-5 h-5 rounded-full border-2 border-gray-300"
                                           style={{
                                             backgroundColor:
-                                              color.colorCode || color.hexCode || "#ccc",
+                                              color.colorCode || color.hexCode || getColorHexByName(color.colorName),
                                           }}
                                           title={color.colorName || "N/A"}
                                         />
