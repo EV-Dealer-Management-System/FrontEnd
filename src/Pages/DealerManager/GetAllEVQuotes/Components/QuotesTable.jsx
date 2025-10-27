@@ -10,6 +10,8 @@ import {
   CheckCircleOutlined,
 } from "@ant-design/icons";
 import ApprovalModal from "./ApprovalModal";
+import { ConfigProvider } from "antd";
+import viVN from "antd/lib/locale/vi_VN";
 
 const { Search } = Input;
 const { Option } = Select;
@@ -82,8 +84,7 @@ function QuotesTable({
       title: "Mã báo giá",
       dataIndex: "id",
       key: "id",
-      width: 120,
-      fixed: "left",
+     
       render: (id) => (
         <Tooltip title={id}>
           <span className="text-blue-600 font-mono text-xs">
@@ -93,33 +94,9 @@ function QuotesTable({
       ),
     },
     {
-      title: "Thông tin xe",
-      key: "vehicle",
-      width: 250,
-      render: (_, record) => {
-        const firstDetail = record.quoteDetails[0];
-        return (
-          <div className="space-y-1">
-            <div className="font-semibold text-gray-800">
-              {firstDetail.version.modelName}
-            </div>
-            <div className="text-sm text-gray-500">
-              {firstDetail.version.versionName}
-            </div>
-            <Tag color="blue">{firstDetail.color.colorName}</Tag>
-            {record.quoteDetails.length > 1 && (
-              <Tag color="purple">
-                +{record.quoteDetails.length - 1} sản phẩm
-              </Tag>
-            )}
-          </div>
-        );
-      },
-    },
-    {
       title: "Số lượng",
       key: "quantity",
-      width: 100,
+      
       align: "center",
       render: (_, record) => {
         const totalQty = record.quoteDetails.reduce(
@@ -136,7 +113,7 @@ function QuotesTable({
     {
       title: "Khuyến mãi",
       key: "promotion",
-      width: 180,
+      
       render: (_, record) => {
         const firstDetail = record.quoteDetails[0];
         if (firstDetail.promotion) {
@@ -153,7 +130,7 @@ function QuotesTable({
       title: "Tổng tiền",
       dataIndex: "totalAmount",
       key: "totalAmount",
-      width: 150,
+      
       align: "right",
       render: (amount) => (
         <span className="font-bold text-green-600 text-base">
@@ -166,7 +143,7 @@ function QuotesTable({
       title: "Ngày tạo",
       dataIndex: "createdAt",
       key: "createdAt",
-      width: 150,
+     
       render: (date) => (
         <div className="flex items-center gap-1 text-gray-600">
           <CalendarOutlined />
@@ -179,7 +156,7 @@ function QuotesTable({
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
-      width: 120,
+      
       align: "center",
       render: (status) => {
         const statusInfo = getQuoteStatus(status);
@@ -197,25 +174,12 @@ function QuotesTable({
       onFilter: (value, record) => record.status === value,
     },
     {
-      title: "Ghi chú",
-      dataIndex: "note",
-      key: "note",
-      width: 150,
-      ellipsis: true,
-      render: (note) => (
-        <Tooltip title={note}>
-          <span className="text-gray-600">{note || "-"}</span>
-        </Tooltip>
-      ),
-    },
-    {
       title: "Thao tác",
       key: "action",
-      width: 180,
-      fixed: "right",
+     
       align: "center",
       render: (_, record) => (
-        <Space>
+        <Space  direction="vertical" size="small" align="center">
           <Button
             type="primary"
             icon={<EyeOutlined />}
@@ -242,6 +206,7 @@ function QuotesTable({
   ];
 
   return (
+    <ConfigProvider locale={viVN}>
     <ProCard
       title={
         <div className="flex items-center gap-2">
@@ -251,6 +216,14 @@ function QuotesTable({
       }
       bordered
       className="shadow-lg"
+      style={{
+    width: "95%",          // ✅ cho khung to hơn
+    maxWidth: 1300,        // ✅ tránh kéo dài vô hạn
+    margin: "0 auto",      // ✅ căn giữa
+    background: "white",
+    borderRadius: 12,
+    padding: 12
+  }}
       extra={
         <Space>
           <Search
@@ -291,7 +264,7 @@ function QuotesTable({
           },
           pageSizeOptions: ["10", "20", "50", "100"],
         }}
-        scroll={{ x: 1500 }}
+        
         className="custom-table"
         rowClassName={(record, index) =>
           index % 2 === 0 ? "bg-gray-50" : "bg-white"
@@ -306,6 +279,7 @@ function QuotesTable({
         onConfirm={handleConfirmApproval}
       />
     </ProCard>
+    </ConfigProvider>
   );
 }
 

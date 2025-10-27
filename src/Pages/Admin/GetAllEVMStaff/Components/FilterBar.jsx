@@ -6,12 +6,15 @@ import {
     DatabaseOutlined,
     ReloadOutlined
 } from '@ant-design/icons';
+import {ConfigProvider} from "antd";
+import viVN from 'antd/lib/locale/vi_VN';
 
 const { Option } = Select;
 const { Text } = Typography;
 
 function FilterBar({ selectedPage, onPageChange, onApply, loading }) {
     return (
+        <ConfigProvider locale={viVN}>
         <Card bordered={false} className="mb-4">
             <Row gutter={[16, 16]}>
                 {/* Statistics */}
@@ -86,6 +89,7 @@ function FilterBar({ selectedPage, onPageChange, onApply, loading }) {
                 </Col>
             </Row>
         </Card>
+        </ConfigProvider>
     );
 }
 

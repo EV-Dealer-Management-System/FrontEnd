@@ -12,6 +12,8 @@ import {
     CheckCircleOutlined,
     StopOutlined
 } from '@ant-design/icons';
+import { ConfigProvider } from 'antd';
+import viVN from 'antd/lib/locale/vi_VN';
 
 const { Title, Text } = Typography;
 
@@ -63,10 +65,8 @@ function PromotionTable({
                     return (
                         <div className="text-center">
                             <div className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
-                                <PercentageOutlined className="text-xs" />
                                 {record.percentage}%
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">Phần trăm</div>
                         </div>
                     );
                 }
@@ -191,6 +191,7 @@ function PromotionTable({
     ];
 
     return (
+        <ConfigProvider locale={viVN}>
         <Card
             title={
                 <div className="flex items-center justify-between">
@@ -222,12 +223,13 @@ function PromotionTable({
                     pageSizeOptions: ['10', '20', '50'],
                     size: 'small'
                 }}
-                scroll={{ x: 1000 }}
+                
                 size="small"
                 className="promotion-table"
                 rowClassName="hover:bg-gray-50 transition-colors duration-150"
             />
         </Card>
+        </ConfigProvider>
     );
 }
 

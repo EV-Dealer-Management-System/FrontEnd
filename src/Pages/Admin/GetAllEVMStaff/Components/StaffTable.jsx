@@ -11,7 +11,8 @@ import {
     CalendarOutlined,
     QuestionCircleOutlined
 } from '@ant-design/icons';
-
+ import {ConfigProvider} from "antd";
+import viVN from 'antd/lib/locale/vi_VN';
 const { Text } = Typography;
 
 function StaffTable({ dataSource, loading }) {
@@ -20,9 +21,7 @@ function StaffTable({ dataSource, loading }) {
             title: 'STT',
             dataIndex: 'index',
             key: 'index',
-            width: 70,
             align: 'center',
-            fixed: 'left',
             search: false,
             render: (_, __, index) => (
                 <div className="flex items-center justify-center w-8 h-8 bg-blue-50 rounded-full">
@@ -33,8 +32,7 @@ function StaffTable({ dataSource, loading }) {
         {
             title: 'Thông tin nhân viên',
             key: 'staff',
-            width: 350,
-            fixed: 'left',
+            width : 300,
             search: false,
             render: (_, record) => (
                 <Space size="middle" className="py-2">
@@ -55,39 +53,38 @@ function StaffTable({ dataSource, loading }) {
                 </Space>
             ),
         },
-        {
-            title: 'Số điện thoại',
-            dataIndex: 'phoneNumber',
-            key: 'phoneNumber',
-            width: 160,
-            align: 'center',
-            search: false,
-            render: (phone) => {
-                if (!phone) {
-                    return (
-                        <div className="flex items-center justify-center gap-2 text-gray-400">
-                            <PhoneOutlined />
-                            <Text type="secondary" className="text-sm">Chưa có</Text>
-                        </div>
-                    );
-                }
-                return (
-                    <Space size={6}>
-                        <PhoneOutlined className="text-green-500" />
-                        <Text className="font-medium">{phone}</Text>
-                    </Space>
-                );
-            },
-        },
+        // {
+        //     title: 'Số điện thoại',
+        //     dataIndex: 'phoneNumber',
+        //     key: 'phoneNumber',
+        //     align: 'center',
+        //     search: false,
+        //     render: (phone) => {
+        //         if (!phone && phone === '-') {
+        //             return (
+        //                 <div className="flex items-center justify-center gap-2 text-gray-400">
+        //                     <PhoneOutlined />
+        //                     <Text type="secondary" className="text-sm">Chưa có</Text>
+        //                 </div>
+        //             );
+        //         }
+        //         return (
+        //             <Space size={6}>
+        //                 <PhoneOutlined className="text-green-500" />
+        //                 <Text className="font-medium">{phone}</Text>
+        //             </Space>
+        //         );
+        //     },
+        // },
         {
             title: 'Địa chỉ',
             dataIndex: 'address',
             key: 'address',
-            width: 250,
+            width : 200,
             search: false,
             ellipsis: true,
             render: (address) => {
-                if (!address) {
+                if (!address && address === 'null') {
                     return (
                         <div className="flex items-center gap-2 text-gray-400">
                             <EnvironmentOutlined />
@@ -107,7 +104,6 @@ function StaffTable({ dataSource, loading }) {
             title: 'Giới tính',
             dataIndex: 'sex',
             key: 'sex',
-            width: 120,
             align: 'center',
             search: false,
             render: (sex) => {
@@ -154,7 +150,7 @@ function StaffTable({ dataSource, loading }) {
                 // Nếu có giá trị nhưng không xác định được
                 return (
                     <Tag icon={<QuestionCircleOutlined />} color="default">
-                        Chưa xác định
+                        Chưa có
                     </Tag>
                 );
             },
@@ -163,11 +159,10 @@ function StaffTable({ dataSource, loading }) {
             title: 'Ngày sinh',
             dataIndex: 'dateOfBirth',
             key: 'dateOfBirth',
-            width: 140,
             align: 'center',
             search: false,
-            render: (date) => {
-                if (!date) {
+            render: (dateOfBirth) => {
+                if (!dateOfBirth) {
                     return (
                         <div className="flex items-center justify-center gap-2 text-gray-400">
                             <CalendarOutlined />
@@ -179,7 +174,7 @@ function StaffTable({ dataSource, loading }) {
                     <Space size={6}>
                         <CalendarOutlined className="text-purple-500" />
                         <Text className="text-sm font-medium">
-                            {new Date(date).toLocaleDateString('vi-VN')}
+                            {new Date(dateOfBirth).toLocaleDateString('vi-VN')}
                         </Text>
                     </Space>
                 );
@@ -188,9 +183,8 @@ function StaffTable({ dataSource, loading }) {
         {
             title: 'Vai trò',
             key: 'role',
-            width: 140,
+            width : 100,
             align: 'center',
-            fixed: 'right',
             search: false,
             render: () => (
                 <Tag
@@ -205,6 +199,17 @@ function StaffTable({ dataSource, loading }) {
     ];
 
     return (
+        <ConfigProvider locale={viVN}>
+             <style>{`
+                .staff-table .ant-table {
+                table-layout: auto !important;   
+                width: 100%;
+                }
+                .staff-table .ant-table-cell {
+                white-space: normal !important;  
+                word-break: break-word !important;
+                }
+            `}</style>
         <ProTable
             columns={columns}
             dataSource={dataSource}
@@ -218,7 +223,6 @@ function StaffTable({ dataSource, loading }) {
                 setting: true,
                 fullScreen: true,
             }}
-            scroll={{ x: 1200 }}
             headerTitle={
                 <Space size="middle">
                     <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
@@ -253,6 +257,7 @@ function StaffTable({ dataSource, loading }) {
             }
             className="staff-table"
         />
+        </ConfigProvider>
     );
 }
 

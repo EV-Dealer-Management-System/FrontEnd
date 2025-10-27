@@ -3,7 +3,8 @@ import { ProTable } from "@ant-design/pro-components";
 import { Tag, Badge, message } from "antd";
 import AdminLayout from "../../../Components/Admin/AdminLayout";
 import { GetAllEVDealer } from "../../../App/EVMAdmin/GetAllEVDealer/GetAllEVDealer";
-
+import { ConfigProvider } from "antd";
+import viVN from "antd/lib/locale/vi_VN";
 function GetAllEVDealerPage() {
   const [dealerData, setDealerData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -204,6 +205,7 @@ function GetAllEVDealerPage() {
     <AdminLayout>
       <div className="h-screen flex flex-col">
         <div className="flex-1 bg-white overflow-hidden">
+          <ConfigProvider locale={viVN}>
           <ProTable
             columns={columns}
             dataSource={dealerData}
@@ -256,6 +258,7 @@ function GetAllEVDealerPage() {
               offsetHeader: 0,
             }}
           />
+          </ConfigProvider>
         </div>
       </div>
     </AdminLayout>

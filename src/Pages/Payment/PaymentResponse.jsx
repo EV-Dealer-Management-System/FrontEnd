@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, Spin } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
-import PaymentSuccess from "./components/PaymentSuccess";
-import PaymentFailure from "./components/PaymentFailure";
+import PaymentSuccess from "./Components/PaymentSuccess";
+import PaymentFailure from "./Components/PaymentFailure";
 
 const PaymentResponse = () => {
   const [searchParams] = useSearchParams();

@@ -19,11 +19,16 @@ import AddSmartCA from '../../SignContract/Components/AddSmartCA';
 import SmartCASelector from '../../SignContract/Components/SmartCASelector';
 import { SmartCAService } from '../../../../App/EVMAdmin/SignContractEVM/SmartCA';
 import { SignContract } from '../../../../App/EVMAdmin/SignContractEVM/SignContractEVM';
+import PDFModal from '../../SignContract/Components/PDF/PDFModal';
+import GetPDFPreview from './GetPDFPreview';
 
 // Component hiển thị chi tiết hợp đồng trong modal
 function ContractDetailModal({ visible, contractId, onClose }) {
     const [loading, setLoading] = useState(false);
     const [contractDetail, setContractDetail] = useState(null);
+    const [showPDFModal, setShowPDFModal] = useState(false);
+    const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+    const [loadingPdf, setLoadingPdf] = useState(false);
     
     // States cho SmartCA workflow
     const [showAddSmartCAModal, setShowAddSmartCAModal] = useState(false);
@@ -38,6 +43,29 @@ function ContractDetailModal({ visible, contractId, onClose }) {
     const [errorEVC, setErrorEVC] = useState(null);
     
     const smartCAService = SmartCAService();
+
+    //
+    useEffect(() => {
+        let revokeTimer;
+        const loadPreview = async () => {
+            if (!contractDetail?.downloadUrl) return;
+            setLoadingPdf(true);
+            const blobUrl = await GetPDFPreview(contractDetail.downloadUrl); // gọi API BE → blob URL
+            setPdfBlobUrl(blobUrl); // có thể là null nếu lỗi
+            setLoadingPdf(false);
+        };
+        loadPreview();
+
+        // cleanup: thu hồi blob cũ để tránh leak bộ nhớ
+        return () => {
+            if (pdfBlobUrl) {
+            revokeTimer = setTimeout(() => URL.revokeObjectURL(pdfBlobUrl), 0);
+            }
+            return () => revokeTimer && clearTimeout(revokeTimer);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [contractDetail?.downloadUrl]);
+
     
     //hook lấy EVC token và userId khi modal mở
     useEffect(() => {
@@ -104,6 +132,15 @@ function ContractDetailModal({ visible, contractId, onClose }) {
             setContractDetail(null);
         }
     }, [visible]);
+
+    // Xử lý mở modal PDF
+    const handleOpenPDF = () => {
+        if(!contractDetail?.downloadUrl) {
+        message.warning('Không có file PDF để xem.');
+        return;
+        }
+        setShowPDFModal(true);
+    }
 
     // Định dạng trạng thái hợp đồng
     const getStatusConfig = (status) => {
@@ -240,6 +277,7 @@ function ContractDetailModal({ visible, contractId, onClose }) {
     if (!visible) return null;
 
     const status = contractDetail ? getStatusConfig(contractDetail.status) : null;
+    const pdfUrl = pdfBlobUrl;
 
     return (
         <Modal
@@ -253,6 +291,15 @@ function ContractDetailModal({ visible, contractId, onClose }) {
             onCancel={onClose}
             footer={
                 <Space>
+                    {pdfUrl && (
+                        <Button
+                            icon={<FileTextOutlined />}
+                            onClick={handleOpenPDF}
+                            type='default'
+                        >
+                            Xem hợp đồng PDF
+                        </Button>
+                    )}
                     {contractDetail?.downloadUrl && (
                         <Button
                             icon={<DownloadOutlined />}
@@ -436,6 +483,14 @@ function ContractDetailModal({ visible, contractId, onClose }) {
                     </div>
                 )}
             </Spin>
+            {/* Modal xem PDF hợp đồng */}
+            <PDFModal
+                visible={showPDFModal}
+                onClose={() => setShowPDFModal(false)}
+                contractNo={contractDetail?.no}
+                pdfUrl={pdfUrl}
+                title={`Hợp Đồng ${contractDetail?.no}`}
+            />
 
             {/* Modal ký hợp đồng */}
             <SignatureModal

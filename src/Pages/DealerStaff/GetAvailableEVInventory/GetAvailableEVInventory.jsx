@@ -4,7 +4,8 @@ import { SearchOutlined, ReloadOutlined, CarOutlined } from "@ant-design/icons";
 import { PageContainer } from "@ant-design/pro-components";
 import DealerStaffLayout from "../../../Components/DealerStaff/DealerStaffLayout";
 import { GetAllEVInventory } from "../../../App/DealerStaff/EVInventory/GetAllEVInventory";
-
+import {ConfigProvider} from "antd";
+import viVN from 'antd/lib/locale/vi_VN';
 const { Search } = Input;
 
 function GetAvailableEVInventory() {
@@ -210,7 +211,7 @@ function GetAvailableEVInventory() {
                             />
                         </div>
                     </Card>
-
+                    <ConfigProvider locale={viVN}>
                     {/* Bảng dữ liệu */}
                     <Card className="shadow-lg border border-gray-200">
                         <Spin spinning={loading} tip="Đang tải dữ liệu...">
@@ -241,6 +242,7 @@ function GetAvailableEVInventory() {
                             />
                         </Spin>
                     </Card>
+                    </ConfigProvider>
                 </div>
             </PageContainer>
 

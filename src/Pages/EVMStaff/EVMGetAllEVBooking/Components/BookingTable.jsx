@@ -12,6 +12,8 @@ import {
 } from "@ant-design/icons";
 import EVBookingUpdateStatus from "../../../../App/DealerManager/EVBooking/EVBookingUpdateStatus";
 import BookingReviewModal from "./BookingReviewModal";
+import { ConfigProvider } from "antd";
+import viVN from "antd/lib/locale/vi_VN";
 
 function BookingTable({
     dataSource,
@@ -143,58 +145,64 @@ function BookingTable({
                 <span style={{ fontWeight: 600, color: "#595959" }}>{index + 1}</span>
             ),
         },
-        {
-            title: "Mã Booking",
-            dataIndex: "id",
-            key: "id",
-            width: 220,
-            copyable: true,
-            ellipsis: true,
-            fixed: "left",
-            render: (text) => {
-                const displayId =
-                    text && typeof text === "string" ? text.split("-")[0] : text || "N/A";
-
-                return (
-                    <Tooltip title={text || "N/A"}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <Tag
-                                color="blue"
-                                style={{
-                                    margin: 0,
-                                    fontSize: 11,
-                                    padding: "2px 8px",
-                                    borderRadius: 4,
-                                }}
-                            >
-                                ID
-                            </Tag>
-                            <span
-                                style={{
-                                    fontFamily: "monospace",
-                                    fontSize: 12,
-                                    color: "#1890ff",
-                                    fontWeight: 600,
-                                }}
-                            >
-                                {displayId}
-                            </span>
-                        </div>
-                    </Tooltip>
-                );
-            },
-        },
-        {
-            title: "Ngày Đặt",
-            dataIndex: "bookingDate",
-            key: "bookingDate",
+         {
+            title: "Người Tạo",
+            dataIndex: "createdBy",
+            key: "createdBy",
             width: 150,
-            sorter: (a, b) => new Date(a.bookingDate) - new Date(b.bookingDate),
+            ellipsis: true,
             render: (text) => (
-                <div style={{ fontSize: 13, color: "#595959" }}>
-                    {formatDateTime(text)}
-                </div>
+                <div style={{ fontSize: 13, color: "#595959" }}>{text || "N/A"}</div>
             ),
+        },
+        // {
+        //     title: "Mã Booking",
+        //     dataIndex: "id",
+        //     key: "id",
+        //     width: 220,
+        //     copyable: true,
+        //     ellipsis: true,
+        //     fixed: "left",
+        //     render: (text) => {
+        //         const displayId =
+        //             text && typeof text === "string" ? text.split("-")[0] : text || "N/A";
+
+        //         return (
+        //             <Tooltip title={text || "N/A"}>
+        //                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        //                     <Tag
+        //                         color="blue"
+        //                         style={{
+        //                             margin: 0,
+        //                             fontSize: 11,
+        //                             padding: "2px 8px",
+        //                             borderRadius: 4,
+        //                         }}
+        //                     >
+        //                         ID
+        //                     </Tag>
+        //                     <span
+        //                         style={{
+        //                             fontFamily: "monospace",
+        //                             fontSize: 12,
+        //                             color: "#1890ff",
+        //                             fontWeight: 600,
+        //                         }}
+        //                     >
+        //                         {displayId}
+        //                     </span>
+        //                 </div>
+        //             </Tooltip>
+        //         );
+        //     },
+        // },
+         {
+            title: "Trạng Thái",
+            dataIndex: "status",
+            key: "status",
+            width: 140,
+            align: "center",
+            render: (status) => getStatusTag(status),
         },
         {
             title: "Số Lượng Xe",
@@ -223,21 +231,15 @@ function BookingTable({
             ),
         },
         {
-            title: "Trạng Thái",
-            dataIndex: "status",
-            key: "status",
-            width: 140,
-            align: "center",
-            render: (status) => getStatusTag(status),
-        },
-        {
-            title: "Người Tạo",
-            dataIndex: "createdBy",
-            key: "createdBy",
+            title: "Ngày Đặt",
+            dataIndex: "bookingDate",
+            key: "bookingDate",
             width: 150,
-            ellipsis: true,
+            sorter: (a, b) => new Date(a.bookingDate) - new Date(b.bookingDate),
             render: (text) => (
-                <div style={{ fontSize: 13, color: "#595959" }}>{text || "N/A"}</div>
+                <div style={{ fontSize: 13, color: "#595959" }}>
+                    {formatDateTime(text)}
+                </div>
             ),
         },
         {
@@ -290,6 +292,7 @@ function BookingTable({
     ];
 
     return (
+        <ConfigProvider locale={viVN}>
         <>
             <ProTable
                 columns={columns}
@@ -317,7 +320,7 @@ function BookingTable({
                     size: "default",
                     style: { marginTop: 16 },
                 }}
-                scroll={{ x: 1100 }}
+                
                 cardBordered={false}
                 headerTitle={false}
                 size="middle"
@@ -350,6 +353,7 @@ function BookingTable({
                 loading={updatingStatus[reviewModal.booking?.id]}
             />
         </>
+        </ConfigProvider>
     );
 }
 
