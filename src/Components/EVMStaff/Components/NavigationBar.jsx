@@ -18,6 +18,7 @@ import {
   ThunderboltOutlined,
   CarOutlined,
   PlusOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 const { Text } = Typography;
@@ -61,6 +62,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         name: "Quản lý xe",
         icon: <CarOutlined />,
         routes: [
+          {
+            path: "/evm-staff/vehicles/template-overview",
+            name: "Tổng quan Templates",
+            icon: <EyeOutlined />,
+            component: "./TemplateOverview",
+          },
           {
             path: "/evm-staff/vehicles/create-vehicle",
             name: "Tạo xe",

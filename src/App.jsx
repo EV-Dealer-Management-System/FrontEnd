@@ -52,6 +52,7 @@ import CreateEVCustomer from "./Pages/DealerStaff/CreateEVCustomer/CreateEVCusto
 import GetAllEVCustomer from "./Pages/DealerStaff/GetAllEVCustomer/GetAllEVCustomer";
 import PaymentResponse from "./Pages/Payment/PaymentResponse";
 import Createvehicle from "./Pages/EVMStaff/Vehicle/Createvehicle";
+import TemplateOverview from "./Pages/EVMStaff/Vehicle/TemplateOverview";
 
 function App() {
   return (
@@ -225,6 +226,10 @@ function App() {
                 <Route
                   path="vehicles/create-vehicle"
                   element={<Createvehicle />}
+                />
+                <Route
+                  path="vehicles/template-overview"
+                  element={<TemplateOverview />}
                 />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ EVM Staff */}
                 <Route
