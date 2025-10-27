@@ -21,7 +21,6 @@ import {
   QuestionCircleOutlined,
   ShoppingCartOutlined,
   DollarOutlined,
-  CalendarOutlined,
   ThunderboltOutlined
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -74,23 +73,6 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: "./Orders",
           },
           {
-            path: "/dealer/sales/create-order",
-            name: "Tạo đơn hàng mới",
-            icon: <UserAddOutlined />,
-            component: "./CreateOrder",
-          },
-          {
-            path: "/dealer/sales/customers",
-            name: "Quản lý khách hàng",
-            icon: <TeamOutlined />,
-            component: "./Customers",
-          },
-          {
-            path: "/dealer-manager/sales/schedule-test-drive",
-            name: "Quản lý lịch lái thử",
-            icon: <CalendarOutlined />,
-            component: "./ScheduleTestDrive",
-          },
             path: "/dealer-manager/ev/all-ev-quotes",
             name: "Đơn báo giá xe",
             icon: <DollarOutlined />,
