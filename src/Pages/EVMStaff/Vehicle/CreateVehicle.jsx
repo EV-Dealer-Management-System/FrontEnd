@@ -30,7 +30,7 @@ import {
   CheckCircleOutlined,
   EditOutlined,
 } from "@ant-design/icons";
-import { vehicleApi } from "../../../../App/EVMAdmin/VehiclesManagement/Vehicles";
+import { vehicleApi } from "../../../App/EVMAdmin/VehiclesManagement/Vehicles";
 
 const { Title, Text } = Typography;
 const { Option } = Select;

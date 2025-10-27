@@ -21,7 +21,7 @@ import {
   QuestionCircleOutlined,
   ShoppingCartOutlined,
   DollarOutlined,
-  ThunderboltOutlined,
+  ThunderboltOutlined
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -71,12 +71,6 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             name: "Đơn hàng",
             icon: <FileTextOutlined />,
             component: "./Orders",
-          },
-          {
-            path: "/dealer-manager/sales/schedule-test-drive",
-            name: "Lịch lái thử",
-            icon: <BellOutlined />,
-            component: "./ScheduleTestDrive",
           },
           {
             path: "/dealer-manager/ev/all-ev-quotes",
