@@ -73,12 +73,6 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: "./Orders",
           },
           {
-            path: "/dealer-manager/sales/schedule-test-drive",
-            name: "Lịch lái thử",
-            icon: <BellOutlined />,
-            component: "./ScheduleTestDrive",
-          },
-          {
             path: "/dealer-manager/ev/all-ev-quotes",
             name: "Đơn báo giá xe",
             icon: <DollarOutlined />,

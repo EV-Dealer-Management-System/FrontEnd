@@ -30,7 +30,7 @@ import {
   CheckCircleOutlined,
   EditOutlined,
 } from "@ant-design/icons";
-import { vehicleApi } from "../../../../App/EVMAdmin/VehiclesManagement/Vehicles";
+import { vehicleApi } from "../../../App/EVMAdmin/VehiclesManagement/Vehicles";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -269,7 +269,7 @@ function CreateElectricVehicle() {
     }
   };
 
- // ✅ Columns cho bảng VEHICLES (có VIN)
+ // ✅ Columns cho bảng VEHICLES 
 const vehicleColumns = [
   {
     title: "STT",
@@ -681,9 +681,9 @@ const vehicleColumns = [
         <div>
           <Title level={4} className="m-0">
             <CarOutlined style={{ color: "#1890ff", marginRight: 8 }} />
-            🚗 Tạo & Quản lý Xe Điện
+            Tạo & Quản lý Xe Điện
           </Title>
-          <Text type="secondary">Quản lý các xe điện cụ thể (có VIN)</Text>
+          
         </div>
         <Space>
           <Button
@@ -769,7 +769,7 @@ const vehicleColumns = [
                     
                     <Col xs={24} sm={5} className="border-r border-gray-300 pr-4">
                       <div className="mb-2">
-                        <Text strong className="block mb-2" style={{ fontSize: '13px' }}>VIN:</Text>
+                        <Text strong className="block mb-2" style={{ fontSize: '13px' }}></Text>
                         <Text copyable strong className="text-blue-600 font-mono" style={{ fontSize: '14px' }}>
                           {vehicle.vin}
                         </Text>
@@ -777,27 +777,45 @@ const vehicleColumns = [
                     </Col>
                     
                     <Col xs={12} sm={6} className="border-r border-gray-300 pr-4">
-                      <div className="mb-2">
-                        <Text strong className="block mb-2" style={{ fontSize: '13px' }}>Phiên bản / Model:</Text>
-                        <Text strong className="block" style={{ fontSize: '15px', color: '#262626' }}>
-                          {versionName}
-                        </Text>
-                        <Text type="secondary" style={{ fontSize: '13px' }}>
-                          {modelName}
-                        </Text>
-                      </div>
-                    </Col>
-                    
+  {/* --- Phần Mẫu --- */}
+  <div className="mb-4">
+    <Text strong className="block mb-2" style={{ fontSize: '13px' }}>
+      Mẫu:
+    </Text>
+    <Text
+      type="secondary"
+      className="block text-[13px] text-gray-500"
+      style={{ lineHeight: '1.5' }}
+    >
+      {modelName}
+    </Text>
+  </div>
+
+  {/* --- Phần Phiên bản --- */}
+  <div>
+    <Text strong className="block mb-2" style={{ fontSize: '13px' }}>
+      Phiên bản:
+    </Text>
+    <Text
+      strong
+      className="block"
+      style={{ fontSize: '15px', color: '#262626', lineHeight: '1.6' }}
+    >
+      {versionName}
+    </Text>
+  </div>
+</Col>
+
                     <Col xs={12} sm={5} className="border-r border-gray-300 pr-4">
                       <div className="mb-2">
-                        <Text strong className="block mb-2" style={{ fontSize: '13px' }}>Kho:</Text>
+                        <Text strong className="block mb-2" style={{ fontSize: '13px' }}>Kho:   </Text>
                         <Text strong style={{ fontSize: '14px' }}>{warehouseName}</Text>
                       </div>
                     </Col>
                     
                     <Col xs={12} sm={5} className="border-r border-gray-300 pr-4">
                       <div className="mb-2">
-                        <Text strong className="block mb-2" style={{ fontSize: '13px' }}>Trạng thái:</Text>
+                        <Text strong className="block mb-2" style={{ fontSize: '13px' }}>Trạng thái:    </Text>
                         <Badge 
                           status={statusConfig.color} 
                           text={<Text strong style={{ fontSize: '14px' }}>{statusConfig.text}</Text>} 
@@ -839,91 +857,57 @@ const vehicleColumns = [
                     </Col>
                   </Row>
                   
-                  <Divider style={{ margin: '12px 0' }} />
+                 
                   
-                  {/* HÀNG 2: Thông tin ngày tháng & Template */}
-                  <Row gutter={[24, 12]}>
-                    <Col xs={12} sm={6} className="border-r border-gray-300 pr-3">
-                      <Text strong className="block mb-2" style={{ fontSize: '13px' }}>Template ID:</Text>
-                      <Text code copyable className="text-xs font-mono" style={{ fontSize: '11px' }}>
-                        {template.evTemplateId || 'N/A'}
-                      </Text>
-                    </Col>
-                    
-                    <Col xs={12} sm={6} className="border-r border-gray-300 pr-3">
-                      <Text strong className="block mb-2" style={{ fontSize: '13px' }}>Ngày SX:</Text>
-                      <Text style={{ fontSize: '14px' }}>
-                        {vehicle.manufactureDate 
-                          ? new Date(vehicle.manufactureDate).toLocaleDateString("vi-VN", { 
-                              year: 'numeric', 
-                              month: '2-digit', 
-                              day: '2-digit' 
-                            })
-                          : <Text type="secondary" italic>Chưa có</Text>
-                        }
-                      </Text>
-                    </Col>
-                    
-                    <Col xs={12} sm={6} className="border-r border-gray-300 pr-3">
-                      <Text strong className="block mb-2" style={{ fontSize: '13px' }}>Ngày nhập:</Text>
-                      <Text style={{ fontSize: '14px' }}>
-                        {vehicle.importDate 
-                          ? new Date(vehicle.importDate).toLocaleDateString("vi-VN", { 
-                              year: 'numeric', 
-                              month: '2-digit', 
-                              day: '2-digit' 
-                            })
-                          : <Text type="secondary" italic>Chưa có</Text>
-                        }
-                      </Text>
-                    </Col>
-                    
-                    <Col xs={12} sm={6}>
-                      <Text strong className="block mb-2" style={{ fontSize: '13px' }}>Hạn bảo hành:</Text>
-                      <Text style={{ fontSize: '14px' }}>
-                        {vehicle.warrantyExpiryDate 
-                          ? new Date(vehicle.warrantyExpiryDate).toLocaleDateString("vi-VN", { 
-                              year: 'numeric', 
-                              month: '2-digit', 
-                              day: '2-digit' 
-                            })
-                          : <Text type="secondary" italic>Chưa có</Text>
-                        }
-                      </Text>
-                    </Col>
-                  </Row>
+                 
 
-                  {/* HÀNG 3: Ngày giao hàng */}
-                  <Divider style={{ margin: '12px 0' }} />
-                  <Row gutter={[24, 12]}>
-                    <Col xs={12} sm={12} className="border-r border-gray-300 pr-3">
-                      <Text strong className="block mb-2" style={{ fontSize: '13px' }}>Ngày giao xe:</Text>
-                      <Text style={{ fontSize: '14px' }}>
-                        {vehicle.deliveryDate 
-                          ? new Date(vehicle.deliveryDate).toLocaleDateString("vi-VN", { 
-                              year: 'numeric', 
-                              month: '2-digit', 
-                              day: '2-digit' 
-                            })
-                          : <Text type="secondary" italic>Chưa giao</Text>
-                        }
-                      </Text>
-                    </Col>
-                    
-                    <Col xs={12} sm={12}>
-                      <Text strong className="block mb-2" style={{ fontSize: '13px' }}>Ngày đại lý nhận:</Text>
-                      <Text style={{ fontSize: '14px' }}>
-                        {vehicle.dealerReceivedDate 
-                          ? new Date(vehicle.dealerReceivedDate).toLocaleDateString("vi-VN", { 
-                              year: 'numeric', 
-                              month: '2-digit', 
-                              day: '2-digit' 
-                            })
-                          : <Text type="secondary" italic>Chưa nhận</Text>
-                        }
-                      </Text>
-                    </Col>
-                  </Row>
+                  {/* HÀNG 2: Ngày giao hàng */}
+                 
+<Row gutter={[24, 12]} align="middle">
+
+  <Col xs={24} sm={8} className="border-r border-gray-300 pr-3">
+    <Text strong className="block mb-1" style={{ fontSize: '13px' }}>Ngày SX:</Text>
+    <Text style={{ fontSize: '14px' }}>
+      {vehicle.manufactureDate 
+        ? new Date(vehicle.manufactureDate).toLocaleDateString("vi-VN", { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          })
+        : <Text type="secondary" italic>Chưa có</Text>
+      }
+    </Text>
+  </Col>
+
+  <Col xs={24} sm={8} className="border-r border-gray-300 pr-3">
+    <Text strong className="block mb-1" style={{ fontSize: '13px' }}>Ngày giao xe:</Text>
+    <Text style={{ fontSize: '14px' }}>
+      {vehicle.deliveryDate 
+        ? new Date(vehicle.deliveryDate).toLocaleDateString("vi-VN", { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          })
+        : <Text type="secondary" italic>Chưa giao</Text>
+      }
+    </Text>
+  </Col>
+
+  <Col xs={24} sm={8}>
+    <Text strong className="block mb-1" style={{ fontSize: '13px' }}>Ngày đại lý nhận:</Text>
+    <Text style={{ fontSize: '14px' }}>
+      {vehicle.dealerReceivedDate 
+        ? new Date(vehicle.dealerReceivedDate).toLocaleDateString("vi-VN", { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+          })
+        : <Text type="secondary" italic>Chưa nhận</Text>
+      }
+    </Text>
+  </Col>
+
+</Row>
                 </Card>
               );
             })}
@@ -1078,40 +1062,28 @@ const vehicleColumns = [
                 </Text>
               </div>
 
-              {/* Images preview - Thumbnail nhỏ */}
-              {selectedTemplate.imgUrl && Array.isArray(selectedTemplate.imgUrl) && selectedTemplate.imgUrl.length > 0 && (
-                <div className="mb-2 pb-2 border-b border-gray-200">
-                  <Text type="secondary" className="text-xs block mb-1">
-                    Hình ảnh ({selectedTemplate.imgUrl.length}):
-                  </Text>
-                  <div className="flex gap-1 items-center">
-                    {selectedTemplate.imgUrl.slice(0, 6).map((url, idx) => (
-                      <Tooltip key={idx} title="Click để xem ảnh full">
-                        <div 
-                          className="w-8 h-8 border border-gray-300 rounded overflow-hidden cursor-pointer hover:border-blue-500 hover:shadow transition-all"
-                          onClick={() => window.open(url, '_blank')}
-                        >
-                          <img 
-                            src={url} 
-                            alt={`${idx + 1}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.src = 'https://via.placeholder.com/32?text=X';
-                            }}
-                          />
-                        </div>
-                      </Tooltip>
-                    ))}
-                    {selectedTemplate.imgUrl.length > 6 && (
-                      <div className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center bg-gray-100">
-                        <Text className="text-xs text-gray-600">
-                          +{selectedTemplate.imgUrl.length - 6}
-                        </Text>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+             {/* Images preview - Thumbnail nhỏ */}
+{selectedTemplate.imgUrl && Array.isArray(selectedTemplate.imgUrl) && selectedTemplate.imgUrl.length > 0 && (
+  <div className="mb-2 pb-2 border-b border-gray-200">
+    <Text type="secondary" className="text-xs block mb-1">
+      Hình ảnh ({selectedTemplate.imgUrl.length}):
+    </Text>
+
+    <Button
+      type="primary"
+      size="small"
+      className="bg-blue-500 hover:bg-blue-600 text-white mt-1"
+      onClick={() => window.open(selectedTemplate.imgUrl[0], "_blank")}
+    >
+      Xem ảnh full
+    </Button>
+  </div>
+)}
+
+
+
+
+
 
               {/* Thông tin chi tiết - 4 cột */}
               <Row gutter={[8, 8]}>
@@ -1129,29 +1101,9 @@ const vehicleColumns = [
                   </Text>
                 </Col>
 
-                <Col span={6}>
-                  <Text type="secondary" className="text-xs block">Color:</Text>
-                  <Space size={4}>
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        background: selectedTemplate.color?.hexCode || selectedTemplate.color?.colorCode || '#ccc',
-                        borderRadius: "50%",
-                        border: "1px solid #666",
-                        display: "inline-block",
-                      }}
-                    />
-                    <Text strong className="text-sm">{selectedTemplate.color?.colorName || 'N/A'}</Text>
-                  </Space>
-                </Col>
+                
 
-                <Col span={6}>
-                  <Text type="secondary" className="text-xs block">Price:</Text>
-                  <Text strong className="text-green-600 text-sm">
-                    {selectedTemplate.price?.toLocaleString('vi-VN')} ₫
-                  </Text>
-                </Col>
+               
               </Row>
 
               {/* Description - Nếu có */}
@@ -1241,7 +1193,7 @@ const vehicleColumns = [
                 name="manufactureDate"
                 tooltip="Có thể để trống"
               >
-                <Input type="datetime-local" placeholder="Chọn ngày sản xuất (tùy chọn)" />
+                <Input type="date" placeholder="Chọn ngày sản xuất (tùy chọn)" />
               </Form.Item>
             </Col>
           </Row>
@@ -1251,9 +1203,9 @@ const vehicleColumns = [
               <Form.Item 
                 label="Ngày nhập kho" 
                 name="importDate"
-                tooltip="Có thể để trống, cập nhật sau"
+                
               >
-                <Input type="datetime-local" placeholder="Chọn ngày nhập kho (tùy chọn)" />
+                <Input type="date" placeholder="Chọn ngày nhập kho (tùy chọn)" />
               </Form.Item>
             </Col>
 
@@ -1261,9 +1213,9 @@ const vehicleColumns = [
               <Form.Item 
                 label="Hạn bảo hành" 
                 name="warrantyExpiryDate"
-                tooltip="Có thể để trống, cập nhật sau"
+               
               >
-                <Input type="datetime-local" placeholder="Chọn hạn bảo hành (tùy chọn)" />
+                <Input type="date" placeholder="Chọn hạn bảo hành (tùy chọn)" />
               </Form.Item>
             </Col>
           </Row>
@@ -1396,7 +1348,7 @@ const vehicleColumns = [
             name="importDate"
             tooltip="Ngày xe nhập vào kho"
           >
-            <Input type="datetime-local" placeholder="Chọn ngày nhập" />
+            <Input type="date" placeholder="Chọn ngày nhập" />
           </Form.Item>
 
           <Form.Item
@@ -1404,7 +1356,7 @@ const vehicleColumns = [
             name="warrantyExpiryDate"
             tooltip="Ngày hết hạn bảo hành"
           >
-            <Input type="datetime-local" placeholder="Chọn ngày hết hạn bảo hành" />
+            <Input type="date" placeholder="Chọn ngày hết hạn bảo hành" />
           </Form.Item>
 
           <Form.Item
@@ -1412,7 +1364,7 @@ const vehicleColumns = [
             name="deliveryDate"
             tooltip="Ngày giao xe cho khách hàng hoặc đại lý"
           >
-            <Input type="datetime-local" placeholder="Chọn ngày giao xe" />
+            <Input type="date" placeholder="Chọn ngày giao xe" />
           </Form.Item>
 
           <Form.Item
@@ -1420,7 +1372,7 @@ const vehicleColumns = [
             name="dealerReceivedDate"
             tooltip="Ngày đại lý nhận xe"
           >
-            <Input type="datetime-local" placeholder="Chọn ngày đại lý nhận" />
+            <Input type="date" placeholder="Chọn ngày đại lý nhận" />
           </Form.Item>
 
           <Divider />
@@ -1467,7 +1419,7 @@ const vehicleColumns = [
           const warehouse = selectedVehicle.warehouse || {};
           const version = template.version || {};
           const model = template.model || {};
-          const color = template.color || {};
+          
           
           // Status mapping
           const statusMap = {
@@ -1530,24 +1482,8 @@ const vehicleColumns = [
                     <Text strong className="block mb-1">Model:</Text>
                     <Text className="text-base">{template.modelName || model.modelName || 'N/A'}</Text>
                   </Col>
-                  <Col span={12}>
-                    <Text strong className="block mb-1">Màu sắc:</Text>
-                    <Space>
-                      {template.colorCode && (
-                        <div 
-                          className="inline-block w-6 h-6 rounded border border-gray-300"
-                          style={{ backgroundColor: template.colorCode }}
-                        />
-                      )}
-                      <Text>{template.colorName || color.colorName || 'N/A'}</Text>
-                    </Space>
-                  </Col>
-                  <Col span={12}>
-                    <Text strong className="block mb-1">Giá bán:</Text>
-                    <Text className="text-lg font-semibold text-green-600">
-                      {template.price ? template.price.toLocaleString('vi-VN') + ' ₫' : 'N/A'}
-                    </Text>
-                  </Col>
+                 
+                  
                 </Row>
               </Card>
 
