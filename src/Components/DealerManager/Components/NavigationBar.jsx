@@ -73,6 +73,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             component: "./Orders",
           },
           {
+            path: "/dealer-manager/sales/schedule-test-drive",
+            name: "Lịch lái thử",
+            icon: <BellOutlined />,
+            component: "./ScheduleTestDrive",
+          },
+          {
             path: "/dealer-manager/ev/all-ev-quotes",
             name: "Đơn báo giá xe",
             icon: <DollarOutlined />,
@@ -115,7 +121,6 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <GlobalOutlined />,
             component: "./InventoryHistory",
           },
-        
         ],
       },
       {
@@ -137,7 +142,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           },
         ],
       },
-       {
+      {
         path: "/dealer-manager/customers",
         name: "Quản lý khách hàng",
         icon: <TeamOutlined />,
