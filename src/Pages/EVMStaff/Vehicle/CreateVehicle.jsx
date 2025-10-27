@@ -31,6 +31,7 @@ import {
   EditOutlined,
 } from "@ant-design/icons";
 import { vehicleApi } from "../../../App/EVMAdmin/VehiclesManagement/Vehicles";
+import EVMStaffLayout from "../../../Components/EVMStaff/EVMStaffLayout";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -675,17 +676,18 @@ const vehicleColumns = [
   };
 
   return (
-    <div className="w-full">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <Title level={4} className="m-0">
-            <CarOutlined style={{ color: "#1890ff", marginRight: 8 }} />
-            Tạo & Quản lý Xe Điện
-          </Title>
-          
-        </div>
-        <Space>
+    <EVMStaffLayout>
+      <div className="w-full">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <Title level={4} className="m-0">
+              <CarOutlined style={{ color: "#1890ff", marginRight: 8 }} />
+              🚗 Tạo & Quản lý Xe Điện
+            </Title>
+            <Text type="secondary">Quản lý các xe điện cụ thể (có VIN)</Text>
+          </div>
+          <Space>
           <Button
             icon={<ReloadOutlined />}
             onClick={loadAllVehicles}
@@ -1538,6 +1540,7 @@ const vehicleColumns = [
         })()}
       </Modal>
     </div>
+    </EVMStaffLayout>
   );
 }
 
