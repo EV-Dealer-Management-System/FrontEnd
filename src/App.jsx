@@ -51,7 +51,7 @@ import GetAllCustomer from "./Pages/DealerManager/GetAllCustomer/GetAllCustomer"
 import CreateEVCustomer from "./Pages/DealerStaff/CreateEVCustomer/CreateEVCustomer";
 import GetAllEVCustomer from "./Pages/DealerStaff/GetAllEVCustomer/GetAllEVCustomer";
 import PaymentResponse from "./Pages/Payment/PaymentResponse";
-import Createvehicle from "./Pages/EVMStaff/Vehicle/Createvehicle";
+import Createvehicle from "./Pages/EVMStaff/Vehicle/CreateVehicle";
 import TemplateOverview from "./Pages/EVMStaff/Vehicle/TemplateOverview";
 
 function App() {
