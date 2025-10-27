@@ -53,7 +53,6 @@ import NavigationBar from "../../../Components/Admin/Components/NavigationBar";
 import ManageModel from "./Components/ModelManagement";
 import ManageVersion from "./Components/VersionManagement";
 import ColorManagement from "./Components/ColorManagementSimple";
-import CreateElectricVehicle from "./Components/CreateElectricVehicle";
 import CreateTemplateVehicle from "./Components/CreateTemplateVehicle";
 import { vehicleApi } from "../../../App/EVMAdmin/VehiclesManagement/Vehicles";
 
@@ -99,8 +98,6 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// ✅ Component CreateVehicleFromTemplateForm đã được chuyển sang CreateElectricVehicle.jsx
-
 function VehicleManagement() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
@@ -131,9 +128,6 @@ function VehicleManagement() {
                 <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => setActiveTab("create-template")} style={{ minWidth: "160px", background: "#1890ff", borderColor: "#1890ff", fontWeight: "bold" }}>
                   Tạo Mẫu Xe Template
                 </Button>
-                <Button type="primary" size="large" icon={<ThunderboltOutlined />} onClick={() => setActiveTab("create-vehicle")} style={{ minWidth: "160px", background: "#52c41a", borderColor: "#52c41a", fontWeight: "bold" }}>
-                  Tạo Xe Điện
-                </Button>
                 <Button size="large" icon={<CarOutlined />} onClick={() => setActiveTab("manage-models")} style={{ minWidth: "160px", background: "rgba(255,255,255,0.9)", borderColor: "white", color: "#1890ff", fontWeight: "500" }}>
                   Quản lý Model
                 </Button>
@@ -163,12 +157,7 @@ function VehicleManagement() {
               {
                 key: "create-template",
                 label: (<span><PlusOutlined />Tạo Mẫu Xe Template</span>),
-                children: <CreateTemplateVehicle />, // ✅ ĐÚNG: Tạo TEMPLATE (upload ảnh)
-              },
-              {
-                key: "create-vehicle",
-                label: (<span><ThunderboltOutlined />Tạo Xe Điện</span>),
-                children: <CreateElectricVehicle />, // ✅ ĐÚNG: Tạo VEHICLE (có VIN)
+                children: <CreateTemplateVehicle />,
               },
               {
                 key: "manage-models",
