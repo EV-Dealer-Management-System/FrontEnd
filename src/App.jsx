@@ -92,6 +92,14 @@ function App() {
           }
         />
         <Route
+          path="/EContract/contract/get-info-to-sign-process-by-code"
+          element={
+            <PublicRoute>
+              <ContractPage />
+            </PublicRoute>
+          }
+        />
+        <Route
           path="/EContract/View"
           element={
             <PublicRoute>
