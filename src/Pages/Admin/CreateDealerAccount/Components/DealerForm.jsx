@@ -30,7 +30,8 @@ const FormField = ({
   rules,
   children,
   span = 12,
-  required = true // This prop is used in rules if not explicitly provided
+  required = true, // This prop is used in rules if not explicitly provided
+  disabledAll = false
 }) => (
   <Col xs={24} md={span}>
     <Form.Item
@@ -43,7 +44,7 @@ const FormField = ({
       }
       rules={rules || (required ? [{ required: true, message: `${label} là bắt buộc` }] : [])}
     >
-      {children}
+      {React.cloneElement(children, { disabled: disabledAll})}
     </Form.Item>
   </Col>
 );
@@ -59,9 +60,47 @@ const DealerForm = ({
   handleProvinceChange,
   loading,
   contractLink,
-  resetForm
+  resetForm,
+  isLocked,
+  isEditing,
+  disabledAll,
+  onStartEdit,
+  onCancelEdit,
+  onConfirmEdit,
+  updatingEdit
 }) => {
   return (
+    <>
+    {contractLink && (
+        <div className="mb-4 items-center justify-end gap-12">
+          {!isEditing ? (
+            <Button
+              type="primary"
+              onClick={onStartEdit}
+              className="px-6 py-2 h-auto font-semibold rounded-lg"
+            >
+              Chỉnh Sửa Thông Tin
+            </Button>
+          ) : (
+            <Space>
+              <Button
+                onClick={onCancelEdit}
+                className="px-6 py-2 h-auto font-semibold rounded-lg"
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                loading={updatingEdit}
+                onClick={onConfirmEdit}
+                className="px-6 py-2 h-auto font-semibold rounded-lg"
+              >
+                Xác nhận sửa đổi
+              </Button>
+            </Space>
+          )}
+        </div>
+      )}
     <Form
       form={form}
       name="dealerForm"
@@ -70,6 +109,7 @@ const DealerForm = ({
       layout="vertical"
       size="large"
       className="max-w-4xl mx-auto"
+      disabled={disabledAll}
     >
       <Row gutter={[24, 16]}>
         <FormField
@@ -80,6 +120,7 @@ const DealerForm = ({
             { required: true, message: 'Vui lòng nhập tên hãng!' },
             { min: 2, message: 'Tên hãng phải có ít nhất 2 ký tự!' }
           ]}
+           disabledAll={disabledAll}
         >
           <Input
             placeholder="Nhập tên hãng xe điện"
@@ -95,6 +136,7 @@ const DealerForm = ({
             { required: true, message: 'Vui lòng nhập họ tên quản lý!' },
             { min: 2, message: 'Họ tên quản lý phải có ít nhất 2 ký tự!' }
           ]}
+           disabledAll={disabledAll}
         >
           <Input
             placeholder="Nhập họ tên quản lý"
@@ -113,6 +155,7 @@ const DealerForm = ({
               message: 'Mã số thuế phải có 10 hoặc 13 chữ số!'
             }
           ]}
+           disabledAll={disabledAll}
         >
           <Input
             placeholder="Nhập mã số thuế (10 hoặc 13 chữ số)"
@@ -128,6 +171,7 @@ const DealerForm = ({
           rules={[
             { required: true, message: 'Vui lòng chọn tỉnh/thành phố!' }
           ]}
+           disabledAll={disabledAll}
         >
           <Select
             placeholder="Chọn tỉnh/thành phố"
@@ -155,6 +199,7 @@ const DealerForm = ({
           rules={[
             { required: true, message: 'Vui lòng chọn quận/huyện/phường/xã!' }
           ]}
+           disabledAll={disabledAll}
         >
           <Select
             placeholder="Chọn quận/huyện/phường/xã"
@@ -183,6 +228,7 @@ const DealerForm = ({
             { required: true, message: 'Vui lòng nhập email quản lý!' },
             { type: 'email', message: 'Email không hợp lệ!' }
           ]}
+           disabledAll={disabledAll}
         >
           <Input
             placeholder="Nhập email quản lý"
@@ -201,6 +247,7 @@ const DealerForm = ({
               message: 'Số điện thoại phải bắt đầu bằng 0 và có đúng 10 chữ số!'
             }
           ]}
+           disabledAll={disabledAll}
         >
           <Input
             placeholder="Nhập số điện thoại quản lý (bắt đầu bằng 0)"
@@ -215,6 +262,7 @@ const DealerForm = ({
           rules={[
             { required: true, message: 'Vui lòng chọn cấp độ đại lý!' }
           ]}
+           disabledAll={disabledAll}
         >
           <Select
             placeholder="Chọn cấp độ đại lý"
@@ -250,6 +298,7 @@ const DealerForm = ({
           rules={[
             { required: true, message: 'Vui lòng nhập địa chỉ đại lý!' }
           ]}
+           disabledAll={disabledAll}
         >
           <Input.TextArea
             placeholder="Nhập địa chỉ đại lý (số nhà, tên đường, ...)"
@@ -265,6 +314,7 @@ const DealerForm = ({
           span={24}
           required={false}
           rules={[]}
+           disabledAll={disabledAll}
         >
           <Input.TextArea
             placeholder="Nhập điều khoản bổ sung (có thể bỏ trống)"
@@ -275,6 +325,7 @@ const DealerForm = ({
       </Row>
 
       {/* Form Actions */}
+      {!contractLink && (
       <Row justify="center" className="mt-10 mb-4">
         <Col>
           <Space size="large" className="flex flex-wrap justify-center">
@@ -311,7 +362,33 @@ const DealerForm = ({
           </Space>
         </Col>
       </Row>
+      )}
+      {contractLink && isEditing && (
+        <Row justify="center" className="mt-10 mb-4">
+          <Col>
+            <Space size="large" className="flex flex-wrap justify-center">
+              <Button
+                onClick={onCancelEdit}
+                size="large"
+                className="px-8 py-3 h-auto text-base font-semibold rounded-xl border-2 border-gray-300 hover:border-gray-400 hover:shadow-md transition-all duration-200"
+              >
+                Hủy Sửa đổi
+              </Button>
+              <Button
+                type="primary"
+                onClick={onConfirmEdit}
+                loading={updatingEdit}
+                size="large"
+                className="px-12 py-3 h-auto text-base font-semibold rounded-xl border-none shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                >
+                  Xác nhận sửa đổi
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      )}
     </Form>
+    </>
   );
 };
 

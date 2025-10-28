@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Form,
   Card,
@@ -63,6 +63,8 @@ const CreateContract = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [originalFormData, setOriginalFormData] = useState(null);
   const [updatingEdit, setUpdatingEdit] = useState(false);
+
+  const contractResultRef = useRef(null);
   
   // Initialize services
   const pdfUpdateService = PDFUpdateService();
@@ -251,6 +253,10 @@ const CreateContract = () => {
           setOriginalFormData(values);
           setIsLock(true);
           setIsEditing(false);
+
+          setTimeout(() => {
+            contractResultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 300);
           
           message.success('Hợp đồng đã được tạo thành công!');
         }
@@ -320,6 +326,83 @@ const CreateContract = () => {
   const handleCancelEdit = () => {
     if (originalFormData) form.setFieldsValue(originalFormData);
     setIsEditing(false);
+  };
+
+  //xác nhận sửa hợp đồng
+  const handleConfirmEdit = async () => {
+    if (!contractId) {
+      message.error('Không tìm thấy ID hợp đồng');
+      return;
+    }
+    try {
+      setUpdatingEdit(true);
+
+      //xóa hợp đồng cũ
+      const deleteResponse = await createAccountApi.deleteDealerContract(contractId);
+      if(deleteResponse?.isSuccess === false){
+        if(deleteResponse?.message) message.error(deleteResponse.message);
+        else message.error('Xóa hợp đồng cũ thất bại');
+        return;
+      }
+
+      //tạo hợp đồng mới
+      const values = form.getFieldsValue(true);
+
+      // Combine address with province and ward information
+      const provinceName = locationApi.getProvinceNameByCode(provinces, values.province);
+      const wardName = locationApi.getWardNameByCode(wards, values.ward);
+      let fullAddress = values.address || '';
+      if (wardName && provinceName) {
+        fullAddress = `${fullAddress}, ${wardName}, ${provinceName}`.trim().replace(/^,\s+/, '');
+      } 
+      const dealerData = {
+        dealerName: values.brandName,
+        dealerAddress: fullAddress,
+        taxNo: values.taxNo,
+        dealerLevel: values.dealerLevel,
+        additionalTerm: values.additionalTerm || null,
+        regionDealer: values.regionDealer || null,
+        fullNameManager: values.representativeName,
+        emailManager: values.email,
+        phoneNumberManager: values.phone,
+        province: values.province,
+        ward: values.ward
+      };
+
+      //validate form data
+      const validation = createAccountApi.validateFormData(dealerData);
+      if (!validation.isValid) {
+        message.error(validation.errors[0]);
+        setUpdatingEdit(false);
+        return;
+      }
+
+      //tạo lại hợp đồng
+      const response = await createAccountApi.createDealerContract(dealerData);
+      if (response?.isSuccess) {
+        const contractData = response.result?.data;
+        
+        setContractId(contractData.id);
+        setContractLink(contractData.downloadUrl);
+        setContractNo(contractData.no);
+
+        setOriginalFormData(form.getFieldsValue(true));
+        setIsEditing(false);
+        setIsLock(true);
+
+        if(contractData?.downloadUrl){
+          await loadPdfPreview(contractData.downloadUrl);
+        }
+        message.success('Hợp đồng đã được cập nhật thành công!');
+      } else {
+        message.error(response.data?.message || 'Có lỗi khi tạo hợp đồng mới');
+      }
+    } catch (error) {
+      console.error('API Error:', error);
+      message.error( error?.message || 'Không thể tạo hợp đồng');
+    } finally {
+      setUpdatingEdit(false);
+    }
   };
 
   // Xác nhận hợp đồng
@@ -407,8 +490,14 @@ const CreateContract = () => {
     setOriginalPositionA(null);
     setOriginalPositionB(null);
     setOriginalPageSign(null);
+
+    // Reset lock/edit states
+    setIsLock(false);
+    setIsEditing(false);
+    setOriginalFormData(null);
+    setUpdatingEdit(false);
     
-    message.success('Đã tạo hợp đồng mới');
+    message.success('Đã tạo mới hợp đồng');
   };
 
   // Reset form with confirmation
@@ -422,6 +511,8 @@ const CreateContract = () => {
       onOk: resetFormDirect
     });
   };
+
+  const isFormDisabled = !!contractLink && !isEditing && isLock;
 
   return (
     <EVMStaffLayout>
@@ -469,8 +560,15 @@ const CreateContract = () => {
               loading={loading}
               contractLink={contractLink}
               resetForm={resetForm}
+              isLocked={isLock}
+              isEditing={isEditing}
+              disabledAll={isFormDisabled}
+              onStartEdit={handleStartEdit}
+              onCancelEdit={handleCancelEdit}
+              onConfirmEdit={handleConfirmEdit}
+              updatingEdit={updatingEdit}
             />
-
+            <div ref={contractResultRef}>
             <ContractActions
               contractLink={contractLink}
               contractNo={contractNo}
@@ -483,6 +581,7 @@ const CreateContract = () => {
               onDownload={handleDownload}
               onReset={resetFormDirect}
             />
+            </div>
           </Space>
         </Card>
 
