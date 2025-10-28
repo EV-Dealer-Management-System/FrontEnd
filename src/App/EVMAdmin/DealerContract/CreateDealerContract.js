@@ -1,3 +1,4 @@
+import { message } from 'antd';
 import api from '../../../api/api';
 
 // API functions cho CreateAccount
@@ -36,6 +37,42 @@ export const createAccountApi = {
       return {
         success: false,
         error: error.response?.data?.message || 'Có lỗi xảy ra khi tạo hợp đồng đại lý',
+        details: error.response?.data || error.message
+      };
+    }
+  },
+
+  deleteDealerContract: async function(contractId) {
+    try {
+      const response = await api.delete(`/EContract/delete-econtract-draft/${contractId}`, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting dealer contract:', error);
+      message.warning('Xóa hợp đồng đại lý thất bại. Vui lòng thử lại.');
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Có lỗi xảy ra khi xóa hợp đồng đại lý',
+        details: error.response?.data || error.message
+      };
+    }
+  },
+
+  // Xác nhận hợp đồng đại lý
+  confirmDealerContract: async function(contractId) {
+    try {
+      const response = await api.post(`/EContract/ready-dealer-contracts`, null, {
+        params: { eContractid: contractId },
+        headers: { 'Content-Type': 'application/json' }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error confirming dealer contract:', error);
+      message.warning('Xác nhận hợp đồng đại lý thất bại. Vui lòng thử lại.');
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Có lỗi xảy ra khi xác nhận hợp đồng đại lý',
         details: error.response?.data || error.message
       };
     }
@@ -106,5 +143,6 @@ export const createAccountApi = {
     };
   }
 };
+
 
 export default createAccountApi;

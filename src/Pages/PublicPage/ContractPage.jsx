@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, use } from 'react';
 import { Card, Form, Input, Button, Row, Col, Typography, Steps, Space, Tag, Divider, Modal, message } from 'antd';
 import { FileTextOutlined, SafetyOutlined, EditOutlined, CheckCircleOutlined, FilePdfOutlined, ReloadOutlined, DownloadOutlined, ClockCircleOutlined, InfoCircleOutlined, CrownOutlined } from '@ant-design/icons';
-
+import { useLocation } from "react-router-dom";
 // Reuse service
 import { ContractService } from '../../App/Home/SignContractCustomer';
 
@@ -50,6 +50,19 @@ function ContractPage() {
   const [showSmartCASelector, setShowSmartCASelector] = useState(false);
   const [showExistingSmartCASelector, setShowExistingSmartCASelector] = useState(false);
   const [selectedSmartCA, setSelectedSmartCA] = useState(null);
+
+  const location = useLocation();
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const processCode = urlParams.get('processCode');
+
+    //Nếu Url có processCode thì tự động điền và submit
+    if (processCode) {
+      form.setFieldsValue({ processCode });
+      getContractInfo(processCode, { silent: true });
+    }
+  }, [location.search]);
 
   // Revoke PDF preview URL
   const revokePdfPreviewUrl = useCallback(() => {
@@ -151,7 +164,7 @@ function ContractPage() {
   }
 
   // Lấy thông tin hợp đồng theo processCode
-  async function getContractInfo(processCode) {
+  async function getContractInfo(processCode, options = {}) {
     try {
       setLoading(true);
       const result = await contractService.handleGetContractInfo(processCode);
@@ -160,7 +173,9 @@ function ContractPage() {
         setCurrentStep(1);
         await checkSmartCA(result.data.processedByUserId);
         await loadPdfPreview(result.data.downloadUrl, { silent: true });
-        message.success('Lấy thông tin hợp đồng thành công!');
+        if (!options.silent) {
+          message.success('Lấy thông tin hợp đồng thành công!');
+        }
       } else {
         message.error(result.error || 'Không lấy được thông tin hợp đồng');
       }
@@ -328,7 +343,7 @@ function ContractPage() {
 
   // Submit form
   async function onFinish(values) {
-    await getContractInfo(values.processCode);
+    await getContractInfo(values.processCode, { silent: false });
   }
 
   // Reset flow
