@@ -132,6 +132,23 @@ function GetAllEVInventory() {
                 }
             },
         },
+        {
+            title: "Số Vin",
+            key: "viNs",
+            render: (_, record) => (
+                <Space direction="vertical">
+                    {record.viNs && record.viNs.length > 0 ? (
+                        record.viNs.map((viNs, index) => (
+                            <Tag key={index} color="geekblue" className="px-2 py-1 rounded-full font-mono">
+                                {viNs}
+                            </Tag>
+                        ))
+                    ) : (
+                        <span className="text-gray-500">Chưa có số VIN</span>
+                    )}
+                </Space>
+            ),
+        }
     ];
 
     useEffect(() => {
