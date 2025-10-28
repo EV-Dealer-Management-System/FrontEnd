@@ -309,6 +309,33 @@ updateVersion: async function (versionId, versionData) {
       };
     } 
   },  
+getVersionByModelId: async function (modelId) {
+    try {
+      const response = await api.get(     
+        `/ElectricVehicleVersion/get-all-available-versions-by-model-id/${modelId}`
+      );
+      if (response.data?.isSuccess) {
+        return {
+          success: true,
+          data: response.data.result || response.data.data || [],
+        };
+      }
+  else {
+        return {
+          success: false,
+          data: [],
+          error: "API không trả về dữ liệu versions hợp lệ",
+        };
+      }
+    } catch (error) {
+      console.error("Error getting versions by model ID:", error);
+      return {
+        success: false,
+        data: [],
+        error: error.message || "Lỗi khi tải danh sách versions",
+      };
+    } 
+  },
   // === COLOR MANAGEMENT ===
   getAllColors: async function () {
     try {
