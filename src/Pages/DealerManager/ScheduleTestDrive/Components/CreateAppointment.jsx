@@ -73,38 +73,41 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
     setSelectedTemplate(template);
   };
 
-  // Hàm validate và điều chỉnh thời gian
-  const validateAndAdjustTime = (momentTime) => {
-    const openTime = moment().hours(8).minutes(0).seconds(0);
-    const closeTime = moment().hours(17).minutes(0).seconds(0);
-
-    // Nếu thời gian trước giờ mở cửa, điều chỉnh về giờ mở cửa
-    if (momentTime.isBefore(openTime)) {
-      return openTime;
-    }
-
-    // Nếu thời gian sau giờ đóng cửa, điều chỉnh về giờ đóng cửa
-    if (momentTime.isAfter(closeTime)) {
-      return closeTime;
-    }
-
-    return momentTime;
-  };
 
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
 
-      // Điều chỉnh thời gian
-      const adjustedStartTime = validateAndAdjustTime(values.startTime);
-      const adjustedEndTime = validateAndAdjustTime(values.endTime);
+      // DatePicker đã trả về moment object rồi, không cần wrap lại
+      const startTime = values.startTime;
+      const endTime = values.endTime;
+
+      console.log("🕐 Start Time:", startTime.format("YYYY-MM-DD HH:mm:ss"));
+      console.log("🕐 End Time:", endTime.format("YYYY-MM-DD HH:mm:ss"));
+      console.log("🌍 Start Time (ISO):", startTime.toISOString());
+      console.log("🌍 End Time (ISO):", endTime.toISOString());
+
+      // Validate: endTime phải sau startTime
+      if (!endTime.isAfter(startTime)) {
+        message.error("Thời gian kết thúc phải sau thời gian bắt đầu!");
+        return;
+      }
+
+      // Validate: Khoảng thời gian tối thiểu 15 phút
+      const durationMinutes = endTime.diff(startTime, 'minutes');
+      console.log("⏱️ Duration:", durationMinutes, "minutes");
+      
+      if (durationMinutes < 15) {
+        message.error("Khoảng thời gian tối thiểu là 15 phút!");
+        return;
+      }
 
       // Format datetime to ISO 8601
       const formattedData = {
         customerId: values.customerId,
         evTemplateId: values.evTemplateId,
-        startTime: adjustedStartTime.toISOString(),
-        endTime: adjustedEndTime.toISOString(),
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
         note: values.note || null,
         status: values.status || 1,
       };
@@ -269,7 +272,10 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
           ]}
         >
           <DatePicker
-            showTime
+            showTime={{
+              format: 'HH:mm',
+              defaultValue: moment('08:00', 'HH:mm'),
+            }}
             format="YYYY-MM-DD HH:mm:ss"
             placeholder="Chọn thời gian bắt đầu"
             style={{ width: "100%" }}
@@ -284,7 +290,10 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
           ]}
         >
           <DatePicker
-            showTime
+            showTime={{
+              format: 'HH:mm',
+              defaultValue: moment('09:00', 'HH:mm'),
+            }}
             format="YYYY-MM-DD HH:mm:ss"
             placeholder="Chọn thời gian kết thúc"
             style={{ width: "100%" }}
