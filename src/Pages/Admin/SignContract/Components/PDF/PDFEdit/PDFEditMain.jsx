@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import 'quill/dist/quill.snow.css';
 import { 
   Modal, 
@@ -34,13 +34,7 @@ function PDFEditMain({
   contractNo,
   visible = false,
   onSave,
-  onConfirm,
-  onCancel,
-  // Signature position props
-  positionA,
-  positionB,
-  pageSign,
-  onPositionsUpdate
+  onCancel
 }) {
   // States cơ bản
   const [htmlContent, setHtmlContent] = useState('');
@@ -49,23 +43,14 @@ function PDFEditMain({
   const [activeTab, setActiveTab] = useState('editor');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isUpdatingFromCode, setIsUpdatingFromCode] = useState(false);
-
-  // Signature position states
-  const [currentPositions, setCurrentPositions] = useState({
-    positionA: positionA || null,
-    positionB: positionB || null,
-    pageSign: pageSign || null
-  });
+  
 
   // Custom hooks
   const {
-    allStyles,
-    htmlHead,
-    htmlAttributes,
-    parseHtmlFromBE,
-    rebuildCompleteHtml,
-    updateParsedStructure,
-    resetStructureStates
+    parseFromBE,
+    bodyForEditor,      
+    allStyles,          
+    rebuildCompleteHtml
   } = useHtmlParser();
 
   const {
@@ -89,7 +74,8 @@ function PDFEditMain({
     loadTemplate,
     resetStates,
     setTemplateData,
-    setTemplateLoaded
+    setTemplateLoaded,
+    contextHolder
   } = useTemplateActions(
     contractId,
     contractNo,
@@ -107,26 +93,14 @@ function PDFEditMain({
     contractSubject
   );
 
-  // Wrapper cho handleSave để xử lý positions update
-  const handleSave = async () => {
-    const result = await originalHandleSave();
-    if (result && result.success) {
-      // Update current positions từ API response mới
-      if (result.positionA) setCurrentPositions(prev => ({ ...prev, positionA: result.positionA }));
-      if (result.positionB) setCurrentPositions(prev => ({ ...prev, positionB: result.positionB }));
-      if (result.pageSign) setCurrentPositions(prev => ({ ...prev, pageSign: result.pageSign }));
-    }
-    return result;
-  };
-
-  // Sync positions từ parent props
   useEffect(() => {
-    setCurrentPositions({
-      positionA: positionA || null,
-      positionB: positionB || null,
-      pageSign: pageSign || null
-    });
-  }, [positionA, positionB, pageSign]);
+    window.__UPDATE_HTML_CONTENT__ = (newHtml) => {
+      setHtmlContent(newHtml);
+    };
+    return () => {
+      delete window.__UPDATE_HTML_CONTENT__;
+    };
+  }, []);
 
   // Xử lý template loading và parsing
   useEffect(() => {
@@ -135,21 +109,28 @@ function PDFEditMain({
         const template = await loadTemplate();
         if (template) {
           // ✅ Parse HTML từ BE - tách TẤT CẢ style và structure
-          const rawHtml = template.contentHtml || '';
+          const rawHtml = template.htmlTemplate || '';
           const parsedResult = parseHtmlFromBE(rawHtml);
           
           // Lưu structure vào state
           updateParsedStructure(parsedResult);
+
+          window.__PDF_TEMPLATE_CACHE__ = {
+            allStyles: parsedResult.allStyles,
+            htmlHead: parsedResult.htmlHead,
+            htmlAttributes: parsedResult.htmlAttributes
+          }
           
-          // Chỉ hiển thị body content trong Quill (đã loại bỏ style rải rác)
-          setHtmlContent(parsedResult.bodyContent);
-          setOriginalContent(parsedResult.bodyContent);
+          // 🧩 DÙNG editableBody (thay bodyContent)
+          setHtmlContent(parsedResult.editableBody || '');
+          setOriginalContent(parsedResult.editableBody || '');
           setContractSubject(template.name || 'Hợp đồng đại lý');
-          
+
+          // ✅ Ghi log an toàn
           console.log('✅ Template loaded và parsed successfully');
-          console.log('- Body content length:', parsedResult.bodyContent.length);
-          console.log('- All styles length:', parsedResult.allStyles.length);
-          console.log('- Styles preserved:', !!parsedResult.allStyles);
+          console.log('- Editable body length:', parsedResult.editableBody?.length || 0);
+          console.log('- Template body length:', parsedResult.templateBody?.length || 0);
+          console.log('- All styles length:', parsedResult.allStyles?.length || 0);
         }
       }
     };
@@ -185,12 +166,6 @@ function PDFEditMain({
       // Clear Quill content
       resetQuillContent();
       
-      // Reset positions
-      setCurrentPositions({
-        positionA: null,
-        positionB: null,
-        pageSign: null
-      });
     }
   };
 
@@ -211,7 +186,8 @@ function PDFEditMain({
     const styleSheet = document.createElement("style");
     styleSheet.innerText = `
       .ql-editor .sign { display: none !important; }
-
+      .ql-editor [data-signature-block] { display: none !important; }
+      .ql-editor [data-preserve-idx][data-type="sign"] { display: none !important; }
       .ql-editor {
         font-family: 'Noto Sans', 'DejaVu Sans', Arial, sans-serif !important;
         font-size: 12pt !important;
@@ -358,6 +334,8 @@ function PDFEditMain({
         </div>
       }
       open={visible}
+      maskClosable={false}
+      keyboard={false}
       onCancel={handleClose}
       width="95vw"
       style={{ top: 20 }}
@@ -370,8 +348,9 @@ function PDFEditMain({
       }}
       footer={null}
       forceRender
-      destroyOnClose={false} // Giữ editor trong DOM
+      destroyOnHidden={false}
     >
+      {contextHolder}
       <div className="h-full flex flex-col">
         {/* Toolbar với workflow buttons */}
         <Card className="mb-4" size="small">
