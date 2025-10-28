@@ -74,6 +74,7 @@ const extractErrorMessage = (err) => {
 function CreateElectricVehicle() {
   const [loading, setLoading] = useState(false);
   const [vehiclesList, setVehiclesList] = useState([]);
+  const [models, setModels] = useState([]); // ✅ Thêm state cho models
   const [versions, setVersions] = useState([]);
   const [colors, setColors] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
@@ -94,6 +95,7 @@ function CreateElectricVehicle() {
   
   // Available colors cho version đã chọn
   const [availableColors, setAvailableColors] = useState([]);
+  const [selectedModelId, setSelectedModelId] = useState(null); // ✅ Thêm state cho selected model
   const [selectedVersionId, setSelectedVersionId] = useState(null);
   
   // Pagination state
@@ -133,15 +135,19 @@ function CreateElectricVehicle() {
 
   const loadDropdownData = async () => {
     try {
-      const [versionsRes, colorsRes, warehousesRes] = await Promise.all([
-        vehicleApi.getAllVersions(),
+      // ✅ Chỉ load models và colors, warehouses lúc đầu
+      // Versions sẽ được load khi chọn model
+      const [modelsRes, colorsRes, warehousesRes] = await Promise.all([
+        vehicleApi.getAllModels(),
         vehicleApi.getAllColors(),
         vehicleApi.getAllWarehouses(),
       ]);
 
-      if (versionsRes.success || versionsRes.isSuccess) {
-        setVersions(versionsRes.data || versionsRes.result || []);
+      if (modelsRes.success || modelsRes.isSuccess) {
+        const modelsData = modelsRes.data || modelsRes.result || [];
+        setModels(modelsData);
       }
+      
       if (colorsRes.success || colorsRes.isSuccess) {
         setColors(colorsRes.data || colorsRes.result || []);
       }
@@ -150,7 +156,56 @@ function CreateElectricVehicle() {
       }
     } catch (err) {
       console.error("❌ Error loading dropdown data:", err);
+      message.error("Lỗi khi tải dữ liệu dropdown!");
     }
+  };
+
+  // ✅ Load versions theo model đã chọn
+  const loadVersionsByModelId = async (modelId) => {
+    if (!modelId) {
+      setVersions([]);
+      return;
+    }
+
+    try {
+      setLoadingTemplate(true);
+      const result = await vehicleApi.getVersionByModelId(modelId);
+      
+      if (result.success || result.isSuccess) {
+        const versionsData = result.data || result.result || [];
+        setVersions(versionsData);
+        
+        if (versionsData.length === 0) {
+          message.warning('Model này chưa có version nào!');
+        } else {
+          message.success(`Tìm thấy ${versionsData.length} version`);
+        }
+      } else {
+        setVersions([]);
+        message.error('Không thể tải danh sách version!');
+      }
+    } catch (err) {
+      console.error('❌ Error loading versions by model:', err);
+      setVersions([]);
+      message.error('Lỗi khi tải danh sách version!');
+    } finally {
+      setLoadingTemplate(false);
+    }
+  };
+
+  // ✅ Xử lý khi chọn model
+  const handleModelChange = async (modelId) => {
+    setSelectedModelId(modelId);
+    setSelectedVersionId(null);
+    setSelectedTemplate(null);
+    setAvailableColors([]);
+    
+    // Reset các field phụ thuộc
+    form.setFieldValue('versionId', undefined);
+    form.setFieldValue('colorId', undefined);
+    
+    // Load versions cho model này
+    await loadVersionsByModelId(modelId);
   };
 
   // ✅ Load available colors khi chọn version
@@ -471,8 +526,10 @@ const vehicleColumns = [
   const handleCreateModal = () => {
     form.resetFields();
     setSelectedTemplate(null);
+    setSelectedModelId(null); // ✅ Reset model selection
     setSelectedVersionId(null);
     setAvailableColors([]);
+    setVersions([]); // ✅ Reset versions list
     setIsCreateModalVisible(true);
   };
 
@@ -553,8 +610,10 @@ const vehicleColumns = [
         setIsCreateModalVisible(false); // ✅ Đóng create modal
         form.resetFields();
         setSelectedTemplate(null);
-        setAvailableColors([]);
+        setSelectedModelId(null); // ✅ Reset model selection
         setSelectedVersionId(null);
+        setAvailableColors([]);
+        setVersions([]); // ✅ Reset versions list
         await loadAllVehicles();
         
         // ✅ Scroll to top và reset về trang đầu tiên
@@ -602,8 +661,10 @@ const vehicleColumns = [
         setIsCreateModalVisible(false); // ✅ Đóng create modal
         form.resetFields();
         setSelectedTemplate(null);
-        setAvailableColors([]);
+        setSelectedModelId(null); // ✅ Reset model selection
         setSelectedVersionId(null);
+        setAvailableColors([]);
+        setVersions([]); // ✅ Reset versions list
         await loadAllVehicles();
       } else {
         console.error("❌ Create failed:", normalized.message);
@@ -969,32 +1030,85 @@ const vehicleColumns = [
           preserve
         >
           <Alert
-            message="Bước 1: Chọn Version và Color để tìm Template"
+            message="Bước 1: Chọn Model → Version → Color để tìm Template"
             type="warning"
             showIcon
             className="mb-4"
           />
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={24}>
               <Form.Item
-                label="Chọn Version"
-                name="versionId"
-                rules={[{ required: true, message: "Vui lòng chọn version!" }]}
+                label="Chọn Model (Mẫu xe)"
+                name="modelId"
+                rules={[{ required: true, message: "Vui lòng chọn model!" }]}
+                tooltip="Chọn model trước để lọc các version phù hợp"
               >
                 <Select
-                  placeholder="Chọn version..."
+                  placeholder={models.length === 0 ? "Đang tải models..." : "Chọn model xe..."}
+                  showSearch
+                  onChange={handleModelChange}
+                  optionFilterProp="children"
+                  size="large"
+                  loading={models.length === 0 && loading}
+                  notFoundContent={
+                    <Empty 
+                      description="Không có model nào"
+                    />
+                  }
+                >
+                  {models.map((model) => {
+                    const modelName = model.name || model.modelName || 'N/A';
+                    
+                    return (
+                      <Option key={model.id} value={model.id}>
+                        {modelName}
+                      </Option>
+                    );
+                  })}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Chọn Version (Phiên bản)"
+                name="versionId"
+                rules={[{ required: true, message: "Vui lòng chọn version!" }]}
+                tooltip={!selectedModelId ? "Vui lòng chọn model trước" : "Chọn version của model"}
+              >
+                <Select
+                  placeholder={
+                    !selectedModelId 
+                      ? "Vui lòng chọn model trước..." 
+                      : loadingTemplate 
+                        ? "Đang tải versions..." 
+                        : "Chọn version..."
+                  }
                   showSearch
                   onChange={handleVersionChange}
                   optionFilterProp="children"
+                  disabled={!selectedModelId}
+                  loading={loadingTemplate && selectedModelId && versions.length === 0}
+                  notFoundContent={
+                    <Empty 
+                      description={
+                        !selectedModelId 
+                          ? "Vui lòng chọn model trước" 
+                          : "Model này chưa có version"
+                      } 
+                    />
+                  }
                 >
                   {versions.map((version) => {
-                    const versionName = version.name || version.versionName || 'N/A';
-                    const modelName = version.model?.name || version.model?.modelName || version.modelName || 'N/A';
+                    // ✅ Lấy đúng tên version từ API response
+                    const versionName = version.versionName || version.name || 'N/A';
                     
                     return (
                       <Option key={version.id} value={version.id}>
-                        {versionName} - {modelName}
+                        {versionName}
                       </Option>
                     );
                   })}
