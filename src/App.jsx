@@ -177,6 +177,10 @@ function App() {
                   path="sales/schedule-test-drive"
                   element={<ScheduleTestDrive />}
                 />
+                <Route
+                  path="schedule/test-drive"
+                  element={<ScheduleTestDrive />}
+                />
                 <Route path="staff/staff-list" element={<DealerStaffList />} />
                 <Route
                   path="customers/get-all-customers"
