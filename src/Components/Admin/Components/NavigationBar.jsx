@@ -98,8 +98,22 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           //   icon: <LineChartOutlined />,
           //   component: "./DealerPerformance",
           // },
+        ],
+      },
+      {
+        path: "/admin/bookings",
+        name: "Quản lý đặt xe",
+        icon: <FileTextOutlined />,
+        component: "./BookingList",
+        routes: [
           {
-            path: "/admin/booking-signing",
+            path: "/admin/booking/all-ev-booking",
+            name: "Danh sách đặt xe",
+            icon: <FileTextOutlined />,
+            component: "./BookingList",
+          },
+            {
+            path: "/admin/booking/ready-booking-signing",
             name: "Hợp đồng đặt xe",
             icon: <FileTextOutlined />,
             component: "./BookingContract",

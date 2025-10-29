@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ProTable } from "@ant-design/pro-components";
 import { Tag, Button, Tooltip, Space, message } from "antd";
 import {
@@ -22,6 +23,7 @@ function BookingTable({
     formatDateTime,
     onStatusUpdate,
 }) {
+    const navigate = useNavigate();
     const [updatingStatus, setUpdatingStatus] = useState({});
     const [reviewModal, setReviewModal] = useState({
         visible: false,
@@ -155,47 +157,6 @@ function BookingTable({
                 <div style={{ fontSize: 13, color: "#595959" }}>{text || "N/A"}</div>
             ),
         },
-        // {
-        //     title: "Mã Booking",
-        //     dataIndex: "id",
-        //     key: "id",
-        //     width: 220,
-        //     copyable: true,
-        //     ellipsis: true,
-        //     fixed: "left",
-        //     render: (text) => {
-        //         const displayId =
-        //             text && typeof text === "string" ? text.split("-")[0] : text || "N/A";
-
-        //         return (
-        //             <Tooltip title={text || "N/A"}>
-        //                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        //                     <Tag
-        //                         color="blue"
-        //                         style={{
-        //                             margin: 0,
-        //                             fontSize: 11,
-        //                             padding: "2px 8px",
-        //                             borderRadius: 4,
-        //                         }}
-        //                     >
-        //                         ID
-        //                     </Tag>
-        //                     <span
-        //                         style={{
-        //                             fontFamily: "monospace",
-        //                             fontSize: 12,
-        //                             color: "#1890ff",
-        //                             fontWeight: 600,
-        //                         }}
-        //                     >
-        //                         {displayId}
-        //                     </span>
-        //                 </div>
-        //             </Tooltip>
-        //         );
-        //     },
-        // },
         {
             title: "Trạng Thái",
             dataIndex: "status",
@@ -291,8 +252,10 @@ function BookingTable({
                             <Button
                                 type="primary"
                                 icon={<CheckCircleOutlined />}
-                                onClick={() => handleUpdateStatus(record.id, 5, "Hoàn thành")}
-                                loading={isUpdating}
+                                onClick={() => {
+                                    // Điều hướng đến trang ký hợp đồng với booking ID
+                                    navigate(`/admin/booking/ready-booking-signing?bookingId=${record.id}`);
+                                }}
                                 size="middle"
                                 style={{
                                     borderRadius: 6,
@@ -301,7 +264,7 @@ function BookingTable({
                                     borderColor: "#52c41a",
                                 }}
                             >
-                                Hoàn Thành Đơn
+                                Kí Hợp Đồng
                             </Button>
                         )}
                     </Space>
@@ -325,7 +288,7 @@ function BookingTable({
                     pagination={{
                         pageSize: 10,
                         showSizeChanger: true,
-                        showQuickJumper: true,
+                        // showQuickJumper: true,
                         showTotal: (total, range) => (
                             <span style={{ fontSize: 13, color: "#595959" }}>
                                 Hiển thị{" "}

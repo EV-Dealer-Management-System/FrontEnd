@@ -53,6 +53,7 @@ import GetAllEVCustomer from "./Pages/DealerStaff/GetAllEVCustomer/GetAllEVCusto
 import PaymentResponse from "./Pages/Payment/PaymentResponse";
 import Createvehicle from "./Pages/EVMStaff/Vehicle/CreateVehicle";
 import TemplateOverview from "./Pages/EVMStaff/Vehicle/TemplateOverview";
+import AdminGetAllEVBooking from "./Pages/Admin/GetAllEVBooking/AdminGetAllEVBooking";
 
 function App() {
   return (
@@ -160,7 +161,8 @@ function App() {
                   path="settings/template-editor"
                   element={<TemplateEditorPage />}
                 />
-                <Route path="booking-signing" element={<BookingContract />} />
+                <Route path="booking/ready-booking-signing" element={<BookingContract />} />
+                <Route path="booking/all-ev-booking" element={<AdminGetAllEVBooking />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ admin */}
                 <Route path="*" element={<Navigate to="/admin" replace />} />
               </Routes>

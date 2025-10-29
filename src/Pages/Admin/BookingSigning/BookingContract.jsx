@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   PageContainer 
 } from '@ant-design/pro-components';
@@ -51,6 +52,8 @@ const { Option } = Select;
 const { Title, Text } = Typography;
 
 function BookingContract() {
+  const [searchParams] = useSearchParams();
+  
   // State quản lý UI
   const [selectedContract, setSelectedContract] = useState(null);
   const [detailDrawerVisible, setDetailDrawerVisible] = useState(false);
@@ -80,11 +83,23 @@ function BookingContract() {
       setEvcUser(res);
       console.log('EVC AccessToken + UserId:', res);
     } catch (err) {
-      console.error('Lỗi khi lấy AccessToken EVC:', err);
+      console.error('Lỗi lấy EVC token:', err);
     }
   };
   fetchEVCUser();
-}, []);
+}, [contractService]);
+
+  // Tự động search khi có bookingId từ URL
+  useEffect(() => {
+    const bookingId = searchParams.get('bookingId');
+    if (bookingId) {
+      console.log('Auto-searching for booking ID:', bookingId);
+      updateFilter('search', bookingId);
+      
+      // Hiển thị thông báo cho user
+      message.info(`Đang tìm kiếm hợp đồng cho Booking ID: ${bookingId.substring(0, 8)}...`);
+    }
+  }, [searchParams, updateFilter]);
 
   // Hàm kiểm tra SmartCA có lựa chọn hợp lệ không
   const getSmartCAChoices = (info) => {
