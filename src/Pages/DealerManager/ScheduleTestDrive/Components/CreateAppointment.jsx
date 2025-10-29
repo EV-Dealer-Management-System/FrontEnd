@@ -7,17 +7,21 @@ import {
   DatePicker,
   Select,
   message,
-  Card,
   Typography,
   Spin,
   Image,
+  Row,
+  Col,
+  Card,
+  Tag,
 } from "antd";
-import { PlusOutlined, ScheduleOutlined } from "@ant-design/icons";
+import { ScheduleOutlined, ClockCircleOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { CreateAppointment } from "../../../../App/DealerManager/ScheduleManagement/CreateAppointment";
 import { GetAllCustomers } from "../../../../App/DealerManager/ScheduleManagement/GetAllCustomers";
 import { GetAllTemplates } from "../../../../App/DealerManager/ScheduleManagement/GetAllTemplates";
+import { GetAvailableAppointments } from "../../../../App/DealerManager/ScheduleManagement/GetAvailableAppointments";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 const CreateAppointmentForm = ({ onAppointmentCreated }) => {
@@ -28,6 +32,10 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
   const [customerLoading, setCustomerLoading] = useState(false);
   const [templateLoading, setTemplateLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
   // Fetch customers and templates on component mount
   useEffect(() => {
@@ -73,41 +81,101 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
     setSelectedTemplate(template);
   };
 
+  const handleDateChange = async (date) => {
+    setSelectedDate(date);
+    setSelectedSlot(null);
+    
+    if (!date) {
+      setAvailableSlots([]);
+      return;
+    }
+
+    try {
+      setSlotsLoading(true);
+      const response = await GetAvailableAppointments.getAvailableAppointments();
+      
+      if (response.isSuccess) {
+        setAvailableSlots(response.result || []);
+      } else {
+        message.error(response.message || "Không thể tải khung giờ có sẵn");
+        setAvailableSlots([]);
+      }
+    } catch (error) {
+      console.error("Error fetching available slots:", error);
+      message.error("Đã xảy ra lỗi khi tải khung giờ");
+      setAvailableSlots([]);
+    } finally {
+      setSlotsLoading(false);
+    }
+  };
+
+  const handleSlotSelect = (slot) => {
+    setSelectedSlot(slot);
+  };
 
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
 
-      // DatePicker đã trả về moment object rồi, không cần wrap lại
-      const startTime = values.startTime;
-      const endTime = values.endTime;
-
-      console.log("🕐 Start Time:", startTime.format("YYYY-MM-DD HH:mm:ss"));
-      console.log("🕐 End Time:", endTime.format("YYYY-MM-DD HH:mm:ss"));
-      console.log("🌍 Start Time (ISO):", startTime.toISOString());
-      console.log("🌍 End Time (ISO):", endTime.toISOString());
-
-      // Validate: endTime phải sau startTime
-      if (!endTime.isAfter(startTime)) {
-        message.error("Thời gian kết thúc phải sau thời gian bắt đầu!");
+      // Validate: Phải chọn ngày
+      if (!selectedDate) {
+        message.error("Vui lòng chọn ngày hẹn!");
         return;
       }
 
-      // Validate: Khoảng thời gian tối thiểu 15 phút
-      const durationMinutes = endTime.diff(startTime, 'minutes');
-      console.log("⏱️ Duration:", durationMinutes, "minutes");
+      // Validate: Phải chọn khung giờ
+      if (!selectedSlot) {
+        message.error("Vui lòng chọn khung giờ!");
+        return;
+      }
+
+      // Tạo startTime và endTime từ selectedDate và selectedSlot
+      const year = selectedDate.year();
+      const month = selectedDate.month(); // 0-11
+      const day = selectedDate.date();
       
-      if (durationMinutes < 15) {
-        message.error("Khoảng thời gian tối thiểu là 15 phút!");
-        return;
-      }
+      // Parse time từ slot (format: "HH:mm:ss")
+      const startTimeParts = selectedSlot.openTime.split(':');
+      const endTimeParts = selectedSlot.closeTime.split(':');
+      
+      // Tạo moment object với date và time cụ thể
+      let startTime = moment({
+        year: year,
+        month: month,
+        day: day,
+        hour: parseInt(startTimeParts[0]),
+        minute: parseInt(startTimeParts[1]),
+        second: parseInt(startTimeParts[2] || 0)
+      });
+      
+      let endTime = moment({
+        year: year,
+        month: month,
+        day: day,
+        hour: parseInt(endTimeParts[0]),
+        minute: parseInt(endTimeParts[1]),
+        second: parseInt(endTimeParts[2] || 0)
+      });
+
+      console.log("📅 Selected Date:", selectedDate.format("YYYY-MM-DD"));
+      console.log("🕐 Selected Slot:", selectedSlot);
+      console.log("⏰ Start Time:", startTime.format("YYYY-MM-DD HH:mm:ss"));
+      console.log("⏰ End Time:", endTime.format("YYYY-MM-DD HH:mm:ss"));
+      
+      // Format thành ISO string với local timezone (YYYY-MM-DDTHH:mm:ss.sssZ)
+      // Sử dụng format ISO để backend parse đúng
+      const startTimeISO = startTime.format("YYYY-MM-DDTHH:mm:ss.SSS") + "Z";
+      const endTimeISO = endTime.format("YYYY-MM-DDTHH:mm:ss.SSS") + "Z";
+      
+      console.log("🌍 Start Time (ISO):", startTimeISO);
+      console.log("🌍 End Time (ISO):", endTimeISO);
 
       // Format datetime to ISO 8601
       const formattedData = {
         customerId: values.customerId,
         evTemplateId: values.evTemplateId,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
+        startTime: startTimeISO,
+        endTime: endTimeISO,
         note: values.note || null,
         status: values.status || 1,
       };
@@ -123,6 +191,9 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
         message.success("Tạo lịch hẹn thành công!");
         form.resetFields();
         setSelectedTemplate(null);
+        setSelectedDate(null);
+        setSelectedSlot(null);
+        setAvailableSlots([]);
 
         // Callback để refresh danh sách nếu được truyền
         if (onAppointmentCreated) {
@@ -157,27 +228,14 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
   };
 
   return (
-    <Card
-      title={
-        <Title level={4}>
-          <ScheduleOutlined className="mr-2" />
-          Tạo Lịch Hẹn Mới
-        </Title>
-      }
-      extra={
-        <Button type="link" icon={<PlusOutlined />}>
-          Thêm
-        </Button>
-      }
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={handleSubmit}
+      initialValues={{
+        status: 1, // Mặc định trạng thái hoạt động
+      }}
     >
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleSubmit}
-        initialValues={{
-          status: 1, // Mặc định trạng thái hoạt động
-        }}
-      >
         <Form.Item
           name="customerId"
           label="Khách Hàng"
@@ -265,40 +323,83 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
         )}
 
         <Form.Item
-          name="startTime"
-          label="Thời Gian Bắt Đầu"
-          rules={[
-            { required: true, message: "Vui lòng chọn thời gian bắt đầu" },
-          ]}
+          label="Chọn Ngày Hẹn"
+          required
         >
           <DatePicker
-            showTime={{
-              format: 'HH:mm',
-              defaultValue: moment('08:00', 'HH:mm'),
-            }}
-            format="YYYY-MM-DD HH:mm:ss"
-            placeholder="Chọn thời gian bắt đầu"
+            value={selectedDate}
+            onChange={handleDateChange}
+            format="DD/MM/YYYY"
+            placeholder="Chọn ngày hẹn"
             style={{ width: "100%" }}
+            disabledDate={(current) => {
+              // Không cho chọn ngày trong quá khứ
+              return current && current < moment().startOf('day');
+            }}
           />
         </Form.Item>
 
-        <Form.Item
-          name="endTime"
-          label="Thời Gian Kết Thúc"
-          rules={[
-            { required: true, message: "Vui lòng chọn thời gian kết thúc" },
-          ]}
-        >
-          <DatePicker
-            showTime={{
-              format: 'HH:mm',
-              defaultValue: moment('09:00', 'HH:mm'),
-            }}
-            format="YYYY-MM-DD HH:mm:ss"
-            placeholder="Chọn thời gian kết thúc"
-            style={{ width: "100%" }}
-          />
-        </Form.Item>
+        {selectedDate && (
+          <Form.Item label="Chọn Khung Giờ" required>
+            {slotsLoading ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <Spin tip="Đang tải khung giờ..." />
+              </div>
+            ) : availableSlots.length > 0 ? (
+              <Row gutter={[8, 8]}>
+                {availableSlots.map((slot, index) => (
+                  <Col span={12} key={index}>
+                    <Card
+                      size="small"
+                      hoverable={slot.isAvailable}
+                      onClick={() => slot.isAvailable && handleSlotSelect(slot)}
+                      style={{
+                        cursor: slot.isAvailable ? 'pointer' : 'not-allowed',
+                        border: selectedSlot === slot ? '2px solid #1890ff' : '1px solid #d9d9d9',
+                        backgroundColor: !slot.isAvailable ? '#f5f5f5' : 
+                                       selectedSlot === slot ? '#e6f7ff' : 'white',
+                        opacity: slot.isAvailable ? 1 : 0.6,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <ClockCircleOutlined style={{ marginRight: 8, fontSize: 16 }} />
+                          <Text strong>
+                            {slot.openTime?.substring(0, 5)} - {slot.closeTime?.substring(0, 5)}
+                          </Text>
+                        </div>
+                        {slot.isAvailable ? (
+                          selectedSlot === slot ? (
+                            <CheckCircleOutlined style={{ color: '#1890ff', fontSize: 18 }} />
+                          ) : (
+                            <Tag color="green">Có sẵn</Tag>
+                          )
+                        ) : (
+                          <Tag color="red">Đã đặt</Tag>
+                        )}
+                      </div>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+                Không có khung giờ nào trong ngày này
+              </div>
+            )}
+          </Form.Item>
+        )}
+
+        {selectedSlot && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
+            <Text strong className="block mb-2">
+              ✓ Đã Chọn Khung Giờ
+            </Text>
+            <Text>
+              {selectedDate.format("DD/MM/YYYY")} từ {selectedSlot.openTime?.substring(0, 5)} đến {selectedSlot.closeTime?.substring(0, 5)}
+            </Text>
+          </div>
+        )}
 
         <Form.Item name="note" label="Ghi Chú">
           <Input.TextArea rows={3} placeholder="Nhập ghi chú (nếu có)" />
@@ -312,19 +413,18 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
           </Select>
         </Form.Item>
 
-        <Form.Item>
-          <Button
-            type="primary"
-            htmlType="submit"
-            icon={<ScheduleOutlined />}
-            loading={loading}
-            block
-          >
-            Tạo Lịch Hẹn
-          </Button>
-        </Form.Item>
-      </Form>
-    </Card>
+      <Form.Item>
+        <Button
+          type="primary"
+          htmlType="submit"
+          icon={<ScheduleOutlined />}
+          loading={loading}
+          block
+        >
+          Tạo Lịch Hẹn
+        </Button>
+      </Form.Item>
+    </Form>
   );
 };
 
