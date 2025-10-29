@@ -7,8 +7,7 @@ import {
   Badge, 
   Space, 
   Button, 
-  Tooltip, 
-  message,
+  Tooltip,
   Modal,
   Descriptions,
   Select
@@ -22,11 +21,13 @@ import {
 import { GetAllAppointment } from '../../../../App/DealerManager/ScheduleManagement/GetAllAppointment';
 import { UpdateAppointment } from '../../../../App/DealerManager/ScheduleManagement/UpdateAppointment';
 import CreateAppointmentForm from './CreateAppointment';
+import { useToast } from './ToastContainer';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const ListAppointment = () => {
+  const toast = useToast();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,7 +69,7 @@ const ListAppointment = () => {
 
   const handleUpdateStatus = async () => {
     if (!selectedAppointment || newStatus === null) {
-      message.warning('Vui lòng chọn trạng thái!');
+      toast.warning('Vui lòng chọn trạng thái!');
       return;
     }
 
@@ -81,17 +82,17 @@ const ListAppointment = () => {
 
       if (response.isSuccess || response.statusCode === 200) {
         const successMessage = response.message || 'Cập nhật trạng thái thành công!';
-        message.success(successMessage);
+        toast.success(successMessage);
         handleEditModalClose();
         fetchAppointments(); // Refresh list
       } else {
         const errorMessage = response.message || 'Cập nhật trạng thái thất bại!';
-        message.error(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error('Error updating appointment status:', error);
       const errorMessage = error.response?.data?.message || 'Đã xảy ra lỗi khi cập nhật trạng thái';
-      message.error(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setUpdating(false);
     }
@@ -110,11 +111,11 @@ const ListAppointment = () => {
       if (response.isSuccess) {
         setAppointments(response.result || []);
       } else {
-        message.error(response.message || 'Không thể tải danh sách lịch hẹn');
+        toast.error(response.message || 'Không thể tải danh sách lịch hẹn');
       }
     } catch (error) {
       console.error('Error fetching appointments:', error);
-      message.error('Đã xảy ra lỗi khi tải danh sách lịch hẹn');
+      toast.error('Đã xảy ra lỗi khi tải danh sách lịch hẹn');
     } finally {
       setLoading(false);
     }

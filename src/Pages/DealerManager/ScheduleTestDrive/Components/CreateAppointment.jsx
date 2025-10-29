@@ -6,7 +6,6 @@ import {
   Button,
   DatePicker,
   Select,
-  message,
   Typography,
   Spin,
   Image,
@@ -20,21 +19,13 @@ import { CreateAppointment } from "../../../../App/DealerManager/ScheduleManagem
 import { GetAllCustomers } from "../../../../App/DealerManager/ScheduleManagement/GetAllCustomers";
 import { GetAllTemplates } from "../../../../App/DealerManager/ScheduleManagement/GetAllTemplates";
 import { GetAvailableAppointments } from "../../../../App/DealerManager/ScheduleManagement/GetAvailableAppointments";
+import { useToast } from "./ToastContainer";
 
 const { Text } = Typography;
 const { Option } = Select;
 
-// Config message để hiển thị trên modal
-message.config({
-  top: 100,
-  duration: 3,
-  maxCount: 3,
-  rtl: false,
-  prefixCls: 'ant-message',
-  getContainer: () => document.body,
-});
-
 const CreateAppointmentForm = ({ onAppointmentCreated }) => {
+  const toast = useToast();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState([]);
@@ -130,21 +121,21 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
       setLoading(true);
       console.log("⏳ Loading state set to true");
 
-      // Validate: Phải chọn ngày
-      if (!selectedDate) {
-        console.log("❌ Validation failed: No date selected");
-        message.error("Vui lòng chọn ngày hẹn!");
-        setLoading(false);
-        return;
-      }
+            // Validate: Phải chọn ngày
+            if (!selectedDate) {
+              console.log("❌ Validation failed: No date selected");
+              toast.error("Vui lòng chọn ngày hẹn!");
+              setLoading(false);
+              return;
+            }
 
-      // Validate: Phải chọn khung giờ
-      if (!selectedSlot) {
-        console.log("❌ Validation failed: No slot selected");
-        message.error("Vui lòng chọn khung giờ!");
-        setLoading(false);
-        return;
-      }
+            // Validate: Phải chọn khung giờ
+            if (!selectedSlot) {
+              console.log("❌ Validation failed: No slot selected");
+              toast.error("Vui lòng chọn khung giờ!");
+              setLoading(false);
+              return;
+            }
       
       console.log("✅ Validation passed");
 
@@ -213,10 +204,10 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
 
       if (response && response.isSuccess) {
         console.log("✅ Success branch");
-        // Hiển thị message từ backend hoặc message mặc định
         const successMessage = response.message || "Đặt lịch hẹn thành công!";
         console.log("💬 Showing success message:", successMessage);
-        message.success(successMessage);
+        
+        toast.success(successMessage);
         
         form.resetFields();
         setSelectedTemplate(null);
@@ -230,10 +221,10 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
         }
       } else {
         console.log("❌ Error branch - isSuccess is false");
-        // Hiển thị message lỗi từ backend
         const errorMessage = response?.message || "Đặt lịch hẹn thất bại!";
         console.log("💬 Showing error message:", errorMessage);
-        message.error(`Đặt lịch thất bại: ${errorMessage}`);
+        
+        toast.error(`Đặt lịch thất bại: ${errorMessage}`);
       }
     } catch (error) {
       console.error("❌❌❌ EXCEPTION CAUGHT:", error);
@@ -254,21 +245,20 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
           "Lỗi từ máy chủ";
         
         console.log("💬 Showing error message:", errorMessage);
-        message.error(`Đặt lịch thất bại: ${errorMessage}`);
+        toast.error(`Đặt lịch thất bại: ${errorMessage}`);
         
         // Log chi tiết để debug
         console.error("Error response data:", errorData);
       } else if (error.request) {
         console.log("🔴 Error request branch");
         // Lỗi kết nối
-        message.error(
-          "Đặt lịch thất bại: Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng."
-        );
+        const errorMsg = "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.";
+        toast.error(`Đặt lịch thất bại: ${errorMsg}`);
       } else {
         console.log("🔴 Error other branch");
         // Lỗi khác
         const errorMessage = error.message || "Lỗi không xác định";
-        message.error(`Đặt lịch thất bại: ${errorMessage}`);
+        toast.error(`Đặt lịch thất bại: ${errorMessage}`);
       }
     } finally {
       console.log("🏁 Finally block - setting loading to false");
@@ -277,26 +267,14 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
   };
 
   return (
-    <>
-      <style>{`
-        .ant-message {
-          z-index: 9999 !important;
-        }
-        .ant-message-notice-content {
-          padding: 10px 16px;
-          border-radius: 4px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-      `}</style>
-      
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleSubmit}
-        initialValues={{
-          status: 1, // Mặc định trạng thái hoạt động
-        }}
-      >
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={handleSubmit}
+      initialValues={{
+        status: 1, // Mặc định trạng thái hoạt động
+      }}
+    >
         <Form.Item
           name="customerId"
           label="Khách Hàng"
@@ -486,7 +464,6 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
         </Button>
       </Form.Item>
     </Form>
-    </>
   );
 };
 
