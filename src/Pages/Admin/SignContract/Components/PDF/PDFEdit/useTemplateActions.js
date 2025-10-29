@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, use } from 'react';
 import { Modal, App } from 'antd';
 import { PDFUpdateService } from '../../../../../../App/Home/PDFconfig/PDFUpdate';
 
@@ -17,24 +17,33 @@ export const useTemplateActions = (
   setHasUnsavedChanges,
   getCurrentContent,
   rebuildCompleteHtml,
-  contractSubject
+  contractSubject,
+  allStyles,
+  signContent,
+  headerContent
 ) => {
+  const [modal, contextHolder] = Modal.useModal();
   const { message } = App.useApp();
   const [saveLoading, setSaveLoading] = useState(false);
   const [templateData, setTemplateData] = useState(null);
   const [templateLoaded, setTemplateLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
+  
 
+
+  const didRequestRef = useRef(false);
+  
   // Service
   const pdfUpdateService = PDFUpdateService();
 
   // ✅ Load template NGAY khi modal mở - KHÔNG phụ thuộc quillReady
   useEffect(() => {
-    if (visible && contractId && !templateLoaded) {
-      console.log('✅ Modal opened → Load template (independent of Quill)');
-      loadTemplate();
-    }
-  }, [visible, contractId]); // ✅ CHỈ phụ thuộc vào modal và contractId
+    if (!visible || !contractId) return;
+    if (didRequestRef.current || templateLoaded || loading) return; // Tránh gọi nhiều lần
+    didRequestRef.current = true;
+    console.log('Modal opened → Load template (independent of Quill)');
+    loadTemplate();
+  }, [visible, contractId, templateLoaded, loading]); 
 
   // Load template từ API
   const loadTemplate = async () => {
@@ -56,11 +65,17 @@ export const useTemplateActions = (
       if (result.success && result.data) {
         const template = result.data;
         setTemplateData(template);
+
+        const html = template.htmlTemplate || ''; 
+        if (html) {
+          console.log('Template HTML length:', html.length);
+        } else {
+          message.warning('Không tìm nội dung template trong hợp đồng');
+        }
         
         console.log('✅ Template loaded successfully');
-        setTemplateLoaded(true);
         message.success('Đã tải template thành công');
-        
+        setTemplateLoaded(true);
         return template; // Return template data để parent component xử lý
       }
     } catch (error) {
@@ -77,7 +92,17 @@ export const useTemplateActions = (
       message.error('Nội dung template không được rỗng');
       return;
     }
-
+    let latestContent = getCurrentContent ? getCurrentContent() : '';
+    let usedDomFallback = false;
+    let useOldHtmlFallback = false;
+      if (!latestContent) {
+        // an toàn: hút trực tiếp từ DOM editor nếu instance đã mount
+        const live = document.querySelector('.ql-editor')?.innerHTML;
+        if (live && typeof live === 'string') {
+          latestContent = live;
+          usedDomFallback = true;
+        }
+      }
     setSaveLoading(true);
     
     // FIX: Thêm timeout để tránh promise treo vô hạn
@@ -86,16 +111,36 @@ export const useTemplateActions = (
     });
     
     try {
-      // ✅ Lấy current content từ Quill và rebuild HTML đầy đủ
-      const currentBodyContent = getCurrentContent ? getCurrentContent() : htmlContent;
-      const completeHtml = rebuildCompleteHtml(currentBodyContent, contractSubject);
+      // ✅ Lấy nội dung người dùng đã chỉnh trong Quill
+      let quillBody = latestContent || htmlContent || '';
+      if(!latestContent && !usedDomFallback) {
+        useOldHtmlFallback = true;
+      }
+      quillBody = quillBody.replace(
+        /<p>(\s*Điều\s+\d+[^<]*)<\/p>/gi,
+        '<div class="section-title">$1</div>'
+      );
+      if (useOldHtmlFallback && hasUnsavedChanges) {
+        // ❌ Không lấy được bản mới nhất từ editor → DỪNG LƯU và báo lỗi
+        message.error('❌ Không thể lấy nội dung mới nhất từ editor. Vui lòng thử bấm "Lưu" lại sau 1 giây.');
+        setSaveLoading(false);
+        return; // ⛔ DỪNG Ở ĐÂY, KHÔNG GỬI BẢN CŨ
+      }
+      const completeHtml = rebuildCompleteHtml(
+        quillBody,
+        contractSubject,
+        allStyles,
+        signContent,
+        headerContent
+      );
       const subject = contractSubject || `Hợp đồng Đại lý ${contractNo}`;
-      
+      const currentBodyContent = quillBody || htmlContent || '';
+
       console.log('=== SAVE TEMPLATE CHANGES ===');
       console.log('Contract ID:', contractId);
       console.log('Subject:', subject);
-      console.log('Body content length:', currentBodyContent.length);
-      console.log('Complete HTML length:', completeHtml.length);
+      console.log('- Quill body length:', quillBody?.length || 0);
+      console.log('- Complete HTML length:', completeHtml?.length || 0);
       
       // Gửi complete HTML với đầy đủ structure về BE
       const result = await Promise.race([
@@ -106,7 +151,7 @@ export const useTemplateActions = (
       if (result.success) {
         console.log('✅ Template changes saved successfully');
         message.success('Đã lưu thay đổi thành công');
-        setOriginalContent(htmlContent);
+        setOriginalContent(quillBody);
         setHasUnsavedChanges(false);
         
         // ✅ Callback với thông tin mới từ API response
@@ -137,7 +182,7 @@ export const useTemplateActions = (
 
   // Khôi phục nội dung gốc
   const handleReset = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Khôi phục nội dung gốc?',
       content: 'Thao tác này sẽ xóa tất cả các thay đổi chưa lưu.',
       okText: 'Khôi phục',
@@ -154,46 +199,30 @@ export const useTemplateActions = (
   const handleClose = () => {
     console.log('PDFEdit handleClose called, hasUnsavedChanges:', hasUnsavedChanges);
     
-    if (hasUnsavedChanges) {
-      Modal.confirm({
-        title: 'Có thay đổi chưa được lưu',
-        content: 'Bạn muốn thực hiện hành động nào?',
-        okText: 'Lưu và Thoát',
-        cancelText: 'Ở lại',
-        okType: 'primary',
-        onOk: async () => {
-          try {
-            console.log('User chose: Save and Exit');
-            await handleSave(); // Lưu trước khi thoát
-            onCancel(); // Thoát sau khi lưu thành công
-          } catch (error) {
-            console.error('Save failed:', error);
-            // Nếu lưu thất bại, không thoát
-          }
-        },
-        onCancel: () => {
-          // Hiển thị modal phụ để chọn "Thoát không lưu" hay "Ở lại"
-          Modal.confirm({
-            title: 'Bạn có chắc chắn?',
-            content: 'Tất cả thay đổi sẽ bị mất. Bạn có muốn thoát không lưu?',
-            okText: 'Thoát không lưu',
-            cancelText: 'Ở lại tiếp tục chỉnh sửa',
-            okType: 'danger',
-            onOk: () => {
-              console.log('User chose: Exit without saving');
-              onCancel(); // Force close không lưu
-            },
-            onCancel: () => {
-              console.log('User chose: Stay in modal');
-              // Không làm gì, ở lại modal
-            }
-          });
-        }
-      });
-    } else {
+    if (!hasUnsavedChanges) {
       console.log('No unsaved changes, closing directly');
       onCancel();
+      return;
     }
+
+    modal.confirm({
+      title: 'Có thay đổi chưa được lưu',
+      content: 'Nếu thoát, tất cả thay đổi sẽ bị mất. Bạn có chắc muốn thoát không?',
+      okText: 'Thoát không lưu',
+      cancelText: 'Ở lại',
+      okType: 'danger',
+      onOk: () => {
+        console.log('User confirmed exit without saving');
+        // Reset các thay đổi cục bộ để đảm bảo không ghi đè
+        setHtmlContent(originalContent);
+        setHasUnsavedChanges(false);
+        onCancel(); // Đóng modal mà không lưu
+      },
+      onCancel: () => {
+        console.log('User canceled exit, staying in modal');
+        // Không làm gì thêm
+      }
+    });
   };
 
   // Xử lý đóng trực tiếp không cần confirm
@@ -207,6 +236,7 @@ export const useTemplateActions = (
     setTemplateLoaded(false);
     setLoading(false);
     setSaveLoading(false);
+    didRequestRef.current = false;
   };
 
   return {
@@ -221,6 +251,8 @@ export const useTemplateActions = (
     loadTemplate,
     resetStates,
     setTemplateData,
-    setTemplateLoaded
+    setTemplateLoaded,
+    contextHolder,
+    allStyles
   };
 };

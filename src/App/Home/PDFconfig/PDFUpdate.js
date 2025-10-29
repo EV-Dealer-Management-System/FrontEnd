@@ -7,12 +7,17 @@ export function PDFUpdateService() {
   const getTemplateByContractId = async (contractId) => {
     try {
       // Sử dụng endpoint mới với contract ID
-      const response = await api.get(`/EContractTemplate/get-econtract-template-by-econtract-id/${contractId}`);
+      const response = await api.get(`/EContract/get-econtract-by-id/${contractId}`);
       
-      if (response.status === 200 && response.data) {
+      if (response.status === 200 && response.data?.result) {
+        const html = response.data.result.htmlTemaple || response.data.result.htmlTemplate;
         return {
           success: true,
-          data: response.data
+          data: {
+            id: response.data.result.id,
+            htmlTemplate: html,
+            raw: response.data.result
+          }
         };
       }
       
@@ -59,7 +64,7 @@ export function PDFUpdateService() {
       console.log('Response data đầy đủ:');
       console.log(JSON.stringify(response.data, null, 2));
 
-      if (response.status === 200) {
+      if (response.status === 200 && response.data.success === true) {
         console.log('Update thành công');
         
         const responseData = response.data?.data;
@@ -78,10 +83,7 @@ export function PDFUpdateService() {
       throw new Error('Update failed');
     } catch (error) {
       console.error('=== LỖI updateEContract ===');
-      console.error('Loại lỗi:', error.constructor.name);
       console.error('Thông báo lỗi:', error.message);
-      console.error('Stack trace:', error.stack);
-      
       if (error.response) {
         console.error('=== SERVER RESPONSE ERROR ===');
         console.error('Status:', error.response.status);

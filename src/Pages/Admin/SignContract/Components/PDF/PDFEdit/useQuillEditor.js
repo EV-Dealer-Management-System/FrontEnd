@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import Quill from 'quill';
 import { App } from 'antd';
 
 // ✅ Cấu hình ReactQuill modules - Giới hạn để tránh phá layout A4
@@ -84,14 +83,6 @@ export const useQuillEditor = (visible, htmlContent, setHasUnsavedChanges, isUpd
           formats: quillFormats,
           placeholder: 'Nhập nội dung hợp đồng...'
         });
-        const Delta = Quill.import('delta');
-        //bỏ toàn bộ blocks signature khi khởi tạo
-        q.clipboard.addMatcher(Node.ELEMENT_NODE, (node, delta) => {
-          if (node.classList && node.classList.contains('sign')) {
-            return new Delta();
-          }
-          return delta;
-        });
         q.root.setAttribute('spellcheck', 'false');
         setQuill(q);
         setIsPasted(false);
@@ -140,6 +131,11 @@ export const useQuillEditor = (visible, htmlContent, setHasUnsavedChanges, isUpd
         // Debounce để tránh update quá nhanh khi gõ
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
+          const rawHtml = quill.root.innerHTML;
+          const postprocessed = postprocessHtmlFromQuill(rawHtml);
+          if (typeof window.__UPDATE_HTML_CONTENT__ === 'function') {
+            window.__UPDATE_HTML_CONTENT__(postprocessed);
+          }
           // Note: setHtmlContent sẽ được truyền từ parent component
           setHasUnsavedChanges(true);
         }, 300); // Delay 300ms

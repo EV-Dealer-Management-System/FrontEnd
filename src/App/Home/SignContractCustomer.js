@@ -27,8 +27,8 @@ export const ContractService = () => {
       // Ensure position and pageSign are included in the returned data
       const enhancedData = {
         ...contractData,
-        position: contractData.position || "406,396,576,486", // Default position theo format mới
-        pageSign: contractData.pageSign || 3 // Default page theo response mẫu
+        position: contractData.position, 
+        pageSign: contractData.pageSign 
       };
       
       return {
