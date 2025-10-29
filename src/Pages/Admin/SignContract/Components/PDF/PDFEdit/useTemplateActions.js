@@ -39,11 +39,11 @@ export const useTemplateActions = (
   // ✅ Load template NGAY khi modal mở - KHÔNG phụ thuộc quillReady
   useEffect(() => {
     if (!visible || !contractId) return;
-    if (didRequestRef.current || templateLoaded || loading) return; // Tránh gọi nhiều lần
+    if (didRequestRef.current) return; // Tránh gọi nhiều lần
     didRequestRef.current = true;
     console.log('Modal opened → Load template (independent of Quill)');
     loadTemplate();
-  }, [visible, contractId, templateLoaded, loading]); 
+  }, [visible, contractId]); 
 
   // Load template từ API
   const loadTemplate = async () => {
@@ -74,7 +74,11 @@ export const useTemplateActions = (
         }
         
         console.log('✅ Template loaded successfully');
-        message.success('Đã tải template thành công');
+        if (!window.__TEMPLATE_LOAD_SHOWN) {
+          message.success('Đã tải template thành công');
+          window.__TEMPLATE_LOAD_SHOWN = true;
+          setTimeout(() => (window.__TEMPLATE_LOAD_SHOWN = false), 1500);
+        }
         setTemplateLoaded(true);
         return template; // Return template data để parent component xử lý
       }

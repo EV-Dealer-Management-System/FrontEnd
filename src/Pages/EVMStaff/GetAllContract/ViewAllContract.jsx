@@ -10,6 +10,7 @@ import PDFModalForConfirm from "./Component/PDFModalForConfirm.jsx";
 import useConfirmContract  from "../../../App/EVMStaff/Contract/ConfirmContract.js";
 import contracDetail from "../../../App/EVMStaff/Contract/GetContractDetail.js";
 import getPdfPreview from "../../../App/EVMStaff/Contract/GetPreviewPDF.js";
+import deleteDealerContract from "../../../App/EVMStaff/Contract/DeleteDraftContract.js";
 const { RangePicker } = DatePicker;
 
 function ViewAllContract() {
@@ -90,6 +91,31 @@ function ViewAllContract() {
       }
     };
 
+    const handleDeleteContract = async (contractId) => {
+      try {
+        const confirm = window.confirm('Bạn có chắc chắn muốn xóa hợp đồng này không?');
+        if (!confirm) return;
+        const result = await deleteDealerContract(contractId);
+        if (result.success) {
+          notification.success({
+            message: 'Thành công',
+            description: 'Hợp đồng đã được xóa thành công.',
+          });
+        } else {
+          notification.error({
+            message: 'Thất bại',
+            description: result.error || 'Không thể xóa hợp đồng.',
+          });
+        }
+      } catch (error) {
+        notification.error({
+          message: 'Lỗi',
+          description: 'Đã xảy ra lỗi khi xóa hợp đồng.',
+        });
+        console.error('Error deleting contract:', error);
+      }
+    };
+
     return (
       <EVMStaffLayout>
       <ConfigProvider locale={viVN}>
@@ -127,15 +153,28 @@ function ViewAllContract() {
           loading={loading}
           rowKey="id"
         >
-          <Table.Column title="Mã hợp đồng" dataIndex="id" />
           <Table.Column title="Tên hợp đồng" dataIndex="name" />
-          <Table.Column title="Trạng thái" dataIndex="status" />
-          <Table.Column title="Ngày tạo" dataIndex="createdAt" />
+          
+          <Table.Column title="Ngày tạo" 
+          dataIndex="createdAt" 
+          sorter={(a, b) => dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix()}
+          defaultSortOrder="descend"
+          render={(value) => {
+            if (!value) return "—";
+            return dayjs(value).tz("Asia/Ho_Chi_Minh").format("DD/MM/YYYY HH:mm");
+          }} />
           <Table.Column title="Thao tác" key="action" render={(text, record) => (
             <Space size="middle">
               <Button onClick={() => {
                 handleViewContract(record.id);
-              }}>Xem chi tiết</Button>
+              }}>Xem chi tiết
+              </Button>
+              <Button 
+              danger 
+              onClick={() => {
+                handleDeleteContract(record.id);
+              }}>Xóa hợp đồng
+              </Button>
             </Space>
           )} />
         </Table>
