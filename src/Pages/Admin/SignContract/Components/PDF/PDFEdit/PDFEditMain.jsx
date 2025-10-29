@@ -135,7 +135,7 @@ function PDFEditMain({
           // 🧩 DÙNG editableBody (thay bodyContent)
           setHtmlContent(parsedResult.editableBody || '');
           setOriginalContent(parsedResult.editableBody || '');
-          setContractSubject(template.name || 'Hợp đồng đại lý');
+          setContractSubject(template.name);
 
           // ✅ Ghi log an toàn
           console.log('✅ Template loaded và parsed successfully');
