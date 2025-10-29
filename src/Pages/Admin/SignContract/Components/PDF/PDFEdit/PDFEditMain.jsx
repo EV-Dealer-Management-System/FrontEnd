@@ -43,14 +43,19 @@ function PDFEditMain({
   const [activeTab, setActiveTab] = useState('editor');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isUpdatingFromCode, setIsUpdatingFromCode] = useState(false);
-  
+  const [signContent, setSignContent] = useState('');
+  const [headerContent, setHeaderContent] = useState('');
+
 
   // Custom hooks
   const {
-    parseFromBE,
-    bodyForEditor,      
-    allStyles,          
-    rebuildCompleteHtml
+    parseHtmlFromBE,        // ✅ đúng tên hàm trong hook
+  rebuildCompleteHtml,
+  allStyles,
+  htmlHead,
+  htmlAttributes,
+  updateParsedStructure,  // ✅ cần thêm vì bạn đang gọi trong code
+  resetStructureStates  
   } = useHtmlParser();
 
   const {
@@ -67,7 +72,7 @@ function PDFEditMain({
     saveLoading,
     templateData,
     templateLoaded,
-    handleSave: originalHandleSave,
+    handleSave,
     handleReset,
     handleClose,
     handleForceClose,
@@ -90,7 +95,10 @@ function PDFEditMain({
     setHasUnsavedChanges,
     getCurrentContent,
     rebuildCompleteHtml,
-    contractSubject
+    contractSubject,
+    allStyles,
+    signContent,
+    headerContent
   );
 
   useEffect(() => {
@@ -111,6 +119,9 @@ function PDFEditMain({
           // ✅ Parse HTML từ BE - tách TẤT CẢ style và structure
           const rawHtml = template.htmlTemplate || '';
           const parsedResult = parseHtmlFromBE(rawHtml);
+          setHtmlContent(parsedResult.editableBody || '');
+          setSignContent(parsedResult.signBody || '');
+          setHeaderContent?.(parsedResult.headerBody || '');
           
           // Lưu structure vào state
           updateParsedStructure(parsedResult);
@@ -188,6 +199,11 @@ function PDFEditMain({
       .ql-editor .sign { display: none !important; }
       .ql-editor [data-signature-block] { display: none !important; }
       .ql-editor [data-preserve-idx][data-type="sign"] { display: none !important; }
+      .ql-editor .__ph_holder[data-type="sign"] { display: none !important; }
+      .ql-editor .__ph_holder[data-type="center"] { display: none !important; }  
+      .ql-editor h1, .ql-editor h2, .ql-editor h3, .ql-editor h4, .ql-editor h5, .ql-editor h6 {
+        display: none !important;  
+      }
       .ql-editor {
         font-family: 'Noto Sans', 'DejaVu Sans', Arial, sans-serif !important;
         font-size: 12pt !important;

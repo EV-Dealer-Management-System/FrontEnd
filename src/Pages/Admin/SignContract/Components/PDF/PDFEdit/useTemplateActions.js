@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, use } from 'react';
 import { Modal, App } from 'antd';
 import { PDFUpdateService } from '../../../../../../App/Home/PDFconfig/PDFUpdate';
 
@@ -17,7 +17,10 @@ export const useTemplateActions = (
   setHasUnsavedChanges,
   getCurrentContent,
   rebuildCompleteHtml,
-  contractSubject
+  contractSubject,
+  allStyles,
+  signContent,
+  headerContent
 ) => {
   const [modal, contextHolder] = Modal.useModal();
   const { message } = App.useApp();
@@ -89,7 +92,17 @@ export const useTemplateActions = (
       message.error('Nội dung template không được rỗng');
       return;
     }
-
+    let latestContent = getCurrentContent ? getCurrentContent() : '';
+    let usedDomFallback = false;
+    let useOldHtmlFallback = false;
+      if (!latestContent) {
+        // an toàn: hút trực tiếp từ DOM editor nếu instance đã mount
+        const live = document.querySelector('.ql-editor')?.innerHTML;
+        if (live && typeof live === 'string') {
+          latestContent = live;
+          usedDomFallback = true;
+        }
+      }
     setSaveLoading(true);
     
     // FIX: Thêm timeout để tránh promise treo vô hạn
@@ -99,26 +112,26 @@ export const useTemplateActions = (
     
     try {
       // ✅ Lấy nội dung người dùng đã chỉnh trong Quill
-      const quillBody = getCurrentContent ? getCurrentContent() : '';
-
-      // ✅ Nếu Quill đã xóa marker, ta khôi phục marker từ state htmlContent
-      // const markerRegex = /(<!--\s*SIGNATURE_BLOCK:\d+\s*-->)|<([a-z0-9:-]+)[^>]*data-signature-(?:block|placeholder)\s*=\s*"?\d+"?[^>]*>[\s\S]*?<\/\2>/gi;
-      // const hasMarkerInQuill = markerRegex.test(quillBody);
-
-      // Lấy các marker còn lưu trong state htmlContent (sau khi parse)
-      // const markersFromState = (htmlContent || '').match(markerRegex) || [];
-
-      // Ghép body dùng để rebuild: ưu tiên nội dung Quill, nhưng gắn thêm marker nếu thiếu
-      // const currentBodyContent = !hasMarkerInQuill && markersFromState.length
-      //   ? `${quillBody}\n${markersFromState.join('\n')}`
-      //   : (quillBody || htmlContent || '');
-
-      // ✅ Rebuild HTML đầy đủ (sẽ thay marker thành block .sign gốc)
-      const cached = (window.__PDF_TEMPLATE_CACHE__ || {});
+      let quillBody = latestContent || htmlContent || '';
+      if(!latestContent && !usedDomFallback) {
+        useOldHtmlFallback = true;
+      }
+      quillBody = quillBody.replace(
+        /<p>(\s*Điều\s+\d+[^<]*)<\/p>/gi,
+        '<div class="section-title">$1</div>'
+      );
+      if (useOldHtmlFallback && hasUnsavedChanges) {
+        // ❌ Không lấy được bản mới nhất từ editor → DỪNG LƯU và báo lỗi
+        message.error('❌ Không thể lấy nội dung mới nhất từ editor. Vui lòng thử bấm "Lưu" lại sau 1 giây.');
+        setSaveLoading(false);
+        return; // ⛔ DỪNG Ở ĐÂY, KHÔNG GỬI BẢN CŨ
+      }
       const completeHtml = rebuildCompleteHtml(
         quillBody,
         contractSubject,
-        cached.allStyles
+        allStyles,
+        signContent,
+        headerContent
       );
       const subject = contractSubject || `Hợp đồng Đại lý ${contractNo}`;
       const currentBodyContent = quillBody || htmlContent || '';
@@ -239,6 +252,7 @@ export const useTemplateActions = (
     resetStates,
     setTemplateData,
     setTemplateLoaded,
-    contextHolder
+    contextHolder,
+    allStyles
   };
 };
