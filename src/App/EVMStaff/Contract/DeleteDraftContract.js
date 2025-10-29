@@ -13,6 +13,7 @@ import { message } from "antd";
       return {
         success: false,
         error: error.response?.data?.message || 'Có lỗi xảy ra khi xóa hợp đồng đại lý',
+        details: error.response?.data || error.message
       };
     }
   }
