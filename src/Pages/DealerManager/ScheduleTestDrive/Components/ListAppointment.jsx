@@ -10,26 +10,31 @@ import {
   Tooltip, 
   message,
   Modal,
-  Descriptions
+  Descriptions,
+  Select
 } from 'antd';
 import { 
   ScheduleOutlined, 
   EditOutlined, 
-  DeleteOutlined, 
   EyeOutlined,
   PlusOutlined
 } from '@ant-design/icons';
 import { GetAllAppointment } from '../../../../App/DealerManager/ScheduleManagement/GetAllAppointment';
+import { UpdateAppointment } from '../../../../App/DealerManager/ScheduleManagement/UpdateAppointment';
 import CreateAppointmentForm from './CreateAppointment';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 const ListAppointment = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [newStatus, setNewStatus] = useState(null);
+  const [updating, setUpdating] = useState(false);
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -47,6 +52,49 @@ const ListAppointment = () => {
   const handleDetailModalClose = () => {
     setIsDetailModalOpen(false);
     setSelectedAppointment(null);
+  };
+
+  const showEditModal = (record) => {
+    setSelectedAppointment(record);
+    setNewStatus(record.status);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditModalClose = () => {
+    setIsEditModalOpen(false);
+    setSelectedAppointment(null);
+    setNewStatus(null);
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!selectedAppointment || newStatus === null) {
+      message.warning('Vui lòng chọn trạng thái!');
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      const response = await UpdateAppointment.updateAppointmentStatus(
+        selectedAppointment.id,
+        newStatus
+      );
+
+      if (response.isSuccess || response.statusCode === 200) {
+        const successMessage = response.message || 'Cập nhật trạng thái thành công!';
+        message.success(successMessage);
+        handleEditModalClose();
+        fetchAppointments(); // Refresh list
+      } else {
+        const errorMessage = response.message || 'Cập nhật trạng thái thất bại!';
+        message.error(errorMessage);
+      }
+    } catch (error) {
+      console.error('Error updating appointment status:', error);
+      const errorMessage = error.response?.data?.message || 'Đã xảy ra lỗi khi cập nhật trạng thái';
+      message.error(errorMessage);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleAppointmentCreated = () => {
@@ -76,23 +124,11 @@ const ListAppointment = () => {
     fetchAppointments();
   }, []);
 
-  const handleDeleteAppointment = async (appointmentId) => {
-    try {
-      // Implement delete logic if API supports it
-      message.success('Xóa lịch hẹn thành công');
-      fetchAppointments(); // Refresh list
-    } catch (error) {
-      console.error('Error deleting appointment:', error);
-      message.error('Không thể xóa lịch hẹn');
-    }
-  };
-
   const getStatusBadge = (status) => {
     const statusMap = {
-      0: { text: 'Chờ xác nhận', color: 'warning' },
-      1: { text: 'Đã xác nhận', color: 'success' },
-      2: { text: 'Đã hoàn thành', color: 'default' },
-      3: { text: 'Đã hủy', color: 'error' },
+      1: { text: 'Hoạt động', color: 'success' },      // Active
+      2: { text: 'Đã hoàn thành', color: 'default' },   // Completed
+      3: { text: 'Đã hủy', color: 'error' },            // Canceled
     };
     const statusInfo = statusMap[status] || { text: 'Không xác định', color: 'default' };
     return <Badge status={statusInfo.color} text={statusInfo.text} />;
@@ -196,19 +232,12 @@ const ListAppointment = () => {
               onClick={() => showDetailModal(record)}
             />
           </Tooltip>
-          <Tooltip title="Chỉnh sửa">
+          <Tooltip title="Sửa trạng thái">
             <Button 
               icon={<EditOutlined />} 
               size="small" 
               type="default"
-            />
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <Button 
-              icon={<DeleteOutlined />} 
-              size="small" 
-              danger
-              onClick={() => handleDeleteAppointment(record.id)}
+              onClick={() => showEditModal(record)}
             />
           </Tooltip>
         </Space>
@@ -336,6 +365,84 @@ const ListAppointment = () => {
               {formatDateTime(selectedAppointment.createdAt)}
             </Descriptions.Item>
           </Descriptions>
+        )}
+      </Modal>
+
+      {/* Modal Sửa Trạng Thái */}
+      <Modal
+        title={
+          <Title level={4}>
+            <EditOutlined className="mr-2" />
+            Cập Nhật Trạng Thái Lịch Hẹn
+          </Title>
+        }
+        open={isEditModalOpen}
+        onCancel={handleEditModalClose}
+        footer={[
+          <Button key="cancel" onClick={handleEditModalClose}>
+            Hủy
+          </Button>,
+          <Button 
+            key="submit" 
+            type="primary" 
+            loading={updating}
+            onClick={handleUpdateStatus}
+          >
+            Cập Nhật
+          </Button>
+        ]}
+        width={500}
+      >
+        {selectedAppointment && (
+          <div>
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+              <Text strong className="block mb-2">
+                Thông Tin Lịch Hẹn
+              </Text>
+              <div>
+                <Text type="secondary">Khách hàng: </Text>
+                <Text strong>{selectedAppointment.customer?.customerName}</Text>
+              </div>
+              <div>
+                <Text type="secondary">Thời gian: </Text>
+                <Text strong>
+                  {formatDateTime(selectedAppointment.startTime)} - {formatTime(selectedAppointment.endTime)}
+                </Text>
+              </div>
+            </div>
+
+            <div>
+              <Text strong className="block mb-2">
+                Chọn Trạng Thái Mới <span style={{ color: 'red' }}>*</span>
+              </Text>
+              <Select
+                value={newStatus}
+                onChange={setNewStatus}
+                style={{ width: '100%' }}
+                placeholder="Chọn trạng thái"
+              >
+                <Option value={1}>
+                  <Badge status="success" text="Hoạt Động (Active)" />
+                </Option>
+                <Option value={2}>
+                  <Badge status="default" text="Đã Hoàn Thành (Completed)" />
+                </Option>
+                <Option value={3}>
+                  <Badge status="error" text="Đã Hủy (Canceled)" />
+                </Option>
+              </Select>
+            </div>
+
+            {newStatus !== null && (
+              <div className="mt-3 p-2 bg-gray-50 rounded">
+                <Text type="secondary">Trạng thái hiện tại: </Text>
+                {getStatusBadge(selectedAppointment.status)}
+                <br />
+                <Text type="secondary">Trạng thái mới: </Text>
+                {getStatusBadge(newStatus)}
+              </div>
+            )}
+          </div>
         )}
       </Modal>
     </>
