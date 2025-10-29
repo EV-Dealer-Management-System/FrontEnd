@@ -51,6 +51,9 @@ import GetAllCustomer from "./Pages/DealerManager/GetAllCustomer/GetAllCustomer"
 import CreateEVCustomer from "./Pages/DealerStaff/CreateEVCustomer/CreateEVCustomer";
 import GetAllEVCustomer from "./Pages/DealerStaff/GetAllEVCustomer/GetAllEVCustomer";
 import PaymentResponse from "./Pages/Payment/PaymentResponse";
+import Createvehicle from "./Pages/EVMStaff/Vehicle/CreateVehicle";
+import TemplateOverview from "./Pages/EVMStaff/Vehicle/TemplateOverview";
+
 function App() {
   return (
     <BrowserRouter>
@@ -182,6 +185,10 @@ function App() {
                   path="sales/schedule-test-drive"
                   element={<ScheduleTestDrive />}
                 />
+                <Route
+                  path="schedule/test-drive"
+                  element={<ScheduleTestDrive />}
+                />
                 <Route path="staff/staff-list" element={<DealerStaffList />} />
                 <Route
                   path="customers/get-all-customers"
@@ -227,6 +234,14 @@ function App() {
                 <Route
                   path="contracts/view-all-dealer-contracts"
                   element={<ViewAllContract />}
+                />
+                <Route
+                  path="vehicles/create-vehicle"
+                  element={<Createvehicle />}
+                />
+                <Route
+                  path="vehicles/template-overview"
+                  element={<TemplateOverview />}
                 />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ EVM Staff */}
                 <Route

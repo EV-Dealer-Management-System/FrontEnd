@@ -153,6 +153,56 @@ export const vehicleApi = {
       };
     }
   },
+  updateModel: async function (modelId, modelData) {
+    try {
+      const response = await api.put(     
+        `/ElectricVehicleModel/update-model/${modelId}`,
+        modelData
+      );
+      if (response.data?.isSuccess) {
+        return {
+          success: true,
+          data: response.data.result || response.data.data,
+          message: response.data.message || "Cập nhật model thành công!",
+        };
+      } else {
+        return {
+          success: false,
+          error: response.data?.message || "Không thể cập nhật model",
+        };
+      }
+    } catch (error) {
+      console.error("Error updating model:", error);
+      return {
+        success: false,
+        error: error.message || "Lỗi khi cập nhật model",
+      };
+    }
+  },
+ deleteModel: async function (modelId) {
+    try {
+      const response = await api.delete(     
+        `/ElectricVehicleModel/delete-model/${modelId}`
+      );
+      if (response.data?.isSuccess) { 
+        return {
+          success: true,
+          message: response.data.message || "Xóa model thành công!",
+        };
+      } else {
+        return {
+          success: false,   
+          error: response.data?.message || "Không thể xóa model",
+        };
+      }   
+    } catch (error) {
+      console.error("Error deleting model:", error);
+      return {
+        success: false,
+        error: error.message || "Lỗi khi xóa model",
+      };
+    }
+  },
 
   // === VERSION MANAGEMENT ===
   getAllVersions: async function () {
@@ -208,7 +258,85 @@ export const vehicleApi = {
       };
     }
   },
+updateVersion: async function (versionId, versionData) {
+    try {
+      const response = await api.put( 
+        `/ElectricVehicleVersion/update-version/${versionId}`,
+        versionData
+      );    
+      if (response.data?.isSuccess) { 
+        return {
+          success: true,
+          data: response.data.result || response.data.data,
+          message: response.data.message || "Cập nhật version thành công!",
+        };
+      } else {  
+        return {
+          success: false,
+          error: response.data?.message || "Không thể cập nhật version",
+        };
+      } 
+    } catch (error) {
+      console.error("Error updating version:", error);
+      return {
+        success: false,
+        error: error.message || "Lỗi khi cập nhật version",
+      };
+    } 
+  },
+  deleteVersion: async function (versionId) {
+    try {
+      const response = await api.delete(    
 
+        `/ElectricVehicleVersion/detele-version-by-id/${versionId}`,
+      );    
+      if (response.data?.isSuccess) { 
+        return {
+          success: true,
+          message: response.data.message || "Xóa version thành công!",
+        };
+      } else {   
+        return {
+          success: false, 
+          error: response.data?.message || "Không thể xóa version",
+        };
+      } 
+    } catch (error) {
+      console.error("Error deleting version:", error);
+      return {
+        success: false,
+        error: error.message || "Lỗi khi xóa version",
+      };
+    } 
+  },  
+getVersionByModelId: async function (modelId) {
+    try {
+      const response = await api.get(     
+        `/ElectricVehicleVersion/get-all-available-versions-by-model-id/${modelId}`
+      );
+      if (response.data?.isSuccess) {
+        return {
+          success: true,
+          data: response.data.result || response.data.data || [],
+        };
+      }
+  else {
+        return {
+          success: false,
+          data: [],
+          error: "API không trả về dữ liệu versions hợp lệ",
+        };
+      }
+    } catch (error) {
+      console.error("Error getting versions by model ID:", error);
+      return {
+        success: false,
+        data: [],
+        error: error.message || "Lỗi khi tải danh sách versions",
+      };
+    } 
+  },
+  // === COLOR MANAGEMENT ===
   getAllColors: async function () {
     try {
       const response = await api.get("/ElectricVehicleColor/get-all-colors");

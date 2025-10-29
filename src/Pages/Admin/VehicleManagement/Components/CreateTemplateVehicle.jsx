@@ -60,6 +60,42 @@ const getColorNameByCode = (colorCode) => {
   return found ? found.name : null;
 };
 
+/** ---- Helper: Get color HEX from colorName ---- */
+const getColorHexByName = (colorName) => {
+  if (!colorName) return "#cccccc"; // Default gray
+  
+  // Tìm trong popularColors
+  const found = popularColors.find(
+    (c) => c.name.toLowerCase().includes(colorName.toLowerCase()) ||
+           colorName.toLowerCase().includes(c.name.toLowerCase())
+  );
+  
+  if (found) return found.code;
+  
+  // Map một số màu phổ biến khác
+  const colorMap = {
+    'đỏ': '#DC143C',
+    'đen': '#000000',
+    'trắng': '#FFFFFF',
+    'xanh': '#006994',
+    'bạc': '#C0C0C0',
+    'xám': '#808080',
+    'vàng': '#FFD700',
+    'cam': '#FF4500',
+    'tím': '#663399',
+    'hồng': '#FF69B4',
+    'nâu': '#8B4513',
+  };
+  
+  for (const [key, value] of Object.entries(colorMap)) {
+    if (colorName.toLowerCase().includes(key)) {
+      return value;
+    }
+  }
+  
+  return "#cccccc"; // Default gray if not found
+};
+
 /** ---- Helpers: normalize API & extract error ---- */
 const normalizeApi = (res) => ({
   success: res?.success ?? res?.isSuccess ?? false,
@@ -171,6 +207,17 @@ function CreateTemplateVehicle() {
         const activeCount = templatesData.filter(t => t.isActive === true || t.isActive === 1).length;
         const inactiveCount = templatesData.filter(t => t.isActive === false || t.isActive === 0).length;
         console.log(`📊 Templates status: Active=${activeCount}, Inactive=${inactiveCount}`);
+        
+        // 🔍 Debug màu sắc
+        console.log("🎨 Color Debug - First template:", templatesData[0]);
+        if (templatesData[0]) {
+          console.log("🎨 Color object:", templatesData[0].color);
+          console.log("🎨 Color properties:", {
+            colorName: templatesData[0].color?.colorName,
+            colorCode: templatesData[0].color?.colorCode,
+            hexCode: templatesData[0].color?.hexCode
+          });
+        }
         
         setTemplatesList(templatesData);
         
@@ -322,18 +369,32 @@ function CreateTemplateVehicle() {
       key: "color",
       width: 150,
       render: (_, record) => {
-        const hexCode = record.color?.colorCode || record.color?.hexCode || "#ccc";
+        // 🔍 Debug: Log toàn bộ color object
+        console.log("🎨 Full color object:", record.color);
+        
         const colorName = record.color?.colorName || "N/A";
-        // ✅ Lấy tên màu đẹp từ popularColors nếu có
-        const prettyName = getColorNameByCode(hexCode) || colorName;
+        
+        // ✅ Ưu tiên lấy từ API, nếu không có thì tìm từ colorName
+        let hexCode = record.color?.colorCode || record.color?.hexCode;
+        
+        if (!hexCode) {
+          // Nếu API không trả về hex code, tìm từ colorName
+          hexCode = getColorHexByName(colorName);
+          console.log("🎨 Generated hex from colorName:", colorName, "=>", hexCode);
+        }
         
         // 🔍 Debug log để kiểm tra
-        console.log("Color Debug:", { 
+        console.log("🎨 Color Debug:", { 
+          record: record,
+          colorObject: record.color,
+          colorName,
           hexCode, 
-          colorName, 
-          prettyName,
-          found: getColorNameByCode(hexCode) ? "✅ Matched" : "❌ No match"
+          rawColorCode: record.color?.colorCode,
+          rawHexCode: record.color?.hexCode,
         });
+        
+        // ✅ Lấy tên màu đẹp từ popularColors nếu có
+        const prettyName = getColorNameByCode(hexCode) || colorName;
         
         return (
           <div className="flex items-center gap-2">
@@ -584,6 +645,14 @@ function CreateTemplateVehicle() {
               Hoạt động: <strong className="text-green-600">{templatesList.filter(t => t.isActive === true || t.isActive === 1).length}</strong> |{" "}
               Đã xóa: <strong className="text-red-600">{templatesList.filter(t => t.isActive === false || t.isActive === 0).length}</strong>
             </p>
+            {templatesList.length > 0 && templatesList[0].color && (
+              <p className="text-xs text-gray-600 mt-2 p-2 bg-gray-100 rounded">
+                🔍 Debug màu sắc (template đầu tiên): 
+                colorName=<code>{templatesList[0].color?.colorName || 'null'}</code> | 
+                colorCode=<code>{templatesList[0].color?.colorCode || 'null'}</code> | 
+                hexCode=<code>{templatesList[0].color?.hexCode || 'null'}</code>
+              </p>
+            )}
             <p className="text-xs text-gray-500 mt-1">
               Khi xóa template, trạng thái isActive sẽ chuyển từ <strong>true → false</strong> (soft delete)
             </p>
@@ -1256,7 +1325,7 @@ function CreateTemplateVehicle() {
             description={
               <div>
                 <p className="text-sm">
-                  Template sẽ không bị xóa vĩnh viễn khỏi hệ thống, chỉ chuyển trạng thái.
+                  Template sẽ không bị xóa , chỉ chuyển trạng thái.
                 </p>
               </div>
             }

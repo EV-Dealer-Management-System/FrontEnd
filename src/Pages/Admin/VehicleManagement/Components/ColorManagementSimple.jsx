@@ -125,22 +125,7 @@ function ColorManagement() {
     setIsModalVisible(true);
   };
 
-  const handleDelete = async (colorId) => {
-    setLoading(true);
-    try {
-      const result = await vehicleApi.deleteColor(colorId);
-      if (result.success) {
-        message.success("Xóa màu sắc thành công!");
-        await loadColors();
-      } else {
-        message.error(result.error || "Không thể xóa màu sắc");
-      }
-    } catch (err) {
-      message.error("Lỗi khi xóa màu sắc");
-    } finally {
-      setLoading(false);
-    }
-  };
+ 
 
   const handleSubmit = async (values) => {
     setLoading(true);
@@ -285,17 +270,7 @@ function ColorManagement() {
           <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             Sửa
           </Button>
-          <Popconfirm
-            title="Xác nhận xóa"
-            description="Bạn chắc chắn muốn xóa màu này?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button size="small" danger icon={<DeleteOutlined />}>
-              Xóa
-            </Button>
-          </Popconfirm>
+        
         </Space>
       ),
     },

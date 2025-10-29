@@ -21,7 +21,8 @@ import {
   QuestionCircleOutlined,
   ShoppingCartOutlined,
   DollarOutlined,
-  ThunderboltOutlined
+  ThunderboltOutlined,
+  ScheduleOutlined // Thêm icon lịch hẹn
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -115,7 +116,19 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <GlobalOutlined />,
             component: "./InventoryHistory",
           },
-        
+        ],
+      },
+      {
+        path: "/dealer/schedule",
+        name: "Quản lý Lịch hẹn",
+        icon: <ScheduleOutlined />,
+        routes: [
+          {
+            path: "/dealer-manager/schedule/test-drive",
+            name: "Lịch hẹn lái thử",
+            icon: <ScheduleOutlined />,
+            component: "./ScheduleTestDrive",
+          }
         ],
       },
       {
@@ -137,7 +150,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           },
         ],
       },
-       {
+      {
         path: "/dealer-manager/customers",
         name: "Quản lý khách hàng",
         icon: <TeamOutlined />,

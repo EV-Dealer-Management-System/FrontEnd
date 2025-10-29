@@ -15,7 +15,10 @@ import {
   BankOutlined,
   AuditOutlined,
   ContainerOutlined,
-  ThunderboltOutlined
+  ThunderboltOutlined,
+  CarOutlined,
+  PlusOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 const { Text } = Typography;
@@ -53,6 +56,25 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         name: "Tổng quan",
         icon: <DashboardOutlined />,
         component: "./Dashboard",
+      },
+      {
+        path: "/evm-staff/vehicles",
+        name: "Quản lý xe",
+        icon: <CarOutlined />,
+        routes: [
+          {
+            path: "/evm-staff/vehicles/template-overview",
+            name: "Tổng quan Templates",
+            icon: <EyeOutlined />,
+            component: "./TemplateOverview",
+          },
+          {
+            path: "/evm-staff/vehicles/create-vehicle",
+            name: "Tạo xe",
+            icon: <PlusOutlined />,
+            component: "./CreateVehicle",
+          },
+        ],
       },
       {
         path: "/evm-staff/contracts",
