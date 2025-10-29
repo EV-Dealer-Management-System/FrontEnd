@@ -44,7 +44,7 @@ import SmartCAModal from '../../Admin/SignContract/Components/SmartCAModal';
 import SmartCASelector from '../../Admin/SignContract/Components/SmartCASelector';
 
 // Reuse Contract service
-import { ContractService } from '../../../App/Home/SignContractCustomer';
+import {  SignContract } from '../../../App/EVMAdmin/SignContractEVM/SignContractEVM';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -60,6 +60,9 @@ function BookingContract() {
   const [smartCAInfo, setSmartCAInfo] = useState(null);
   const [selectedSmartCA, setSelectedSmartCA] = useState(null);
   const [showSmartCASelector, setShowSmartCASelector] = useState(false);
+  const [showAddSmartCAModal, setShowAddSmartCAModal] = useState(false);
+  // EVC User Info State
+  const [evcUser, setEvcUser] = useState({ accessToken: '', userId: '' });
 
   // Hooks logic
   const { contracts, loading, filters, updateFilter, reload } = useFetchContracts();
@@ -67,7 +70,31 @@ function BookingContract() {
   
   // Reuse Contract Signing system
   const contractSigning = useContractSigning();
-  const contractService = ContractService();
+  const contractService = SignContract();
+
+  // Lấy EVC AccessToken khi mở trang
+  useEffect(() => {
+  const fetchEVCUser = async () => {
+    try {
+      const res = await contractService.getAccessTokenForEVC();
+      setEvcUser(res);
+      console.log('EVC AccessToken + UserId:', res);
+    } catch (err) {
+      console.error('Lỗi khi lấy AccessToken EVC:', err);
+    }
+  };
+  fetchEVCUser();
+}, []);
+
+  // Hàm kiểm tra SmartCA có lựa chọn hợp lệ không
+  const getSmartCAChoices = (info) => {
+    if (!info) return { hasChoices: false, hasValidChoices: false };
+    const defaultExists = !!info.defaultSmartCa;
+    const userCerts = Array.isArray(info.userCertificates) ? info.userCertificates : [];
+    const hasChoices = defaultExists || userCerts.length > 0;
+    const hasValidChoices = (info.defaultSmartCa?.isValid) || userCerts.some(c => c.isValid);
+    return { hasChoices, hasValidChoices };
+  };
 
   // Hàm xử lý mở chi tiết hợp đồng
   const handleViewContract = async (record) => {
@@ -113,17 +140,15 @@ function BookingContract() {
     setSmartCAInfo(smartCAData);
     }
     
-    // Tự động chọn SmartCA nếu có sẵn
-    if(!selectedSmartCA) {
+    const userCerts = smartCAData?.userCertificates || [];
+    if (!selectedSmartCA) {
       if (smartCAData?.defaultSmartCa?.isValid) {
         setSelectedSmartCA(smartCAData.defaultSmartCa);
-      } else if (smartCAData?.userCertificates?.length > 0) {
-        const validCert = smartCAData.userCertificates.find(cert => cert.isValid);
-        if (validCert) {
-          setSelectedSmartCA(validCert);
-        }
+      } else {
+        const validCert = userCerts.find(c => c.isValid);
+        if (validCert) setSelectedSmartCA(validCert);
       }
-    } 
+    }
   };
 
   // Hàm mở signature modal (có SmartCA rồi)
@@ -373,58 +398,118 @@ function BookingContract() {
                 {/* SmartCA Status */}
                 <div className="border rounded-lg p-4">
                   <Title level={5}>SmartCA cho Admin</Title>
-                  
-                  {/* SmartCA Status Checker */}
-                  {!smartCAInfo && (
-                    <SmartCAStatusChecker
-                      userId="18858" // Fixed admin user ID for EVM
-                      contractService={contractService}
-                      onChecked={handleSmartCAChecked}
-                    />
-                  )}
-                  
-                  {!smartCAInfo && (
-                    <Alert
-                      message="Đang kiểm tra SmartCA..."
-                      type="info"
-                      showIcon
-                      className="mb-3"
-                    />
-                  )}
 
-                  {smartCAInfo && (
-                    <div className="space-y-3">
-                      {selectedSmartCA ? (
-                        <Alert
-                          message="SmartCA đã sẵn sàng"
-                          description={
-                            <div>
-                              <div><strong>Chứng thư:</strong> {selectedSmartCA.commonName}</div>
-                              <div><strong>UID:</strong> {selectedSmartCA.uid}</div>
-                            </div>
-                          }
-                          type="success"
-                          action={
-                            <Button size="small" onClick={() => setShowSmartCASelector(true)}>
-                              Đổi
-                            </Button>
-                          }
+                  {!smartCAInfo && (
+                      <>
+                        <SmartCAStatusChecker
+                          userId={evcUser.userId}
+                          contractService={contractService}
+                          onChecked={handleSmartCAChecked}
                         />
-                      ) : (
                         <Alert
-                          message="Chưa chọn SmartCA"
-                          description="Cần chọn chứng thư số để ký hợp đồng"
-                          type="warning"
-                          action={
-                            <Button size="small" type="primary" onClick={() => setShowSmartCASelector(true)}>
-                              Chọn
-                            </Button>
-                          }
+                          message="Đang kiểm tra SmartCA..."
+                          type="info"
+                          showIcon
+                          className="mb-3"
                         />
-                      )}
-                    </div>
-                  )}
-                </div>
+                      </>
+                    )}
+
+                      {/* Khi đã có kết quả kiểm tra */}
+                      {smartCAInfo && (() => {
+                        const { hasChoices, hasValidChoices } = getSmartCAChoices(smartCAInfo);
+
+                        // ====== Trường hợp KHÔNG có lựa chọn nào: cho phép Add SmartCA ======
+                        if (!hasChoices) {
+                          return (
+                            <>
+                              <Alert
+                                message="Không tìm thấy chứng thư số"
+                                description="Bạn có thể thêm SmartCA mới bằng CCCD/CMND (serial tuỳ chọn)."
+                                type="warning"
+                                showIcon
+                                className="mb-3"
+                              />
+                              <Button type="primary" onClick={() => setShowAddSmartCAModal(true)}>
+                                Thêm SmartCA
+                              </Button>
+
+                              <AddSmartCA
+                                visible={showAddSmartCAModal}
+                                onCancel={() => setShowAddSmartCAModal(false)}
+                                onSuccess={(res) => {
+                                  // Gắn chứng thư mới vào danh sách để ngay lập tức có "lựa chọn"
+                                  setSmartCAInfo(prev => ({
+                                    ...(prev || {}),
+                                    userCertificates: [...(prev?.userCertificates || []), res.smartCAData].filter(Boolean),
+                                    defaultSmartCa: (prev?.defaultSmartCa) || null,
+                                  }));
+                                  // Nếu chứng thư mới hợp lệ thì chọn luôn
+                                  if (res.hasValidSmartCA && res.smartCAData) {
+                                    setSelectedSmartCA(res.smartCAData);
+                                  }
+                                  setShowAddSmartCAModal(false);
+                                  message.success('SmartCA mới đã được thêm!');
+                                }}
+                                contractInfo={{
+                                  // có thể truyền thêm accessToken nếu cần
+                                  userId: evcUser.userId,
+                                  accessToken: evcUser.accessToken
+                                }}
+                              />
+                            </>
+                          );
+                        }
+                        // ====== Có lựa chọn (dù hợp lệ hay chưa) ======
+                        return (
+                          <div className="space-y-3">
+                            {selectedSmartCA ? (
+                              <Alert
+                                message="SmartCA đã sẵn sàng"
+                                description={
+                                  <div>
+                                    <div><strong>Chứng thư:</strong> {selectedSmartCA.commonName}</div>
+                                    <div><strong>UID:</strong> {selectedSmartCA.uid}</div>
+                                  </div>
+                                }
+                                type={hasValidChoices ? 'success' : 'warning'}
+                                action={
+                                  <Button size="small" onClick={() => setShowSmartCASelector(true)}>
+                                    Đổi
+                                  </Button>
+                                }
+                              />
+                            ) : (
+                              <Alert
+                                message={hasValidChoices ? 'Chưa chọn SmartCA' : 'Chưa có chứng thư hợp lệ'}
+                                description={hasValidChoices
+                                  ? 'Vui lòng chọn chứng thư số để ký hợp đồng'
+                                  : 'Hệ thống có chứng thư nhưng chưa hợp lệ; bạn có thể thêm chứng thư mới.'}
+                                type="warning"
+                                action={
+                                  <Space>
+                                    {hasValidChoices ? (
+                                      <Button size="small" type="primary" onClick={() => setShowSmartCASelector(true)}>
+                                        Chọn
+                                      </Button>
+                                    ) : (
+                                      <>
+                                        <Button size="small" onClick={() => setShowSmartCASelector(true)}>
+                                          Xem danh sách
+                                        </Button>
+                                        <Button size="small" type="primary" onClick={() => setShowAddSmartCAModal(true)}>
+                                          Thêm SmartCA
+                                        </Button>
+                                      </>
+                                    )}
+                                  </Space>
+                                }
+                              />
+                            )}
+                          </div>
+                        );
+                      })()}
+                      </div>
               </div>
             </Col>
 
@@ -494,7 +579,7 @@ function BookingContract() {
         loading={contractSigning.signingLoading}
         currentSelectedId={selectedSmartCA?.id}
         contractService={contractService}
-        userId="18858" // Fixed admin user ID for EVM
+        userId={evcUser.userId} // Fixed admin user ID for EVM
       />
 
       {/* PDF Modal - Reuse từ SignContract system */}
