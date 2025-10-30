@@ -1,14 +1,14 @@
 import React from 'react';
 import { Typography, Card } from 'antd';
 import { CommentOutlined } from '@ant-design/icons';
-import DealerManagerLayout from '../../../Components/DealerManager/DealerManagerLayout';
+import DealerStaffLayout from '../../../Components/DealerStaff/DealerStaffLayout';
 import GetAllFeedBack from './Components/GetAllFeedBack';
 
 const { Title } = Typography;
 
 const FeedBack = () => {
   return (
-    <DealerManagerLayout>
+    <DealerStaffLayout>
       <div style={{ 
         position: 'fixed',
         top: 0,
@@ -41,7 +41,7 @@ const FeedBack = () => {
           <GetAllFeedBack />
         </div>
       </div>
-    </DealerManagerLayout>
+    </DealerStaffLayout>
   );
 };
 

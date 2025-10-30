@@ -24,6 +24,7 @@ import {
   PlusOutlined,
   ThunderboltOutlined
 } from "@ant-design/icons";
+import { CommentOutlined } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const { Text } = Typography;
@@ -120,6 +121,19 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             name: "Mẫu xe và chi tiết",
             icon: <GlobalOutlined />,
             component: "./EVVersionDetails",
+          },
+        ],
+      },
+      {
+        path: "/dealer-staff/feedback",
+        name: "Feedback",
+        icon: <CommentOutlined />,
+        routes: [
+          {
+            path: "/dealer-staff/feedback/all",
+            name: "Quản lý Feedback",
+            icon: <CommentOutlined />,
+            component: "./FeedbackList",
           },
         ],
       },

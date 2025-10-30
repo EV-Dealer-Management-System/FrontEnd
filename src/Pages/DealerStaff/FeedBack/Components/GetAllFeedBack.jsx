@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Tag, Space, Input, Typography, message, Image } from 'antd';
+import { Table, Card, Button, Tag, Space, Input, Typography, message, Image, Modal } from 'antd';
 import { PlusOutlined, SearchOutlined, StarOutlined, PictureOutlined } from '@ant-design/icons';
-import { GetAllCustomerFeedBack } from '../../../../App/DealerManager/FeedBackManagement/GetAllCustomerFeedBack';
+import { GetAllCustomerFeedBack } from '../../../../App/DealerStaff/FeedBackManagement/GetAllCustomerFeedBack';
+import CreateFeedBack from './CreateFeedBack';
 
 const { Text } = Typography;
 
@@ -9,6 +10,7 @@ const GetAllFeedBack = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
   const [searchText, setSearchText] = useState('');
+  const [createVisible, setCreateVisible] = useState(false);
 
   useEffect(() => {
     fetchFeedbacks();
@@ -152,7 +154,7 @@ const GetAllFeedBack = () => {
             Làm mới
           </Button>
         </Space>
-        <Button type="primary" icon={<PlusOutlined />}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateVisible(true)}>
           Tạo Feedback Mới
         </Button>
       </div>
@@ -184,9 +186,18 @@ const GetAllFeedBack = () => {
             defaultPageSize: 10,
             showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} feedback`,
           }}
-          scroll={{ x: 1400 }}
         />
       </Card>
+      <Modal
+        open={createVisible}
+        onCancel={() => setCreateVisible(false)}
+        footer={null}
+        width={700}
+        destroyOnClose
+        title="Tạo Feedback"
+      >
+        <CreateFeedBack onSuccess={fetchFeedbacks} onCancel={() => setCreateVisible(false)} />
+      </Modal>
     </>
   );
 };
