@@ -55,6 +55,8 @@ import PaymentResponse from "./Pages/Payment/PaymentResponse";
 import Createvehicle from "./Pages/EVMStaff/Vehicle/CreateVehicle";
 import TemplateOverview from "./Pages/EVMStaff/Vehicle/TemplateOverview";
 import FeedbackDealerStaff from "./Pages/DealerManager/StaffFeedback/FeedbackDealerStaff";
+import UpdateStatusCustomerFeedback from "./Pages/DealerManager/ManageCusFeedback/UpdateStatusCustomerFeedback";
+import UpdateStatusStaffFeedback from "./Pages/EVMStaff/StaffFeedbackManage/UpdateStatusStaffFeedback";
 
 function App() {
   return (
@@ -205,6 +207,7 @@ function App() {
                   path="staff/create-dealer-staff-account"
                   element={<CreateDealerAccount />}
                 />
+                <Route path="customer-feedback/all" element={<UpdateStatusCustomerFeedback />} />
                 <Route path="staff-feedback/all" element={<FeedbackDealerStaff />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}
                 <Route
@@ -246,6 +249,10 @@ function App() {
                 <Route
                   path="vehicles/template-overview"
                   element={<TemplateOverview />}
+                />
+                <Route
+                  path="dealer-feedback/all"
+                  element={<UpdateStatusStaffFeedback />}
                 />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ EVM Staff */}
                 <Route

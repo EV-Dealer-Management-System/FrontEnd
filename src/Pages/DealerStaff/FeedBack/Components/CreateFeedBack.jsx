@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Typography, Upload, Select, message, Spin } from 'antd';
+import { Form, Input, Button, Card, Typography, Upload, Select, Spin, Tooltip, App } from 'antd';
 import { SendOutlined, PlusOutlined } from '@ant-design/icons';
 import { CreateCustomerFeedBack } from '../../../../App/DealerStaff/FeedBackManagement/CreateCustomerFeedBack';
 import { UploadFileFeedback } from '../../../../App/DealerStaff/FeedBackManagement/UploadFileFeedback';
@@ -10,6 +10,7 @@ const { Title } = Typography;
 const { Option } = Select;
 
 const CreateFeedBack = ({ onSuccess, onCancel }) => {
+  const { message } = App.useApp(); // Sử dụng hook từ AntdApp
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [fileList, setFileList] = useState([]);
@@ -34,28 +35,30 @@ const CreateFeedBack = ({ onSuccess, onCancel }) => {
 
   const customUpload = async ({ file, onSuccess, onError }) => {
     try {
-      // 1. Lấy uploadUrl + objectKey từ backend (gửi JSON)
       const res = await UploadFileFeedback.uploadFileFeedback({
-        fileName: file.name,
-        contentType: file.type,
+        fileName: `${file.name.replace(/\.[^/.]+$/, '')}.png`,
+        contentType: 'image/jpeg',
       });
+      
       const uploadUrl = res?.result?.uploadUrl || res?.data?.uploadUrl;
       const objectKey = res?.result?.objectKey || res?.data?.objectKey;
-      if (!uploadUrl || !objectKey) throw new Error("Thiếu uploadUrl hoặc objectKey");
+      
+      if (!uploadUrl || !objectKey) {
+        throw new Error("Thiếu uploadUrl hoặc objectKey");
+      }
 
-      // 2. Upload file thực tới S3 qua pre-signed URL
       await fetch(uploadUrl, {
         method: "PUT",
-        headers: { "Content-Type": file.type },
+        headers: { "Content-Type": 'image/jpeg' },
         body: file,
       });
 
-      // Gán key vào response để Antd quản lý đúng
       onSuccess({ attachmentKey: objectKey }, file);
+      message.success(`${file.name} upload thành công`);
     } catch (e) {
       onError(e);
-      message.error("Upload ảnh thất bại!");
-      console.error(e);
+      message.error(`${file.name} upload thất bại!`);
+      console.error('Upload error:', e);
     }
   };
 
@@ -68,7 +71,6 @@ const CreateFeedBack = ({ onSuccess, onCancel }) => {
     if (submitting) return;
     setSubmitting(true);
     try {
-      // Lấy key từ file.response.attachmentKey
       const attachmentKeys = fileList
         .map((file) => file.response?.attachmentKey)
         .filter(Boolean);
@@ -77,31 +79,33 @@ const CreateFeedBack = ({ onSuccess, onCancel }) => {
         customerId: values.customerId,
         feedbackContent: values.feedbackContent,
         attachmentKeys,
-        status: 1,
+        status: 0, // Pending - trạng thái mặc định khi tạo mới
       };
 
-      message.loading({ content: 'Đang tạo feedback...', key: 'create', duration: 0 });
       const res = await CreateCustomerFeedBack.createCustomerFeedBack(payload);
-      message.destroy('create');
+      
       if (res?.isSuccess || res?.success) {
-        message.success(res?.message || 'Tạo feedback thành công');
         form.resetFields();
         setFileList([]);
-        onSuccess && onSuccess();
+        
+        const successMessage = res?.message || 'Tạo feedback thành công!';
+        onSuccess && onSuccess(successMessage);
         onCancel && onCancel();
       } else {
         message.error(res?.message || res?.error || 'Tạo feedback thất bại');
       }
     } catch (e) {
-      message.destroy('create');
-      message.error('Đã xảy ra lỗi. Vui lòng thử lại.');
-      console.error(e);
+      message.error('Đã xảy ra lỗi khi tạo feedback. Vui lòng thử lại!');
+      console.error('Error creating feedback:', e);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const allUploaded = fileList.every(file => file.status === 'done' && file.response && file.response.attachmentKey);
+  // Kiểm tra xem tất cả ảnh đã upload xong chưa
+  const allUploaded = fileList.length === 0 || fileList.every(
+    (file) => file.status === 'done' && file.response?.attachmentKey
+  );
 
   return (
     <Card>
@@ -137,35 +141,56 @@ const CreateFeedBack = ({ onSuccess, onCancel }) => {
           <TextArea rows={4} placeholder="Nhập nội dung feedback" />
         </Form.Item>
 
-        <Form.Item label="Hình ảnh đính kèm (tối đa 8)">
+        <Form.Item label="Hình ảnh đính kèm (Tối đa 8 ảnh)">
           <Upload
             listType="picture-card"
             fileList={fileList}
-            onChange={handleChange}
             customRequest={customUpload}
-            accept="image/*"
+            onChange={handleChange}
+            beforeUpload={(file) => {
+              const isImage = file.type.startsWith('image/');
+              if (!isImage) {
+                message.error('Chỉ được upload file ảnh!');
+                return Upload.LIST_IGNORE;
+              }
+              const isLt5M = file.size / 1024 / 1024 < 5;
+              if (!isLt5M) {
+                message.error('Ảnh phải nhỏ hơn 5MB!');
+                return Upload.LIST_IGNORE;
+              }
+              return true;
+            }}
+            onRemove={(file) => {
+              const index = fileList.indexOf(file);
+              const newFileList = fileList.slice();
+              newFileList.splice(index, 1);
+              setFileList(newFileList);
+            }}
           >
             {fileList.length >= 8 ? null : (
               <div>
                 <PlusOutlined />
-                <div style={{ marginTop: 8 }}>Upload</div>
+                <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
               </div>
             )}
           </Upload>
         </Form.Item>
 
         <Form.Item>
-          <Button
-            type="primary"
-            htmlType="submit"
-            icon={<SendOutlined />}
-            loading={submitting}
-            block
-            disabled={!allUploaded || submitting}
-            title={!allUploaded ? 'Vui lòng chờ upload ảnh xong!' : ''}
+          <Tooltip
+            title={!allUploaded ? "Vui lòng đợi tất cả ảnh upload xong" : ""}
           >
-            Gửi Feedback
-          </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              icon={<SendOutlined />}
+              loading={submitting}
+              block
+              disabled={!allUploaded || submitting}
+            >
+              Gửi Feedback
+            </Button>
+          </Tooltip>
         </Form.Item>
       </Form>
     </Card>

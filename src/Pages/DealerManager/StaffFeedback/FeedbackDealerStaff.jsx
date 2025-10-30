@@ -1,8 +1,8 @@
 import React from 'react';
-import { Typography, Card } from 'antd';
+import { Typography } from 'antd';
 import { CommentOutlined } from '@ant-design/icons';
-import DealerManagerLayout from '../../Components/DealerManager/DealerManagerLayout';
-import GetAllFeedBack from '../DealerStaff/FeedBack/Components/GetAllFeedBack';
+import DealerManagerLayout from '../../../Components/DealerManager/DealerManagerLayout';
+import GetStaffFeedback from './Components/GetStaffFeedback';
 
 const { Title } = Typography;
 
@@ -23,22 +23,22 @@ const FeedbackDealerStaff = () => {
         backgroundColor: '#f0f2f5',
         zIndex: 1
       }}>
-        <div style={{ 
-          padding: '16px 24px', 
-          borderBottom: '1px solid #d9d9d9',
-          backgroundColor: '#fff'
-        }}>
-          <Title level={3} style={{ margin: 0 }}>
-            <CommentOutlined style={{ color: '#1890ff', marginRight: 8 }} />
-            Quản Lý Lịch Feedback Dealer Staff
-          </Title>
-        </div>
+                <div style={{
+                  padding: '16px 24px',
+                  borderBottom: '1px solid #d9d9d9',
+                  backgroundColor: '#fff'
+                }}>
+                  <Title level={3} style={{ margin: 0 }}>
+                    <CommentOutlined style={{ color: '#1890ff', marginRight: 8 }} />
+                    Quản Lý Feedback Dealer Staff
+                  </Title>
+                </div>
         <div style={{ 
           height: 'calc(100vh - 80px)',
           overflow: 'auto',
           padding: '24px'
         }}>
-          <GetAllFeedBack />
+          <GetStaffFeedback />
         </div>
       </div>
     </DealerManagerLayout>

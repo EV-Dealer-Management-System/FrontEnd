@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Tag, Space, Input, Typography, Image, Modal, App } from 'antd';
-import { PlusOutlined, SearchOutlined, StarOutlined, PictureOutlined } from '@ant-design/icons';
+import { Table, Card, Tag, Space, Input, Typography, Image, Button, Select, message, App } from 'antd';
+import { SearchOutlined, StarOutlined, EditOutlined } from '@ant-design/icons';
 import { GetAllCustomerFeedBack } from '../../../../App/DealerStaff/FeedBackManagement/GetAllCustomerFeedBack';
-import CreateFeedBack from './CreateFeedBack';
+import { UpdateStatusCustomerFeedback as UpdateStatusAPI } from '../../../../App/DealerManager/ManageCustomerFeedback/UpdateStatusCustomerFeedback';
 
 const { Text } = Typography;
+const { Option } = Select;
 
-const GetAllFeedBack = () => {
-  const { message } = App.useApp();
+const ManageCustomerFeedback = () => {
+  const { message: messageApi } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
   const [searchText, setSearchText] = useState('');
-  const [createVisible, setCreateVisible] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
     fetchFeedbacks();
@@ -25,13 +26,32 @@ const GetAllFeedBack = () => {
       if (response.isSuccess) {
         setData(response.result || []);
       } else {
-        message.error(response.message || 'Không thể tải danh sách feedback');
+        messageApi.error(response.message || 'Không thể tải danh sách feedback');
       }
     } catch (error) {
       console.error('Error fetching feedbacks:', error);
-      message.error('Đã xảy ra lỗi khi tải danh sách feedback');
+      messageApi.error('Đã xảy ra lỗi khi tải danh sách feedback');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateStatus = async (feedbackId, newStatus) => {
+    try {
+      setUpdatingId(feedbackId);
+      const response = await UpdateStatusAPI.updateStatusCustomerFeedback(feedbackId, newStatus);
+
+      if (response?.isSuccess || response?.success) {
+        messageApi.success('Cập nhật trạng thái thành công!');
+        fetchFeedbacks();
+      } else {
+        messageApi.error(response?.message || 'Cập nhật trạng thái thất bại');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      messageApi.error('Đã xảy ra lỗi khi cập nhật trạng thái');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -100,7 +120,7 @@ const GetAllFeedBack = () => {
       dataIndex: 'imgUrls',
       key: 'imgUrls',
       align: 'center',
-      width: 100,
+      width: 120,
       render: (imgUrls) => {
         if (!imgUrls || imgUrls.length === 0) {
           return <Text type="secondary">Không có</Text>;
@@ -115,7 +135,6 @@ const GetAllFeedBack = () => {
                   height={30}
                   src={url}
                   style={{ objectFit: 'cover', borderRadius: 4 }}
-                  fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
                 />
               ))}
             </Image.PreviewGroup>
@@ -133,86 +152,74 @@ const GetAllFeedBack = () => {
       render: (status) => getStatusBadge(status),
     },
     {
+      title: 'Cập nhật trạng thái',
+      key: 'updateStatus',
+      align: 'center',
+      width: 180,
+      render: (_, record) => {
+        // Chỉ cho phép chuyển từ Chờ xử lý (0) sang Đã trả lời (3) hoặc Đã hủy (4)
+        const isDisabled = record.status !== 0 || updatingId === record.id;
+        
+        return (
+          <Select
+            value={record.status}
+            onChange={(value) => handleUpdateStatus(record.id, value)}
+            loading={updatingId === record.id}
+            disabled={isDisabled}
+            style={{ width: 150 }}
+          >
+            <Option value={0}>Chờ xử lý</Option>
+            <Option value={3} disabled={record.status !== 0}>Đã trả lời</Option>
+            <Option value={4} disabled={record.status !== 0}>Đã hủy</Option>
+          </Select>
+        );
+      },
+    },
+    {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 150,
+      width: 130,
       render: (date) => new Date(date).toLocaleDateString('vi-VN'),
     },
   ];
 
   return (
-    <>
+    <Card>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Space>
           <Input
-            placeholder="Tìm kiếm theo tên, email, SĐT..."
+            placeholder="Tìm kiếm theo tên, email, SĐT, nội dung..."
             prefix={<SearchOutlined />}
             style={{ width: 350 }}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             allowClear
           />
-          <Button onClick={fetchFeedbacks} loading={loading}>
-            Làm mới
-          </Button>
+          <Button onClick={fetchFeedbacks} loading={loading}>Làm mới</Button>
         </Space>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateVisible(true)}>
-          Tạo Feedback Mới
-        </Button>
+        <Space>
+          <StarOutlined style={{ color: '#faad14', fontSize: 18 }} />
+          <Text strong>Quản lý Feedback Customer</Text>
+        </Space>
       </div>
-
-      <Card
-        title={
-          <Space>
-            <StarOutlined style={{ color: '#faad14' }} />
-            <Text strong>Danh Sách Feedback</Text>
-          </Space>
-        }
-        extra={
-          <Space>
-            <Text type="secondary">
-              Hiển thị: {filteredData.length} / {data.length} feedback
-            </Text>
-          </Space>
-        }
-      >
-        <Table
-          columns={columns}
-          dataSource={filteredData}
-          loading={loading}
-          rowKey="id"
-          pagination={{
-            showSizeChanger: true,
-            showQuickJumper: true,
-            pageSizeOptions: [10, 20, 50, 100],
-            defaultPageSize: 10,
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} feedback`,
-          }}
-        />
-      </Card>
-      <Modal
-        open={createVisible}
-        onCancel={() => setCreateVisible(false)}
-        footer={null}
-        width={700}
-        destroyOnClose
-        title="Tạo Feedback"
-      >
-        <CreateFeedBack
-          onSuccess={(responseMessage) => {
-            setCreateVisible(false);
-            fetchFeedbacks();
-            setTimeout(() => {
-              message.success(responseMessage || 'Tạo feedback thành công!');
-            }, 200);
-          }}
-          onCancel={() => setCreateVisible(false)}
-        />
-      </Modal>
-    </>
+      <Table
+        columns={columns}
+        dataSource={filteredData}
+        loading={loading}
+        rowKey="id"
+        pagination={{
+          showSizeChanger: true,
+          showQuickJumper: true,
+          pageSizeOptions: [10, 20, 50, 100],
+          defaultPageSize: 10,
+          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} feedback`,
+        }}
+        scroll={{ x: true }}
+      />
+    </Card>
   );
 };
 
-export default GetAllFeedBack;
+export default ManageCustomerFeedback;
 

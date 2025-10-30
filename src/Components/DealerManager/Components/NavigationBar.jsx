@@ -196,19 +196,6 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         ],
       },
       {
-        path: "/dealer/feedback",
-        name: "Feedback",
-        icon: <CommentOutlined />,
-        routes: [
-          {
-            path: "/dealer-manager/feedback/all",
-            name: "Quản lý Feedback",
-            icon: <CommentOutlined />,
-            component: "./FeedbackList",
-          },
-        ],
-      },
-      {
         path: "/dealer/settings",
         name: "Cài đặt",
         icon: <SettingOutlined />,
@@ -223,13 +210,26 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         ],
       },
       {
+        path: "/dealer-manager/customer-feedback",
+        name: "Feedback Customer",
+        icon: <CommentOutlined />,
+        routes: [
+          {
+            path: "/dealer-manager/customer-feedback/all",
+            name: "Quản lý Feedback Customer",
+            icon: <CommentOutlined />,
+            component: "./ManageCusFeedback/UpdateStatusCustomerFeedback",
+          },
+        ],
+      },
+      {
         path: "/dealer-manager/staff-feedback",
-        name: "Lịch Feedback DealerStaff",
+        name: "Feedback DealerStaff",
         icon: <CommentOutlined />,
         routes: [
           {
             path: "/dealer-manager/staff-feedback/all",
-            name: "Quản lý lịch Feedback DealerStaff",
+            name: "Quản lý Feedback DealerStaff",
             icon: <CommentOutlined />,
             component: "./StaffFeedback/FeedbackDealerStaff",
           },

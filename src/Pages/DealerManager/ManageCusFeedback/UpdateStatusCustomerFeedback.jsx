@@ -1,15 +1,15 @@
 import React from 'react';
-import { Typography, Card } from 'antd';
+import { Typography } from 'antd';
 import { CommentOutlined } from '@ant-design/icons';
-import DealerManagerLayout from '../../Components/DealerManager/DealerManagerLayout';
-import GetAllFeedBack from '../DealerStaff/FeedBack/Components/GetAllFeedBack';
+import DealerManagerLayout from '../../../Components/DealerManager/DealerManagerLayout';
+import ManageCustomerFeedback from './Components/ManageCustomerFeedback';
 
 const { Title } = Typography;
 
-const FeedbackDealerStaff = () => {
+const UpdateStatusCustomerFeedback = () => {
   return (
     <DealerManagerLayout>
-      <div style={{ 
+      <div style={{
         position: 'fixed',
         top: 0,
         left: 280,
@@ -23,26 +23,27 @@ const FeedbackDealerStaff = () => {
         backgroundColor: '#f0f2f5',
         zIndex: 1
       }}>
-        <div style={{ 
-          padding: '16px 24px', 
+        <div style={{
+          padding: '16px 24px',
           borderBottom: '1px solid #d9d9d9',
           backgroundColor: '#fff'
         }}>
           <Title level={3} style={{ margin: 0 }}>
             <CommentOutlined style={{ color: '#1890ff', marginRight: 8 }} />
-            Quản Lý Lịch Feedback Dealer Staff
+            Quản Lý Feedback Customer
           </Title>
         </div>
-        <div style={{ 
+        <div style={{
           height: 'calc(100vh - 80px)',
           overflow: 'auto',
           padding: '24px'
         }}>
-          <GetAllFeedBack />
+          <ManageCustomerFeedback />
         </div>
       </div>
     </DealerManagerLayout>
   );
 };
 
-export default FeedbackDealerStaff;
+export default UpdateStatusCustomerFeedback;
+

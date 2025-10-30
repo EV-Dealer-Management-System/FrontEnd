@@ -131,7 +131,7 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         routes: [
           {
             path: "/dealer-staff/feedback/all",
-            name: "Quản lý Feedback",
+            name: "Customer Feedback",
             icon: <CommentOutlined />,
             component: "./FeedbackList",
           },
