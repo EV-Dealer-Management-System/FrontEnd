@@ -117,63 +117,63 @@ function EVMAdmin() {
         `}
       </style>
       <div style={{ margin: 0, padding: 0 }}>
-      <PageContainer
-        title={
-          <div className="flex items-center">
-            <DashboardOutlined className="mr-2 text-blue-500" />
-            Dashboard Quản Lý Xe Điện
-          </div>
-        }
-        subTitle="Tổng quan hệ thống quản lý bán xe điện cho hãng"
-        extra={
-          <Button
-            type="primary"
-            icon={<ReloadOutlined />}
-            onClick={handleRefresh}
-            loading={loading}
-          >
-            Làm mới dữ liệu
-          </Button>
-        }
-      >
-        {loading && (
-          <div className="flex justify-center items-center py-8">
-            <Spin size="large" />
-          </div>
-        )}
-
-        {!loading && (
-          <div>
-            {/* Thống kê tổng quan - 4 KPI cards với Statistic và Progress */}
-            <DashboardStats
-              inventoryData={inventoryData}
-              bookingData={bookingData}
-              staffData={staffData}
-              dealerData={dealerData}
-              warehouseData={warehouseData}
+        <PageContainer
+          title={
+            <div className="flex items-center">
+              <DashboardOutlined className="mr-2 text-blue-500" />
+              Dashboard Quản Lý Xe Điện
+            </div>
+          }
+          subTitle="Tổng quan hệ thống quản lý bán xe điện cho hãng"
+          extra={
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={handleRefresh}
               loading={loading}
-            />
+            >
+              Làm mới dữ liệu
+            </Button>
+          }
+        >
+          {loading && (
+            <div className="flex justify-center items-center py-8">
+              <Spin size="large" />
+            </div>
+          )}
 
-            {/* Biểu đồ tròn (Phân bố trạng thái) và Biểu đồ cột (Xu hướng 7 ngày) */}
-            <BookingCharts
-              bookingData={bookingData}
-              loading={loading}
-            />
+          {!loading && (
+            <div>
+              {/* Thống kê tổng quan - 4 KPI cards với Statistic và Progress */}
+              <DashboardStats
+                inventoryData={inventoryData}
+                bookingData={bookingData}
+                staffData={staffData}
+                dealerData={dealerData}
+                warehouseData={warehouseData}
+                loading={loading}
+              />
 
-            {/* Performance Metrics - Pending/Approved/Completed với ProCard */}
-            <BookingMetrics
-              bookingData={bookingData}
-              loading={loading}
-            />
+              {/* Biểu đồ tròn (Phân bố trạng thái) và Biểu đồ cột (Xu hướng 7 ngày) */}
+              <BookingCharts
+                bookingData={bookingData}
+                loading={loading}
+              />
 
-            {/* Tổng quan kho xe */}
-            <InventoryOverview
-              inventoryData={inventoryData}
-              loading={loading}
-            />
-          </div>
-        )}
-      </PageContainer>
+              {/* Performance Metrics - Pending/Approved/Completed với ProCard */}
+              <BookingMetrics
+                bookingData={bookingData}
+                loading={loading}
+              />
+
+              {/* Tổng quan kho xe */}
+              <InventoryOverview
+                inventoryData={inventoryData}
+                loading={loading}
+              />
+            </div>
+          )}
+        </PageContainer>
       </div>
     </AdminLayout>
   );

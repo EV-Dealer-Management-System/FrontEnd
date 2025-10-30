@@ -278,9 +278,13 @@ function AdminGetAllEVBooking() {
         return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
     };
 
-    // Lọc dữ liệu
+    // Lọc dữ liệu - CHỈ HIỂN THỊ BOOKING ĐÃ DUYỆT (status = 2)
     const filteredBookings = useMemo(() => {
         return bookings.filter((booking) => {
+            // Chỉ lấy booking có status = 2 (Đã Duyệt)
+            const bookingStatus = typeof booking.status === "number" ? booking.status : 0;
+            if (bookingStatus !== 2) return false;
+
             // Filter by search text
             if (searchText) {
                 const searchLower = searchText.toLowerCase();
@@ -301,23 +305,6 @@ function AdminGetAllEVBooking() {
                 if (!matchesSearch) return false;
             }
 
-            // Filter by active tab (status)
-            if (activeTab && activeTab !== "all") {
-                const statusMap = {
-                    draft: 0,      // Draft = 0
-                    pending: 1,    // Pending = 1 
-                    approved: 2,   // Approved = 2
-                    rejected: 3,   // Rejected = 3
-                    cancelled: 4,  // Cancelled = 4
-                    completed: 5,  // Completed = 5
-                };
-                const filterStatusValue = statusMap[activeTab];
-                const bookingStatus =
-                    typeof booking.status === "number" ? booking.status : 0;
-
-                if (bookingStatus !== filterStatusValue) return false;
-            }
-
             // Filter by date range
             if (dateRange && dateRange[0] && dateRange[1]) {
                 const bookingDate = new Date(booking.bookingDate);
@@ -329,7 +316,7 @@ function AdminGetAllEVBooking() {
 
             return true;
         });
-    }, [bookings, searchText, activeTab, dateRange]);
+    }, [bookings, searchText, dateRange]);
 
     return (
         <Layout className="min-h-screen" style={{ background: "#f0f2f5" }}>
