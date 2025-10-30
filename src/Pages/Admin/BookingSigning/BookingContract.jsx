@@ -242,17 +242,18 @@ function BookingContract() {
   };
 
   // Render trạng thái hợp đồng
-  const renderStatus = (status) => {
-    const statusConfig = {
-      1: { color: 'blue', text: 'Mới' },
-      2: { color: 'processing', text: 'Đang xử lý' },
-      4: { color: 'warning', text: 'Chờ xử lý' },
-      5: { color: 'orange', text: 'Đang sửa' },
-      6: { color: 'success', text: 'Đã chấp nhận' },
-      '-1': { color: 'error', text: 'Từ chối' },
-      '-2': { color: 'default', text: 'Đã xóa' },
-      '-3': { color: 'volcano', text: 'Hủy' }
-    };
+ const renderStatus = (status) => {
+  const statusConfig = {
+    1: { color: 'blue', text: 'Nháp' },
+    2: { color: 'processing', text: 'Sẵn sàng' },
+    3: { color: 'gold', text: 'Đang thực hiện' },
+    4: { color: 'success', text: 'Hoàn tất' },
+    5: { color: 'purple', text: 'Đang chỉnh sửa' },
+    6: { color: 'green', text: 'Đã chấp nhận' },
+    [-1]: { color: 'error', text: 'Từ chối' },
+    [-2]: { color: 'default', text: 'Đã xóa' },
+    [-3]: { color: 'volcano', text: 'Đã hủy' },
+  };
 
     const config = statusConfig[status] || { color: 'default', text: 'Không xác định' };
     return <Tag color={config.color}>{config.text}</Tag>;
@@ -278,9 +279,10 @@ function BookingContract() {
       render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
     },
     {
-      title: 'Người tạo',
-      dataIndex: 'createdBy',
-      key: 'createdBy',
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      render: (_, record) => <SafeStatus value={record.status} />,
     },
     {
       title: 'Thao tác',

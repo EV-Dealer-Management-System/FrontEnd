@@ -96,7 +96,7 @@ function ViewAllContract() {
         const confirm = window.confirm('Bạn có chắc chắn muốn xóa hợp đồng này không?');
         if (!confirm) return;
         const result = await deleteDealerContract(contractId);
-        if (result.success) {
+        if (result.isSuccess) {
           notification.success({
             message: 'Thành công',
             description: 'Hợp đồng đã được xóa thành công.',
@@ -113,6 +113,8 @@ function ViewAllContract() {
           description: 'Đã xảy ra lỗi khi xóa hợp đồng.',
         });
         console.error('Error deleting contract:', error);
+      } finally {
+        reloadContracts();
       }
     };
 

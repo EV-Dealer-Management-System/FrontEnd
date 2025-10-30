@@ -50,7 +50,6 @@ const useFetchContracts = () => {
       const params = {
         pageNumber: 1,
         pageSize: 10000,
-        eContractStatus: 1,
         econtractType: 2, // Loại booking
       };
 
