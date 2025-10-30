@@ -22,15 +22,15 @@ const ScheduleTestDrive = () => {
           margin: 0,
           padding: 0,
           overflow: 'hidden',
-          backgroundColor: '#0A0E1A',
+          backgroundColor: '#f0f2f5',
           zIndex: 1
         }}>
           <div style={{ 
             padding: '12px 20px', 
-            borderBottom: '1px solid #2A2F3C',
-            backgroundColor: '#0A0E1A'
+            borderBottom: '1px solid #d9d9d9',
+            backgroundColor: '#ffffff'
           }}>
-            <Title level={4} style={{ margin: 0, color: '#fff' }}>
+            <Title level={4} style={{ margin: 0, color: '#262626' }}>
               <ScheduleOutlined style={{ color: '#1890ff', marginRight: 8 }} />
               Quản Lý Lịch Hẹn Lái Thử
             </Title>
@@ -38,7 +38,7 @@ const ScheduleTestDrive = () => {
           <div style={{ 
             height: 'calc(100vh - 60px)',
             overflow: 'auto',
-            backgroundColor: '#0A0E1A'
+            backgroundColor: '#f0f2f5'
           }}>
             <ListAppointment />
           </div>

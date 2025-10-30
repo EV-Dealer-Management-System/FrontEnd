@@ -187,14 +187,14 @@ const CalendarView = () => {
   };
 
   return (
-    <div style={{ padding: '16px 20px', backgroundColor: '#0A0E1A', minHeight: '100%', width: '100%' }}>
+    <div style={{ padding: '16px 20px', backgroundColor: '#f0f2f5', minHeight: '100%', width: '100%' }}>
       {/* Filter Bar */}
       <Card 
         style={{ 
           marginBottom: 12, 
-          borderRadius: 6,
-          backgroundColor: '#141824',
-          border: '1px solid #2A2F3C'
+          borderRadius: 8,
+          backgroundColor: '#ffffff',
+          boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)'
         }}
         bodyStyle={{ padding: '12px 16px' }}
       >
@@ -206,9 +206,9 @@ const CalendarView = () => {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ 
-                backgroundColor: '#1E2330',
-                border: '1px solid #2A2F3C',
-                color: '#fff'
+                backgroundColor: '#fafafa',
+                border: '1px solid #d9d9d9',
+                color: '#262626'
               }}
             />
           </Col>
@@ -218,9 +218,9 @@ const CalendarView = () => {
               prefix={<CalendarOutlined style={{ color: '#666' }} />}
               readOnly
               style={{ 
-                backgroundColor: '#1E2330',
-                border: '1px solid #2A2F3C',
-                color: '#fff'
+                backgroundColor: '#fafafa',
+                border: '1px solid #d9d9d9',
+                color: '#262626'
               }}
             />
           </Col>
@@ -269,16 +269,17 @@ const CalendarView = () => {
         <Col xs={12} sm={12} md={6} lg={6}>
           <Card 
             style={{ 
-              backgroundColor: '#141824',
-              border: '1px solid #2A2F3C',
-              borderRadius: 6
+              backgroundColor: '#ffffff',
+              border: '1px solid #f0f0f0',
+              borderRadius: 8,
+              boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03)'
             }}
             bodyStyle={{ padding: '10px' }}
           >
             <Space direction="vertical" size={0}>
-              <Text style={{ color: '#999', fontSize: 12 }}>Chờ xác nhận</Text>
+              <Text style={{ color: '#8c8c8c', fontSize: 12 }}>Chờ xác nhận</Text>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Title level={2} style={{ margin: 0, color: '#fff' }}>{stats.pending}</Title>
+                <Title level={2} style={{ margin: 0, color: '#262626' }}>{stats.pending}</Title>
                 <div style={{ 
                   backgroundColor: '#FEF3E2',
                   padding: '4px 8px',
@@ -295,16 +296,17 @@ const CalendarView = () => {
         <Col xs={12} sm={12} md={6} lg={6}>
           <Card 
             style={{ 
-              backgroundColor: '#141824',
-              border: '1px solid #2A2F3C',
-              borderRadius: 6
+              backgroundColor: '#ffffff',
+              border: '1px solid #f0f0f0',
+              borderRadius: 8,
+              boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03)'
             }}
             bodyStyle={{ padding: '10px' }}
           >
             <Space direction="vertical" size={0}>
-              <Text style={{ color: '#999', fontSize: 12 }}>Đã duyệt</Text>
+              <Text style={{ color: '#8c8c8c', fontSize: 12 }}>Đã duyệt</Text>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Title level={2} style={{ margin: 0, color: '#fff' }}>{stats.approved}</Title>
+                <Title level={2} style={{ margin: 0, color: '#262626' }}>{stats.approved}</Title>
                 <div style={{ 
                   backgroundColor: '#E6F0FF',
                   padding: '4px 8px',
@@ -321,16 +323,17 @@ const CalendarView = () => {
         <Col xs={12} sm={12} md={6} lg={6}>
           <Card 
             style={{ 
-              backgroundColor: '#141824',
-              border: '1px solid #2A2F3C',
-              borderRadius: 6
+              backgroundColor: '#ffffff',
+              border: '1px solid #f0f0f0',
+              borderRadius: 8,
+              boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03)'
             }}
             bodyStyle={{ padding: '10px' }}
           >
             <Space direction="vertical" size={0}>
-              <Text style={{ color: '#999', fontSize: 12 }}>Hoàn thành</Text>
+              <Text style={{ color: '#8c8c8c', fontSize: 12 }}>Hoàn thành</Text>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Title level={2} style={{ margin: 0, color: '#fff' }}>{stats.completed}</Title>
+                <Title level={2} style={{ margin: 0, color: '#262626' }}>{stats.completed}</Title>
                 <div style={{ 
                   backgroundColor: '#E8F5E9',
                   padding: '4px 8px',
@@ -347,16 +350,17 @@ const CalendarView = () => {
         <Col xs={12} sm={12} md={6} lg={6}>
           <Card 
             style={{ 
-              backgroundColor: '#141824',
-              border: '1px solid #2A2F3C',
-              borderRadius: 6
+              backgroundColor: '#ffffff',
+              border: '1px solid #f0f0f0',
+              borderRadius: 8,
+              boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03)'
             }}
             bodyStyle={{ padding: '10px' }}
           >
             <Space direction="vertical" size={0}>
-              <Text style={{ color: '#999', fontSize: 12 }}>Đã hủy</Text>
+              <Text style={{ color: '#8c8c8c', fontSize: 12 }}>Đã hủy</Text>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Title level={2} style={{ margin: 0, color: '#fff' }}>{stats.cancelled}</Title>
+                <Title level={2} style={{ margin: 0, color: '#262626' }}>{stats.cancelled}</Title>
                 <div style={{ 
                   backgroundColor: '#FFEBEE',
                   padding: '4px 8px',
@@ -378,18 +382,19 @@ const CalendarView = () => {
         <Col xs={24} lg={17} xl={18}>
           <Card 
             style={{ 
-              backgroundColor: '#141824',
-              border: '1px solid #2A2F3C',
-              borderRadius: 6,
+              backgroundColor: '#ffffff',
+              border: '1px solid #f0f0f0',
+              borderRadius: 8,
               height: 'calc(100vh - 280px)',
-              minHeight: 450
+              minHeight: 450,
+              boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)'
             }}
             bodyStyle={{ padding: '12px 16px', height: '100%', display: 'flex', flexDirection: 'column' }}
             title={
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
                 <Space>
-                  <ClockCircleOutlined style={{ color: '#666' }} />
-                  <Text strong style={{ color: '#fff', fontSize: 15 }}>
+                  <ClockCircleOutlined style={{ color: '#1890ff' }} />
+                  <Text strong style={{ color: '#262626', fontSize: 15 }}>
                     Lịch theo khung giờ • {selectedDate.format('dddd, DD/MM')}
                   </Text>
                 </Space>
@@ -437,7 +442,7 @@ const CalendarView = () => {
                     key={timeSlot}
                     style={{ 
                       display: 'flex',
-                      borderBottom: '1px solid #2A2F3C',
+                      borderBottom: '1px solid #f0f0f0',
                       padding: '8px 0',
                       minHeight: 50
                     }}
@@ -446,9 +451,10 @@ const CalendarView = () => {
                     <div style={{ 
                       width: 70,
                       flexShrink: 0,
-                      color: '#666',
+                      color: '#8c8c8c',
                       fontSize: 13,
-                      paddingTop: 4
+                      paddingTop: 4,
+                      fontWeight: 500
                     }}>
                       {timeSlot}
                     </div>
@@ -457,7 +463,7 @@ const CalendarView = () => {
                     <div style={{ flex: 1 }}>
                       {slotAppointments.length === 0 ? (
                         <div style={{ 
-                          color: '#444',
+                          color: '#bfbfbf',
                           fontSize: 13,
                           padding: '4px 0'
                         }}>
@@ -517,17 +523,18 @@ const CalendarView = () => {
         <Col xs={24} lg={7} xl={6}>
           <Card 
             style={{ 
-              backgroundColor: '#141824',
-              border: '1px solid #2A2F3C',
-              borderRadius: 6,
+              backgroundColor: '#ffffff',
+              border: '1px solid #f0f0f0',
+              borderRadius: 8,
               height: 'calc(100vh - 280px)',
-              minHeight: 450
+              minHeight: 450,
+              boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)'
             }}
             bodyStyle={{ padding: '12px', height: '100%', display: 'flex', flexDirection: 'column' }}
             title={
               <Space style={{ padding: '4px 0' }}>
-                <CarOutlined style={{ color: '#666' }} />
-                <Text strong style={{ color: '#fff', fontSize: 15 }}>Xế & Tình trạng</Text>
+                <CarOutlined style={{ color: '#1890ff' }} />
+                <Text strong style={{ color: '#262626', fontSize: 15 }}>Xế & Tình trạng</Text>
               </Space>
             }
           >
@@ -540,19 +547,21 @@ const CalendarView = () => {
                       key={apt.id}
                       size="small"
                       style={{
-                        backgroundColor: '#1E2330',
-                        border: '1px solid #2A2F3C',
+                        backgroundColor: '#fafafa',
+                        border: '1px solid #e8e8e8',
                         borderRadius: 6,
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
                       }}
+                      hoverable
                       onClick={() => showDetailModal(apt)}
                       bodyStyle={{ padding: '10px' }}
                     >
                       <Space direction="vertical" size={3} style={{ width: '100%' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <Space size={4}>
-                            <CarOutlined style={{ color: '#fff', fontSize: 13 }} />
-                            <Text strong style={{ color: '#fff', fontSize: 12 }}>
+                            <CarOutlined style={{ color: '#1890ff', fontSize: 13 }} />
+                            <Text strong style={{ color: '#262626', fontSize: 12 }}>
                               {apt.evTemplate?.versionName || 'N/A'}
                             </Text>
                           </Space>
@@ -560,13 +569,13 @@ const CalendarView = () => {
                             {statusInfo.text}
                           </Tag>
                         </div>
-                        <Text style={{ color: '#999', fontSize: 10 }}>
+                        <Text style={{ color: '#8c8c8c', fontSize: 10 }}>
                           {apt.evTemplate?.modelName} • {apt.evTemplate?.colorName}
                         </Text>
-                        <Text style={{ color: '#666', fontSize: 10 }}>
+                        <Text style={{ color: '#8c8c8c', fontSize: 10 }}>
                           <ClockCircleOutlined style={{ fontSize: 9 }} /> {formatTime(apt.startTime)} - {formatTime(apt.endTime)}
                         </Text>
-                        <Text style={{ color: '#666', fontSize: 10 }}>
+                        <Text style={{ color: '#8c8c8c', fontSize: 10 }}>
                           <UserOutlined style={{ fontSize: 9 }} /> {apt.customer?.customerName}
                         </Text>
                       </Space>

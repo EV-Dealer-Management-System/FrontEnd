@@ -19,6 +19,7 @@ import DealerManager from "./Pages/DealerManager/DealerManager";
 import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
 import GetAllEVBooking from "./Pages/DealerManager/GetAllEVBooking.jsx/GetAllEVBooking";
 import ScheduleTestDrive from "./Pages/DealerManager/ScheduleTestDrive/ScheduleTestDrive";
+import FeedBack from "./Pages/DealerManager/FeedBack/FeedBack";
 import GetAllEVQuotesDealerManager from "./Pages/DealerManager/GetAllEVQuotes/GetAllEVQuotes";
 import DealerManagerRoute from "./Router/DealerManagerRoute";
 import AdminRoute from "./Router/AdminRoute";
@@ -188,6 +189,10 @@ function App() {
                 <Route
                   path="schedule/test-drive"
                   element={<ScheduleTestDrive />}
+                />
+                <Route
+                  path="feedback/all"
+                  element={<FeedBack />}
                 />
                 <Route path="staff/staff-list" element={<DealerStaffList />} />
                 <Route

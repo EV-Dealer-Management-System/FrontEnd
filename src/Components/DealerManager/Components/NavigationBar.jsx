@@ -22,7 +22,8 @@ import {
   ShoppingCartOutlined,
   DollarOutlined,
   ThunderboltOutlined,
-  ScheduleOutlined // Thêm icon lịch hẹn
+  ScheduleOutlined, // Thêm icon lịch hẹn
+  CommentOutlined // Icon feedback
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -191,6 +192,19 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             name: "Báo cáo tồn kho",
             icon: <DatabaseOutlined />,
             component: "./InventoryReport",
+          },
+        ],
+      },
+      {
+        path: "/dealer/feedback",
+        name: "Feedback",
+        icon: <CommentOutlined />,
+        routes: [
+          {
+            path: "/dealer-manager/feedback/all",
+            name: "Quản lý Feedback",
+            icon: <CommentOutlined />,
+            component: "./FeedbackList",
           },
         ],
       },
