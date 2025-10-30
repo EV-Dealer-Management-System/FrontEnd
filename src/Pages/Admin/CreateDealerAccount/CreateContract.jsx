@@ -261,10 +261,11 @@ const CreateContract = () => {
           message.success('Hợp đồng đã được tạo thành công!');
         }
       } else {
-        message.error(response.data?.message || 'Có lỗi khi tạo hợp đồng');
-        setContractLink(null);
-        setContractNo(null);
-      }
+          const errorMsg = response?.message || response?.data?.message || 'Có lỗi khi tạo hợp đồng';
+          message.error(errorMsg);
+          setContractLink(null);
+          setContractNo(null);
+        }
     } catch (error) {
       console.error('API Error:', error);
       if (error.response?.data) {
