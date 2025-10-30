@@ -11,14 +11,37 @@ const ScheduleTestDrive = () => {
   return (
     <DealerManagerLayout>
       <ToastProvider>
-        <div style={{ padding: '16px', width: '100%', maxWidth: '100%' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <Title level={3}>
-              <ScheduleOutlined className="mr-2 text-blue-600" />
+        <div style={{ 
+          position: 'fixed',
+          top: 0,
+          left: 280,
+          right: 0,
+          bottom: 0,
+          width: 'calc(100vw - 280px)',
+          height: '100vh',
+          margin: 0,
+          padding: 0,
+          overflow: 'hidden',
+          backgroundColor: '#f0f2f5',
+          zIndex: 1
+        }}>
+          <div style={{ 
+            padding: '12px 20px', 
+            borderBottom: '1px solid #d9d9d9',
+            backgroundColor: '#ffffff'
+          }}>
+            <Title level={4} style={{ margin: 0, color: '#262626' }}>
+              <ScheduleOutlined style={{ color: '#1890ff', marginRight: 8 }} />
               Quản Lý Lịch Hẹn Lái Thử
             </Title>
           </div>
-          <ListAppointment />
+          <div style={{ 
+            height: 'calc(100vh - 60px)',
+            overflow: 'auto',
+            backgroundColor: '#f0f2f5'
+          }}>
+            <ListAppointment />
+          </div>
         </div>
       </ToastProvider>
     </DealerManagerLayout>

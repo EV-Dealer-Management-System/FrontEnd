@@ -93,17 +93,25 @@ const CreateAppointmentForm = ({ onAppointmentCreated }) => {
 
     try {
       setSlotsLoading(true);
-      const response = await GetAvailableAppointments.getAvailableAppointments();
+      
+      // Format date theo yêu cầu của backend: 2025-10-30T00:00:00Z
+      const formattedDate = date.format('YYYY-MM-DD') + 'T00:00:00Z';
+      console.log('📅 Fetching slots for date:', formattedDate);
+      
+      const response = await GetAvailableAppointments.getAvailableAppointments(formattedDate);
+      
+      console.log('📥 Response:', response);
       
       if (response.isSuccess) {
         setAvailableSlots(response.result || []);
+        console.log('✅ Available slots:', response.result);
       } else {
-        message.error(response.message || "Không thể tải khung giờ có sẵn");
+        toast.error(response.message || "Không thể tải khung giờ có sẵn");
         setAvailableSlots([]);
       }
     } catch (error) {
       console.error("Error fetching available slots:", error);
-      message.error("Đã xảy ra lỗi khi tải khung giờ");
+      toast.error("Đã xảy ra lỗi khi tải khung giờ");
       setAvailableSlots([]);
     } finally {
       setSlotsLoading(false);

@@ -19,6 +19,7 @@ import DealerManager from "./Pages/DealerManager/DealerManager";
 import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
 import GetAllEVBooking from "./Pages/DealerManager/GetAllEVBooking.jsx/GetAllEVBooking";
 import ScheduleTestDrive from "./Pages/DealerManager/ScheduleTestDrive/ScheduleTestDrive";
+import FeedBack from "./Pages/DealerStaff/FeedBack/FeedBack";
 import GetAllEVQuotesDealerManager from "./Pages/DealerManager/GetAllEVQuotes/GetAllEVQuotes";
 import DealerManagerRoute from "./Router/DealerManagerRoute";
 import AdminRoute from "./Router/AdminRoute";
@@ -56,6 +57,9 @@ import TemplateOverview from "./Pages/EVMStaff/Vehicle/TemplateOverview";
 import AdminGetAllEVBooking from "./Pages/Admin/GetAllEVBooking/AdminGetAllEVBooking";
 import EVMGetAllInventory from "./Pages/Admin/GetAllEVInventory/EVMGetAllInventory";
 
+import FeedbackDealerStaff from "./Pages/DealerManager/StaffFeedback/FeedbackDealerStaff";
+import UpdateStatusCustomerFeedback from "./Pages/DealerManager/ManageCusFeedback/UpdateStatusCustomerFeedback";
+import UpdateStatusStaffFeedback from "./Pages/EVMStaff/StaffFeedbackManage/UpdateStatusStaffFeedback";
 
 function App() {
   return (
@@ -197,6 +201,7 @@ function App() {
                   path="schedule/test-drive"
                   element={<ScheduleTestDrive />}
                 />
+                
                 <Route path="staff/staff-list" element={<DealerStaffList />} />
                 <Route
                   path="customers/get-all-customers"
@@ -210,6 +215,8 @@ function App() {
                   path="staff/create-dealer-staff-account"
                   element={<CreateDealerAccount />}
                 />
+                <Route path="customer-feedback/all" element={<UpdateStatusCustomerFeedback />} />
+                <Route path="staff-feedback/all" element={<FeedbackDealerStaff />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}
                 <Route
                   path="*"
@@ -251,6 +258,10 @@ function App() {
                   path="vehicles/template-overview"
                   element={<TemplateOverview />}
                 />
+                <Route
+                  path="dealer-feedback/all"
+                  element={<UpdateStatusStaffFeedback />}
+                />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ EVM Staff */}
                 <Route
                   path="*"
@@ -278,6 +289,10 @@ function App() {
                 />
                 <Route path="quotes/create-quote" element={<CreateEVQuote />} />
                 <Route path="quotes/all-quotes" element={<GetAllEVQuotes />} />
+                <Route
+                  path="feedback/all"
+                  element={<FeedBack />}
+                />
                 <Route
                   path="ev/version-details"
                   element={<EVVersionDetails />}

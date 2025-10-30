@@ -19,6 +19,7 @@ import {
   CarOutlined,
   PlusOutlined,
   EyeOutlined,
+  CommentOutlined,
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 const { Text } = Typography;
@@ -136,6 +137,19 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           //     icon: <AuditOutlined />,
           //     component: "./DealerAudit",
           // },
+        ],
+      },
+      {
+        path: "/evm-staff/dealer-feedback",
+        name: "Feedback DealerStaff",
+        icon: <CommentOutlined />,
+        routes: [
+          {
+            path: "/evm-staff/dealer-feedback/all",
+            name: "Quản lý Feedback DealerStaff",
+            icon: <CommentOutlined />,
+            component: "./StaffFeedbackManage/UpdateStatusStaffFeedback",
+          },
         ],
       },
       {
