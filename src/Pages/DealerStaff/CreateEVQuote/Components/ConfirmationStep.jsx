@@ -1,6 +1,6 @@
 import React from "react";
 import { ProCard } from "@ant-design/pro-components";
-import { Typography, Row, Col, Space, Divider, Alert, Tag } from "antd";
+import { Typography, Row, Col, Space, Divider, Alert, Tag, Table } from "antd";
 import {
   CheckCircleOutlined,
   CarOutlined,
@@ -12,9 +12,9 @@ import {
 const { Text, Title } = Typography;
 
 function ConfirmationStep({
-  selectedVehicle,
-  quantity,
-  selectedPromotion,
+  vehicleList,
+  inventory,
+  promotions,
   note,
   dashboardStats,
   validationErrors,
@@ -22,6 +22,85 @@ function ConfirmationStep({
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN").format(amount) + " VNĐ";
   };
+
+  // Lấy thông tin chi tiết xe từ inventory
+  const getVehicleInfo = (vehicle) => {
+    const inventoryItem = inventory.find(
+      (item) =>
+        item.versionId === vehicle.versionId && item.colorId === vehicle.colorId
+    );
+    return inventoryItem || null;
+  };
+
+  // Lấy thông tin khuyến mãi
+  const getPromotionInfo = (promotionId) => {
+    if (!promotionId) return null;
+    return promotions.find((p) => p.id === promotionId);
+  };
+
+  // Columns cho bảng danh sách xe
+  const columns = [
+    {
+      title: "STT",
+      key: "index",
+      width: 60,
+      align: "center",
+      render: (_, __, index) => index + 1,
+    },
+    {
+      title: "Thông tin xe",
+      key: "vehicle",
+      render: (_, record) => {
+        const info = getVehicleInfo(record);
+        if (!info) return <Text type="secondary">Chưa chọn xe</Text>;
+        return (
+          <Space direction="vertical" size={2}>
+            <Text strong>{info.modelName}</Text>
+            <Text type="secondary" className="text-sm">
+              {info.versionName}
+            </Text>
+            <Tag color="blue" className="mt-1">
+              {info.colorName}
+            </Tag>
+          </Space>
+        );
+      },
+    },
+    {
+      title: "Số lượng",
+      key: "quantity",
+      width: 100,
+      align: "center",
+      render: (_, record) => (
+        <Text strong className="text-green-600 text-base">
+          {record.quantity || 0} xe
+        </Text>
+      ),
+    },
+    {
+      title: "Khuyến mãi",
+      key: "promotion",
+      width: 200,
+      render: (_, record) => {
+        const promotion = getPromotionInfo(record.promotionId);
+        if (!promotion) return <Text type="secondary">Không có</Text>;
+        return (
+          <Space direction="vertical" size={2}>
+            <Text className="text-sm">🎁 {promotion.name}</Text>
+            {promotion.discountType === 0 ? (
+              <Tag color="green" className="text-xs">
+                Giảm {formatCurrency(promotion.fixedAmount)}
+              </Tag>
+            ) : (
+              <Tag color="blue" className="text-xs">
+                Giảm {promotion.percentage}%
+              </Tag>
+            )}
+          </Space>
+        );
+      },
+    },
+  ];
 
   return (
     <ProCard
@@ -35,128 +114,46 @@ function ConfirmationStep({
       headerBordered
     >
       <Space direction="vertical" size="large" style={{ width: "100%" }}>
-        {/* Thông tin xe */}
-        {selectedVehicle && (
-          <div>
-            <div style={{ marginBottom: 12 }}>
-              <Space>
-                <CarOutlined style={{ color: "#1890ff", fontSize: 16 }} />
-                <Text strong style={{ fontSize: 15 }}>
-                  Thông tin xe điện
-                </Text>
-              </Space>
-            </div>
-            <div
-              style={{
-                padding: "16px",
-                backgroundColor: "#e6f7ff",
-                border: "1px solid #91d5ff",
-                borderRadius: 8,
-              }}
-            >
-              <Row gutter={[16, 12]}>
-                <Col span={12}>
-                  <Space direction="vertical" size={2}>
-                    <Text type="secondary" style={{ fontSize: 13 }}>
-                      Model
-                    </Text>
-                    <Text strong style={{ fontSize: 14 }}>
-                      {selectedVehicle.modelName}
-                    </Text>
-                  </Space>
-                </Col>
-                <Col span={12}>
-                  <Space direction="vertical" size={2}>
-                    <Text type="secondary" style={{ fontSize: 13 }}>
-                      Phiên bản
-                    </Text>
-                    <Text strong style={{ fontSize: 14 }}>
-                      {selectedVehicle.versionName}
-                    </Text>
-                  </Space>
-                </Col>
-                <Col span={12}>
-                  <Space direction="vertical" size={2}>
-                    <Text type="secondary" style={{ fontSize: 13 }}>
-                      Màu sắc
-                    </Text>
-                    <Text strong style={{ fontSize: 14 }}>
-                      {selectedVehicle.colorName}
-                    </Text>
-                  </Space>
-                </Col>
-                <Col span={12}>
-                  <Space direction="vertical" size={2}>
-                    <Text type="secondary" style={{ fontSize: 13 }}>
-                      Số lượng
-                    </Text>
-                    <Text strong style={{ fontSize: 16, color: "#52c41a" }}>
-                      {quantity} xe
-                    </Text>
-                  </Space>
-                </Col>
-              </Row>
-            </div>
-          </div>
+        {/* Validation Errors */}
+        {validationErrors.length > 0 && (
+          <Alert
+            message="Vui lòng kiểm tra lại thông tin"
+            description={
+              <ul className="mb-0 pl-4">
+                {validationErrors.map((error, index) => (
+                  <li key={index} className="text-sm">
+                    {error}
+                  </li>
+                ))}
+              </ul>
+            }
+            type="error"
+            showIcon
+          />
         )}
+
+        {/* Bảng danh sách xe */}
+        <div>
+          <div style={{ marginBottom: 12 }}>
+            <Space>
+              <CarOutlined style={{ color: "#1890ff", fontSize: 16 }} />
+              <Text strong style={{ fontSize: 15 }}>
+                Danh sách xe điện ({vehicleList.filter((v) => v.versionId && v.colorId).length} loại)
+              </Text>
+            </Space>
+          </div>
+          <Table
+            columns={columns}
+            dataSource={vehicleList.filter((v) => v.versionId && v.colorId)}
+            rowKey="id"
+            pagination={false}
+            size="small"
+            bordered
+            className="rounded-lg overflow-hidden"
+          />
+        </div>
 
         <Divider style={{ margin: 0 }} />
-
-        {/* Khuyến mãi */}
-        {selectedPromotion ? (
-          <>
-            <div>
-              <div style={{ marginBottom: 12 }}>
-                <Space>
-                  <GiftOutlined style={{ color: "#fa8c16", fontSize: 16 }} />
-                  <Text strong style={{ fontSize: 15 }}>
-                    Khuyến mãi áp dụng
-                  </Text>
-                </Space>
-              </div>
-              <div
-                style={{
-                  padding: "12px 16px",
-                  backgroundColor: "#fff7e6",
-                  border: "1px solid #ffd591",
-                  borderRadius: 8,
-                }}
-              >
-                <Text style={{ fontSize: 14, color: "#d46b08" }}>
-                  🎁 {selectedPromotion.name}
-                </Text>
-              </div>
-            </div>
-            <Divider style={{ margin: 0 }} />
-          </>
-        ) : (
-          <>
-            <div>
-              <div style={{ marginBottom: 12 }}>
-                <Space>
-                  <GiftOutlined style={{ color: "#bfbfbf", fontSize: 16 }} />
-                  <Text type="secondary" style={{ fontSize: 15 }}>
-                    Khuyến mãi
-                  </Text>
-                </Space>
-              </div>
-              <div
-                style={{
-                  padding: "12px 16px",
-                  backgroundColor: "#f5f5f5",
-                  border: "1px dashed #d9d9d9",
-                  borderRadius: 8,
-                  textAlign: "center",
-                }}
-              >
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  Không áp dụng khuyến mãi
-                </Text>
-              </div>
-            </div>
-            <Divider style={{ margin: 0 }} />
-          </>
-        )}
 
         {/* Ghi chú */}
         {note && (
@@ -188,7 +185,7 @@ function ConfirmationStep({
         )}
 
         {/* Tổng giá */}
-        {/* <div>
+        <div>
           <div style={{ marginBottom: 12 }}>
             <Space>
               <DollarOutlined style={{ color: "#52c41a", fontSize: 16 }} />
@@ -233,23 +230,7 @@ function ConfirmationStep({
               </div>
             </Space>
           </div>
-        </div> */}
-
-        {/* Validation Errors */}
-        {validationErrors.length > 0 && (
-          <Alert
-            message="Vui lòng kiểm tra lại thông tin"
-            description={
-              <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
-                {validationErrors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            }
-            type="error"
-            showIcon
-          />
-        )}
+        </div>
       </Space>
     </ProCard>
   );

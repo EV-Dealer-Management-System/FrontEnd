@@ -48,13 +48,17 @@ function CreateEVQuote() {
   const [loadingPromotions, setLoadingPromotions] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // State cho form data
-  const [selectedItems, setSelectedItems] = useState({
-    versionId: null,
-    colorId: null,
-  });
-  const [selectedPromotionId, setSelectedPromotionId] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  // State cho form data - Đổi từ single vehicle sang danh sách nhiều xe
+  const [vehicleList, setVehicleList] = useState([
+    {
+      id: Date.now(),
+      modelId: null,
+      versionId: null,
+      colorId: null,
+      quantity: 1,
+      promotionId: null,
+    },
+  ]);
   const [note, setNote] = useState("");
 
   // State cho modal thành công
@@ -106,30 +110,6 @@ function CreateEVQuote() {
     }
   };
 
-  // Tính toán thông tin xe được chọn
-  const selectedVehicleInfo = useMemo(() => {
-    if (!selectedItems.versionId || !selectedItems.colorId) return null;
-
-    const vehicleItem = inventory.find(
-      (item) =>
-        item.versionId === selectedItems.versionId &&
-        item.colorId === selectedItems.colorId
-    );
-
-    return vehicleItem
-      ? {
-        ...vehicleItem,
-        maxQuantity: vehicleItem.quantity,
-      }
-      : null;
-  }, [inventory, selectedItems]);
-
-  // Tính toán khuyến mãi được chọn
-  const selectedPromotionInfo = useMemo(() => {
-    if (!selectedPromotionId) return null;
-    return promotions.find((promotion) => promotion.id === selectedPromotionId);
-  }, [promotions, selectedPromotionId]);
-
   // Tính toán thống kê dashboard
   const dashboardStats = useMemo(() => {
     const totalVehicles = inventory.reduce(
@@ -137,64 +117,100 @@ function CreateEVQuote() {
       0
     );
     const totalPromotions = promotions.length;
-    const currentQuoteValue = selectedVehicleInfo
-      ? (selectedVehicleInfo.price || 0) * quantity
-      : 0;
 
-    // Tính discount dựa trên loại khuyến mãi
+    // Tính tổng số lượng xe trong báo giá
+    const totalQuoteQuantity = vehicleList.reduce(
+      (sum, vehicle) => sum + (vehicle.quantity || 0),
+      0
+    );
+
+    // Tính tổng giá trị (cần giá từ inventory)
+    const currentQuoteValue = vehicleList.reduce((sum, vehicle) => {
+      const inventoryItem = inventory.find(
+        (item) =>
+          item.versionId === vehicle.versionId &&
+          item.colorId === vehicle.colorId
+      );
+      const price = inventoryItem?.price || 0;
+      return sum + price * (vehicle.quantity || 0);
+    }, 0);
+
+    // Tính tổng discount
     let discountAmount = 0;
-    if (selectedPromotionInfo) {
-      if (selectedPromotionInfo.discountType === 0) {
-        // Fixed amount discount
-        discountAmount = selectedPromotionInfo.fixedAmount || 0;
-      } else {
-        // Percentage discount
-        discountAmount =
-          ((selectedPromotionInfo.percentage || 0) * currentQuoteValue) / 100;
+    vehicleList.forEach((vehicle) => {
+      if (vehicle.promotionId) {
+        const promotion = promotions.find((p) => p.id === vehicle.promotionId);
+        if (promotion) {
+          const inventoryItem = inventory.find(
+            (item) =>
+              item.versionId === vehicle.versionId &&
+              item.colorId === vehicle.colorId
+          );
+          const price = inventoryItem?.price || 0;
+          const itemTotal = price * (vehicle.quantity || 0);
+
+          if (promotion.discountType === 0) {
+            discountAmount += promotion.fixedAmount || 0;
+          } else {
+            discountAmount += ((promotion.percentage || 0) * itemTotal) / 100;
+          }
+        }
       }
-    }
+    });
 
     const finalValue = currentQuoteValue - discountAmount;
 
     return {
       totalVehicles,
       totalPromotions,
+      totalQuoteQuantity,
       currentQuoteValue,
       discountAmount,
       finalValue,
     };
-  }, [
-    inventory,
-    promotions,
-    selectedVehicleInfo,
-    selectedPromotionInfo,
-    quantity,
-  ]);
+  }, [inventory, promotions, vehicleList]);
 
   // Validation
   const validationErrors = useMemo(() => {
     const errors = [];
 
-    if (!selectedItems.versionId) {
-      errors.push("Vui lòng chọn model và phiên bản xe điện");
+    // Kiểm tra có ít nhất 1 xe
+    if (vehicleList.length === 0) {
+      errors.push("Vui lòng thêm ít nhất 1 xe vào báo giá");
+      return errors;
     }
 
-    if (!selectedItems.colorId) {
-      errors.push("Vui lòng chọn màu sắc");
-    }
+    // Kiểm tra từng xe trong danh sách
+    vehicleList.forEach((vehicle, index) => {
+      if (!vehicle.versionId) {
+        errors.push(`Xe #${index + 1}: Chưa chọn model và phiên bản`);
+      }
 
-    if (!quantity || quantity < 1) {
-      errors.push("Vui lòng nhập số lượng xe (tối thiểu 1)");
-    }
+      if (!vehicle.colorId) {
+        errors.push(`Xe #${index + 1}: Chưa chọn màu sắc`);
+      }
 
-    if (selectedVehicleInfo && quantity > selectedVehicleInfo.maxQuantity) {
-      errors.push(
-        `Số lượng vượt quá số xe có sẵn (${selectedVehicleInfo.maxQuantity})`
+      if (!vehicle.quantity || vehicle.quantity < 1) {
+        errors.push(`Xe #${index + 1}: Số lượng phải lớn hơn 0`);
+      }
+
+      // Kiểm tra số lượng có sẵn
+      const inventoryItem = inventory.find(
+        (item) =>
+          item.versionId === vehicle.versionId &&
+          item.colorId === vehicle.colorId
       );
-    }
+
+      if (inventoryItem && vehicle.quantity > inventoryItem.quantity) {
+        errors.push(
+          `Xe #${index + 1}: Số lượng vượt quá tồn kho (${inventoryItem.quantity
+          } xe)`
+        );
+      }
+    });
 
     return errors;
-  }, [selectedItems, quantity, selectedVehicleInfo]);
+  }, [vehicleList, inventory]);
 
   const canSubmit = validationErrors.length === 0;
 
@@ -223,17 +239,16 @@ function CreateEVQuote() {
   ];
 
   // Handlers
-  const handleVehicleSelectionChange = (selection) => {
-    setSelectedItems(selection);
-    setQuantity(1);
+  const handleVehicleListChange = (newList) => {
+    setVehicleList(newList);
   };
 
-  const handlePromotionChange = (promotionId) => {
-    setSelectedPromotionId(promotionId);
-  };
-
-  const handleQuantityChange = (value) => {
-    setQuantity(value);
+  const handlePromotionChange = (vehicleId, promotionId) => {
+    setVehicleList(
+      vehicleList.map((v) =>
+        v.id === vehicleId ? { ...v, promotionId: promotionId } : v
+      )
+    );
   };
 
   const handleNoteChange = (value) => {
@@ -255,13 +270,12 @@ function CreateEVQuote() {
   const canGoNext = () => {
     switch (currentStep) {
       case 0:
-        return selectedItems.versionId && selectedItems.colorId;
+        // Bước 1: Kiểm tra có ít nhất 1 xe hợp lệ
+        return vehicleList.some((v) => v.versionId && v.colorId && v.quantity > 0);
       case 1:
         return true; // Khuyến mãi là optional
       case 2:
-        return (
-          quantity > 0 && quantity <= (selectedVehicleInfo?.maxQuantity || 0)
-        );
+        return true; // Ghi chú là optional
       default:
         return true;
     }
@@ -276,17 +290,17 @@ function CreateEVQuote() {
     try {
       setSubmitting(true);
 
-      // Chuẩn bị dữ liệu gửi API
+      // Chuẩn bị dữ liệu gửi API - quoteDetails là mảng các xe
       const quoteData = {
         note: note || "",
-        quoteDetails: [
-          {
-            versionId: selectedItems.versionId,
-            colorId: selectedItems.colorId,
-            promotionId: selectedPromotionId || null,
-            quantity: quantity,
-          },
-        ],
+        quoteDetails: vehicleList
+          .filter((v) => v.versionId && v.colorId && v.quantity > 0)
+          .map((vehicle) => ({
+            versionId: vehicle.versionId,
+            colorId: vehicle.colorId,
+            promotionId: vehicle.promotionId || null,
+            quantity: vehicle.quantity,
+          })),
       };
 
       console.log("Sending quote data:", quoteData);
@@ -294,30 +308,24 @@ function CreateEVQuote() {
       const response = await CreateEVQuotes(quoteData);
 
       if (response && response.isSuccess) {
-        // Lấy thông tin từ API response
-        const quoteDetail = response.result?.quoteDetails?.[0];
+        // Hiển thị thông tin tóm tắt từ response
+        const quoteDetails = response.result?.quoteDetails || [];
 
-        // Chuẩn bị thông tin cho modal thành công
+        // Chuẩn bị dữ liệu cho modal - hiển thị tổng quan
         const successData = {
-          vehicleName: quoteDetail?.version
-            ? `${quoteDetail.version.modelName} - ${quoteDetail.version.versionName}`
-            : selectedVehicleInfo
-              ? `${selectedVehicleInfo.modelName} - ${selectedVehicleInfo.versionName}`
+          totalVehicles: quoteDetails.length,
+          totalQuantity: quoteDetails.reduce((sum, item) => sum + (item.quantity || 0), 0),
+          totalPrice: quoteDetails.reduce((sum, item) => sum + (item.totalPrice || 0), 0),
+          quoteDetails: quoteDetails.map((detail) => ({
+            vehicleName: detail.version
+              ? `${detail.version.modelName} - ${detail.version.versionName}`
               : "",
-          colorName:
-            quoteDetail?.color?.colorName ||
-            (selectedVehicleInfo ? selectedVehicleInfo.colorName : ""),
-          quantity: quoteDetail?.quantity || quantity,
-          promotionName:
-            quoteDetail?.promotion?.promotionName ||
-            (selectedPromotionInfo ? selectedPromotionInfo.name : null),
-          promotionType: selectedPromotionInfo?.discountType ?? null,
-          promotionValue:
-            selectedPromotionInfo?.discountType === 0
-              ? selectedPromotionInfo?.fixedAmount
-              : selectedPromotionInfo?.percentage,
-          unitPrice: quoteDetail?.unitPrice || null,
-          totalPrice: quoteDetail?.totalPrice || null,
+            colorName: detail.color?.colorName || "",
+            quantity: detail.quantity || 0,
+            promotionName: detail.promotion?.promotionName || null,
+            unitPrice: detail.unitPrice || 0,
+            totalPrice: detail.totalPrice || 0,
+          })),
         };
 
         setCreatedQuoteData(successData);
@@ -333,7 +341,6 @@ function CreateEVQuote() {
     } catch (error) {
       console.error("Error creating quote:", error);
 
-      // Hiển thị lỗi chi tiết từ API
       if (
         error.response &&
         error.response.data &&
@@ -351,12 +358,16 @@ function CreateEVQuote() {
   };
 
   const handleReset = () => {
-    setSelectedItems({
-      versionId: null,
-      colorId: null,
-    });
-    setSelectedPromotionId(null);
-    setQuantity(1);
+    setVehicleList([
+      {
+        id: Date.now(),
+        modelId: null,
+        versionId: null,
+        colorId: null,
+        quantity: 1,
+        promotionId: null,
+      },
+    ]);
     setNote("");
     setCurrentStep(0);
     form.resetFields();
@@ -386,10 +397,8 @@ function CreateEVQuote() {
             <VehicleSelection
               inventory={inventory}
               loadingInventory={loadingInventory}
-              selectedItems={selectedItems}
-              onSelectionChange={handleVehicleSelectionChange}
-              quantity={quantity}
-              onQuantityChange={handleQuantityChange}
+              vehicleList={vehicleList}
+              onVehicleListChange={handleVehicleListChange}
             />
           </Card>
         );
@@ -399,10 +408,9 @@ function CreateEVQuote() {
             <PromotionSelection
               promotions={promotions}
               loadingPromotions={loadingPromotions}
-              selectedPromotionId={selectedPromotionId}
+              vehicleList={vehicleList}
               onPromotionChange={handlePromotionChange}
-              modelId={selectedVehicleInfo?.modelId}
-              versionId={selectedItems.versionId}
+              inventory={inventory}
             />
           </Card>
         );
@@ -410,21 +418,11 @@ function CreateEVQuote() {
         return (
           <Card className="border-0 shadow-sm">
             <QuoteDetails
-              quantity={quantity}
-              onQuantityChange={handleQuantityChange}
+              vehicleList={vehicleList}
               note={note}
               onNoteChange={handleNoteChange}
-              maxQuantity={selectedVehicleInfo?.maxQuantity || 0}
-              selectedVehicle={
-                selectedVehicleInfo
-                  ? {
-                    modelName: selectedVehicleInfo.modelName,
-                    versionName: selectedVehicleInfo.versionName,
-                    colorName: selectedVehicleInfo.colorName,
-                  }
-                  : null
-              }
-              selectedPromotion={selectedPromotionInfo}
+              inventory={inventory}
+              promotions={promotions}
             />
           </Card>
         );
@@ -432,17 +430,9 @@ function CreateEVQuote() {
         return (
           <Card className="border-0 shadow-sm">
             <ConfirmationStep
-              selectedVehicle={
-                selectedVehicleInfo
-                  ? {
-                    modelName: selectedVehicleInfo.modelName,
-                    versionName: selectedVehicleInfo.versionName,
-                    colorName: selectedVehicleInfo.colorName,
-                  }
-                  : null
-              }
-              quantity={quantity}
-              selectedPromotion={selectedPromotionInfo}
+              vehicleList={vehicleList}
+              inventory={inventory}
+              promotions={promotions}
               note={note}
               dashboardStats={dashboardStats}
               validationErrors={validationErrors}
@@ -551,6 +541,18 @@ function CreateEVQuote() {
                       </div>
                       <div className="text-sm text-gray-600">Khuyến mãi</div>
                     </div>
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">
+                        {dashboardStats.totalQuoteQuantity}
+                      </div>
+                      <div className="text-sm text-gray-600">Tổng số xe báo giá</div>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {vehicleList.filter((v) => v.versionId && v.colorId).length}
+                      </div>
+                      <div className="text-sm text-gray-600">Loại xe</div>
+                    </div>
                   </div>
                 </Card>
 
@@ -599,18 +601,18 @@ function CreateEVQuote() {
                       <div
                         key={index}
                         className={`flex items-center gap-3 p-2 rounded-lg ${index === currentStep
-                            ? "bg-blue-50 border border-blue-200"
-                            : index < currentStep
-                              ? "bg-green-50"
-                              : "bg-gray-50"
+                          ? "bg-blue-50 border border-blue-200"
+                          : index < currentStep
+                            ? "bg-green-50"
+                            : "bg-gray-50"
                           }`}
                       >
                         <div
                           className={`text-lg ${index === currentStep
-                              ? "text-blue-600"
-                              : index < currentStep
-                                ? "text-green-600"
-                                : "text-gray-400"
+                            ? "text-blue-600"
+                            : index < currentStep
+                              ? "text-green-600"
+                              : "text-gray-400"
                             }`}
                         >
                           {step.icon}
@@ -618,10 +620,10 @@ function CreateEVQuote() {
                         <div>
                           <div
                             className={`font-medium ${index === currentStep
-                                ? "text-blue-800"
-                                : index < currentStep
-                                  ? "text-green-800"
-                                  : "text-gray-600"
+                              ? "text-blue-800"
+                              : index < currentStep
+                                ? "text-green-800"
+                                : "text-gray-600"
                               }`}
                           >
                             {step.title}

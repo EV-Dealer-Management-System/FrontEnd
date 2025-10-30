@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Table, Card, message, Spin, Tag, Input, Button, Space, Statistic, Row, Col } from "antd";
-import { SearchOutlined, ReloadOutlined, CarOutlined } from "@ant-design/icons";
+import { SearchOutlined, ReloadOutlined, CarOutlined, EyeOutlined } from "@ant-design/icons";
 import { PageContainer } from "@ant-design/pro-components";
 import DealerManagerLayout from "../../../Components/DealerManager/DealerManagerLayout";
 import { GetEVDealerInventory } from "../../../App/DealerManager/EVInventory/GetEVDealerInventory";
+import VehicleDetailModal from "./Components/VehicleDetailModal";
 
 const { Search } = Input;
 
@@ -12,6 +13,8 @@ function GetAllEVInventory() {
     const [inventoryData, setInventoryData] = useState([]);
     const [searchText, setSearchText] = useState("");
     const [filteredData, setFilteredData] = useState([]);
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [selectedVehicle, setSelectedVehicle] = useState(null);
 
     // Lấy dealerId từ localStorage (giả sử được lưu khi đăng nhập)
     const dealerId = localStorage.getItem("dealerId") || "1"; // fallback cho demo
@@ -61,6 +64,18 @@ function GetAllEVInventory() {
     const handleRefresh = () => {
         setSearchText("");
         fetchInventoryData();
+    };
+
+    // Mở modal xem chi tiết
+    const showDetailModal = (record) => {
+        setSelectedVehicle(record);
+        setIsModalVisible(true);
+    };
+
+    // Đóng modal
+    const handleCloseModal = () => {
+        setIsModalVisible(false);
+        setSelectedVehicle(null);
     };
 
     // Tính toán thống kê
@@ -136,17 +151,14 @@ function GetAllEVInventory() {
             title: "Số Vin",
             key: "viNs",
             render: (_, record) => (
-                <Space direction="vertical">
-                    {record.viNs && record.viNs.length > 0 ? (
-                        record.viNs.map((viNs, index) => (
-                            <Tag key={index} color="geekblue" className="px-2 py-1 rounded-full font-mono">
-                                {viNs}
-                            </Tag>
-                        ))
-                    ) : (
-                        <span className="text-gray-500">Chưa có số VIN</span>
-                    )}
-                </Space>
+                <Button
+                    type="primary"
+                    icon={<EyeOutlined />}
+                    onClick={() => showDetailModal(record)}
+                    className="bg-blue-500 hover:bg-blue-600"
+                >
+                    Xem Chi Tiết
+                </Button>
             ),
         }
     ];
@@ -256,6 +268,13 @@ function GetAllEVInventory() {
                     </Card>
                 </div>
             </PageContainer>
+
+            {/* Modal hiển thị chi tiết số VIN */}
+            <VehicleDetailModal
+                visible={isModalVisible}
+                onClose={handleCloseModal}
+                vehicle={selectedVehicle}
+            />
 
             <style jsx>{`
         .custom-table .ant-table-thead > tr > th {
