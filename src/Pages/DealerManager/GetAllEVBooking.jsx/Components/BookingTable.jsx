@@ -304,6 +304,70 @@ function BookingTable({
       ),
     },
     {
+      title: "E-Contract",
+      dataIndex: "eContract",
+      key: "eContract",
+      width: 200,
+      ellipsis: true,
+      render: (eContract) => {
+        if (!eContract) {
+          return (
+            <Tag color="default" style={{ borderRadius: 6 }}>
+              Chưa có hợp đồng
+            </Tag>
+          );
+        }
+
+        // Mapping trạng thái hợp đồng: Draft=0, Pending=1, Approved=2, Rejected=3
+        const contractStatusMap = {
+          0: { color: "default", text: "Bản Nháp" },
+          1: { color: "orange", text: "Chờ Duyệt" },
+          2: { color: "green", text: "Đã Duyệt" },
+          3: { color: "red", text: "Từ Chối" },
+        };
+
+        const statusInfo = contractStatusMap[eContract.status] || {
+          color: "default",
+          text: "Không xác định",
+        };
+
+        return (
+          <Tooltip
+            title={
+              <div className="space-y-1">
+                <div><strong>Tên file:</strong> {eContract.name}</div>
+                <div><strong>Trạng thái:</strong> {statusInfo.text}</div>
+                <div><strong>Người tạo:</strong> {eContract.createdName || "N/A"}</div>
+                <div><strong>Chủ sở hữu:</strong> {eContract.ownerName || "N/A"}</div>
+                <div><strong>Ngày tạo:</strong> {formatDateTime(eContract.createdAt)}</div>
+              </div>
+            }
+          >
+            <div className="flex flex-col gap-1">
+              <Tag
+                color={statusInfo.color}
+                icon={<AuditOutlined />}
+                style={{
+                  borderRadius: 6,
+                  fontSize: 12,
+                  padding: "4px 10px",
+                  fontWeight: 500,
+                }}
+              >
+                {statusInfo.text}
+              </Tag>
+              <div
+                className="text-xs text-gray-500 truncate"
+                style={{ maxWidth: 180 }}
+              >
+                {eContract.name}
+              </div>
+            </div>
+          </Tooltip>
+        );
+      },
+    },
+    {
       title: "Thao Tác",
       key: "actions",
       width: 120,

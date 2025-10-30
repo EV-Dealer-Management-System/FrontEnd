@@ -21,8 +21,7 @@ import {
     TrophyOutlined,
     ThunderboltOutlined,
 } from "@ant-design/icons";
-import { getAllEVBookings } from "../../../App/DealerManager/EVBooking/GetAllEVBooking";
-import { getBookingById } from "../../../App/DealerManager/EVBooking/GetBookingByID";
+import { getAllEVBookingsAdmin, getBookingByIdAdmin } from "../../../App/Admin/EVBooking/GetAllEVBooking";
 import NavigationBar from "../../../Components/Admin/Components/NavigationBar";
 import BookingFilters from "./Components/BookingFilters";
 import BookingTable from "./Components/BookingTable";
@@ -62,46 +61,65 @@ function AdminGetAllEVBooking() {
     const fetchBookings = async () => {
         setLoading(true);
         try {
-            const response = await getAllEVBookings();
+            const response = await getAllEVBookingsAdmin();
+            console.log("Admin API Response:", response);
+
+            // Xử lý cấu trúc response đúng theo API
+            let bookingsList = [];
 
             if (response && response.isSuccess) {
-                const data = response.result || response.data || [];
-                const bookingsList = Array.isArray(data) ? data : [];
+                // API trả về: response.result.data (array)
+                const data = response.result?.data || response.result || response.data || [];
+                console.log("Extracted data:", data);
+                bookingsList = Array.isArray(data) ? data : [];
+            } else if (response && Array.isArray(response)) {
+                // Trường hợp API trả về trực tiếp array
+                console.log("Direct array response:", response);
+                bookingsList = response;
+            } else if (response && response.data && Array.isArray(response.data)) {
+                // Trường hợp có data wrapper
+                console.log("Data wrapper response:", response.data);
+                bookingsList = response.data;
+            }
 
-                // Map data để thêm thông tin từ bookingEVDetails
+            console.log("Final bookings list:", bookingsList);
+
+            if (bookingsList.length > 0) {
+
+                // Map data để đảm bảo tính toán đúng totalQuantity từ API hoặc từ bookingEVDetails
                 const enhancedBookings = bookingsList.map((booking) => {
-                    // Tính tổng số lượng xe từ bookingEVDetails
-                    const totalQuantity =
+                    console.log("Processing booking:", booking);
+
+                    // Ưu tiên sử dụng totalQuantity từ API, nếu không có thì tính từ bookingEVDetails
+                    const totalQuantity = booking.totalQuantity ||
                         booking.bookingEVDetails?.reduce(
                             (sum, detail) => sum + (detail.quantity || 0),
                             0
-                        ) ||
-                        booking.totalQuantity ||
-                        0;
+                        ) || 0;
 
-                    // Tính tổng giá trị
-                    const totalAmount =
-                        booking.bookingEVDetails?.reduce(
-                            (sum, detail) => sum + (detail.totalPrice || 0),
-                            0
-                        ) ||
-                        booking.totalAmount ||
-                        0;
+                    // Tính tổng giá trị từ bookingEVDetails
+                    const totalAmount = booking.bookingEVDetails?.reduce(
+                        (sum, detail) => sum + (detail.totalPrice || 0),
+                        0
+                    ) || booking.totalAmount || 0;
 
                     return {
                         ...booking,
                         totalQuantity,
                         totalAmount,
-                        // Giữ nguyên bookingEVDetails để hiển thị chi tiết
+                        // Đảm bảo có bookingEVDetails và eContract
                         bookingEVDetails: booking.bookingEVDetails || [],
+                        eContract: booking.eContract || null,
                     };
                 });
 
+                console.log("Enhanced bookings:", enhancedBookings);
                 setBookings(enhancedBookings);
                 message.success(`Đã tải ${enhancedBookings.length} booking thành công`);
             } else {
-                message.error(response?.message || "Không thể tải danh sách booking");
+                console.log("No booking data found");
                 setBookings([]);
+                message.warning("Không có booking nào được tìm thấy");
             }
         } catch (error) {
             console.error("Error fetching bookings:", error);
@@ -119,7 +137,7 @@ function AdminGetAllEVBooking() {
         setSelectedBooking(null); // Reset trước khi fetch
 
         try {
-            const response = await getBookingById(record.id);
+            const response = await getBookingByIdAdmin(record.id);
 
             if (response && response.isSuccess) {
                 setSelectedBooking(response.result);
