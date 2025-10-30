@@ -11,7 +11,7 @@ import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfir
 import PublicRoute from "./Router/PublicRoute";
 import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
 import ContractPage from "./Pages/PublicPage/ContractPage";
-import EVMAdmin from "./Pages/Admin/EVMAdmin";
+import EVMAdmin from "./Pages/Admin/Dashboard/EVMAdmin";
 import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
 import InventoryManagement from "./Pages/Admin/InventoryManagement/InventoryManagement";
 import GetAllDealerContractPage from "./Pages/Admin/GetAllDealerContracts/GetAllDealerContract";
@@ -55,6 +55,7 @@ import Createvehicle from "./Pages/EVMStaff/Vehicle/CreateVehicle";
 import TemplateOverview from "./Pages/EVMStaff/Vehicle/TemplateOverview";
 import AdminGetAllEVBooking from "./Pages/Admin/GetAllEVBooking/AdminGetAllEVBooking";
 import EVMGetAllInventory from "./Pages/Admin/GetAllEVInventory/EVMGetAllInventory";
+
 
 function App() {
   return (
