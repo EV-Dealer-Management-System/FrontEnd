@@ -62,25 +62,20 @@ function PromotionSelection({
     const vehicleInfo = getVehicleInfo(vehicle);
     if (!vehicleInfo) return [];
 
-    // Tìm khuyến mãi cụ thể cho model và version
-    const specificPromotions = validPromotions.filter((promotion) => {
-      return (
-        promotion.modelId === vehicleInfo.modelId &&
-        promotion.versionId === vehicleInfo.versionId
-      );
-    });
-
-    // Nếu có khuyến mãi cụ thể, hiển thị tất cả
-    if (specificPromotions.length > 0) {
-      return validPromotions;
-    }
-
-    // Nếu không, chỉ hiển thị khuyến mãi tổng quát
-    return validPromotions.filter(
-      (promotion) =>
+    // Lọc khuyến mãi theo quy tắc:
+    // - Nếu promotion.modelId và promotion.versionId === null → áp dụng cho mọi xe
+    // - Nếu có giá trị cụ thể → chỉ áp dụng cho xe khớp modelId và versionId
+    return validPromotions.filter((promotion) => {
+      const isGeneralPromotion =
         (promotion.modelId === null || promotion.modelId === undefined) &&
-        (promotion.versionId === null || promotion.versionId === undefined)
-    );
+        (promotion.versionId === null || promotion.versionId === undefined);
+
+      const isSpecificPromotion =
+        promotion.modelId === vehicleInfo.modelId &&
+        promotion.versionId === vehicleInfo.versionId;
+
+      return isGeneralPromotion || isSpecificPromotion;
+    });
   };
 
   if (loadingPromotions) {
@@ -239,7 +234,7 @@ function PromotionSelection({
                                 Tên chương trình
                               </Text>
                               <Text strong className="text-sm">
-                                🎁 {selectedPromotion.name}
+                                {selectedPromotion.name}
                               </Text>
                             </Space>
                           </Col>
