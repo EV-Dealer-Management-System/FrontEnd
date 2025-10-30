@@ -145,7 +145,7 @@ function BookingTable({
                 <span style={{ fontWeight: 600, color: "#595959" }}>{index + 1}</span>
             ),
         },
-         {
+        {
             title: "Người Tạo",
             dataIndex: "createdBy",
             key: "createdBy",
@@ -196,7 +196,7 @@ function BookingTable({
         //         );
         //     },
         // },
-         {
+        {
             title: "Trạng Thái",
             dataIndex: "status",
             key: "status",
@@ -243,14 +243,79 @@ function BookingTable({
             ),
         },
         {
+            title: "E-Contract",
+            dataIndex: "eContract",
+            key: "eContract",
+            width: 200,
+            ellipsis: true,
+            render: (eContract) => {
+                if (!eContract) {
+                    return (
+                        <Tag color="default" style={{ borderRadius: 6 }}>
+                            Chưa có hợp đồng
+                        </Tag>
+                    );
+                }
+
+                // Mapping trạng thái hợp đồng: Draft=0, Pending=1, Approved=2, Rejected=3
+                const contractStatusMap = {
+                    0: { color: "default", text: "Bản Nháp" },
+                    1: { color: "orange", text: "Chờ Duyệt" },
+                    2: { color: "green", text: "Đã Duyệt" },
+                    3: { color: "red", text: "Từ Chối" },
+                };
+
+                const statusInfo = contractStatusMap[eContract.status] || {
+                    color: "default",
+                    text: "Không xác định",
+                };
+
+                return (
+                    <Tooltip
+                        title={
+                            <div className="space-y-1">
+                                <div><strong>Tên file:</strong> {eContract.name}</div>
+                                <div><strong>Trạng thái:</strong> {statusInfo.text}</div>
+                                <div><strong>Người tạo:</strong> {eContract.createdName || "N/A"}</div>
+                                <div><strong>Chủ sở hữu:</strong> {eContract.ownerName || "N/A"}</div>
+                                <div><strong>Ngày tạo:</strong> {formatDateTime(eContract.createdAt)}</div>
+                            </div>
+                        }
+                    >
+                        <div className="flex flex-col gap-1">
+                            <Tag
+                                color={statusInfo.color}
+                                icon={<AuditOutlined />}
+                                style={{
+                                    borderRadius: 6,
+                                    fontSize: 12,
+                                    padding: "4px 10px",
+                                    fontWeight: 500,
+                                }}
+                            >
+                                {statusInfo.text}
+                            </Tag>
+                            <div
+                                className="text-xs text-gray-500 truncate"
+                                style={{ maxWidth: 180 }}
+                            >
+                                {eContract.name}
+                            </div>
+                        </div>
+                    </Tooltip>
+                );
+            },
+        },
+        {
             title: "Thao Tác",
             key: "actions",
-            width: 240,
+            width: 280,
             align: "center",
             fixed: "right",
             render: (_, record) => {
                 const isUpdating = updatingStatus[record.id];
                 const isPending = record.status === 1; // Status Pending = 1
+                const isApproved = record.status === 2; // Status Approved = 2
 
                 return (
                     <Space size={8}>
@@ -285,6 +350,24 @@ function BookingTable({
                                 Duyệt Đơn
                             </Button>
                         )}
+
+                        {isApproved && (
+                            <Button
+                                type="primary"
+                                icon={<CheckCircleOutlined />}
+                                onClick={() => handleUpdateStatus(record.id, 5, "Hoàn thành")}
+                                loading={isUpdating}
+                                size="middle"
+                                style={{
+                                    borderRadius: 6,
+                                    fontWeight: 500,
+                                    backgroundColor: "#52c41a",
+                                    borderColor: "#52c41a",
+                                }}
+                            >
+                                Hoàn Thành Đơn
+                            </Button>
+                        )}
                     </Space>
                 );
             },
@@ -293,66 +376,66 @@ function BookingTable({
 
     return (
         <ConfigProvider locale={viVN}>
-        <>
-            <ProTable
-                columns={columns}
-                dataSource={dataSource}
-                loading={loading}
-                rowKey={(record) => record.id || record.bookingCode}
-                search={false}
-                dateFormatter="string"
-                toolbar={false}
-                options={false}
-                pagination={{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                    showTotal: (total, range) => (
-                        <span style={{ fontSize: 13, color: "#595959" }}>
-                            Hiển thị{" "}
-                            <strong>
-                                {range[0]}-{range[1]}
-                            </strong>{" "}
-                            trong tổng số <strong>{total}</strong> booking
-                        </span>
-                    ),
-                    pageSizeOptions: ["5", "10", "20", "50", "100"],
-                    size: "default",
-                    style: { marginTop: 16 },
-                }}
-                
-                cardBordered={false}
-                headerTitle={false}
-                size="middle"
-                rowClassName={(record, index) => {
-                    const isPending = record.status === 1; // Status Pending = 1
-                    if (isPending) {
-                        return "highlight-pending-row";
-                    }
-                    return index % 2 === 0 ? "table-row-even" : "table-row-odd";
-                }}
-                style={{
-                    borderRadius: 8,
-                }}
-                tableStyle={{
-                    borderRadius: 8,
-                }}
-            />
+            <>
+                <ProTable
+                    columns={columns}
+                    dataSource={dataSource}
+                    loading={loading}
+                    rowKey={(record) => record.id || record.bookingCode}
+                    search={false}
+                    dateFormatter="string"
+                    toolbar={false}
+                    options={false}
+                    pagination={{
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        showQuickJumper: true,
+                        showTotal: (total, range) => (
+                            <span style={{ fontSize: 13, color: "#595959" }}>
+                                Hiển thị{" "}
+                                <strong>
+                                    {range[0]}-{range[1]}
+                                </strong>{" "}
+                                trong tổng số <strong>{total}</strong> booking
+                            </span>
+                        ),
+                        pageSizeOptions: ["5", "10", "20", "50", "100"],
+                        size: "default",
+                        style: { marginTop: 16 },
+                    }}
 
-            {/* Modal Duyệt Đơn */}
-            <BookingReviewModal
-                visible={reviewModal.visible}
-                booking={reviewModal.booking}
-                onClose={closeReviewModal}
-                onApprove={() =>
-                    handleUpdateStatus(reviewModal.booking?.id, 2, "Đồng Ý")
-                }
-                onReject={() =>
-                    handleUpdateStatus(reviewModal.booking?.id, 3, "Từ chối")
-                }
-                loading={updatingStatus[reviewModal.booking?.id]}
-            />
-        </>
+                    cardBordered={false}
+                    headerTitle={false}
+                    size="middle"
+                    rowClassName={(record, index) => {
+                        const isPending = record.status === 1; // Status Pending = 1
+                        if (isPending) {
+                            return "highlight-pending-row";
+                        }
+                        return index % 2 === 0 ? "table-row-even" : "table-row-odd";
+                    }}
+                    style={{
+                        borderRadius: 8,
+                    }}
+                    tableStyle={{
+                        borderRadius: 8,
+                    }}
+                />
+
+                {/* Modal Duyệt Đơn */}
+                <BookingReviewModal
+                    visible={reviewModal.visible}
+                    booking={reviewModal.booking}
+                    onClose={closeReviewModal}
+                    onApprove={() =>
+                        handleUpdateStatus(reviewModal.booking?.id, 2, "Đồng Ý")
+                    }
+                    onReject={() =>
+                        handleUpdateStatus(reviewModal.booking?.id, 3, "Từ chối")
+                    }
+                    loading={updatingStatus[reviewModal.booking?.id]}
+                />
+            </>
         </ConfigProvider>
     );
 }

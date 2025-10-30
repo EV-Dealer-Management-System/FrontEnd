@@ -44,7 +44,7 @@ function GetAllEVCustomer() {
 
     fetchCustomers();
   }, []);
-
+ 
   // Tính toán thống kê
   const stats = {
     total: customers.length,
@@ -114,7 +114,7 @@ function GetAllEVCustomer() {
             <span className="text-gray-800">
               {dayjs(date).format("DD/MM/YYYY HH:mm")}
             </span>
-            {isNew && <Tag color="green">Mới</Tag>}
+           
           </Space>
         );
       },

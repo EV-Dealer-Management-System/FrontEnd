@@ -11,7 +11,7 @@ import ResetPasswordConfirm from "./Pages/Home/Login/Partial/ResetPasswordConfir
 import PublicRoute from "./Router/PublicRoute";
 import CreateContract from "./Pages/Admin/CreateDealerAccount/CreateContract";
 import ContractPage from "./Pages/PublicPage/ContractPage";
-import EVMAdmin from "./Pages/Admin/EVMAdmin";
+import EVMAdmin from "./Pages/Admin/Dashboard/EVMAdmin";
 import VehicleManagement from "./Pages/Admin/VehicleManagement/VehicleManagement";
 import InventoryManagement from "./Pages/Admin/InventoryManagement/InventoryManagement";
 import GetAllDealerContractPage from "./Pages/Admin/GetAllDealerContracts/GetAllDealerContract";
@@ -53,6 +53,9 @@ import GetAllEVCustomer from "./Pages/DealerStaff/GetAllEVCustomer/GetAllEVCusto
 import PaymentResponse from "./Pages/Payment/PaymentResponse";
 import Createvehicle from "./Pages/EVMStaff/Vehicle/CreateVehicle";
 import TemplateOverview from "./Pages/EVMStaff/Vehicle/TemplateOverview";
+import AdminGetAllEVBooking from "./Pages/Admin/GetAllEVBooking/AdminGetAllEVBooking";
+import EVMGetAllInventory from "./Pages/Admin/GetAllEVInventory/EVMGetAllInventory";
+
 
 function App() {
   return (
@@ -128,6 +131,10 @@ function App() {
                   element={<InventoryManagement />}
                 />
                 <Route
+                  path="inventory/company-inventory"
+                  element={<EVMGetAllInventory />}
+                />
+                <Route
                   path="dealer/all-dealers"
                   element={<GetAllEVDealerPage />}
                 />
@@ -160,7 +167,8 @@ function App() {
                   path="settings/template-editor"
                   element={<TemplateEditorPage />}
                 />
-                <Route path="booking-signing" element={<BookingContract />} />
+                <Route path="booking/ready-booking-signing" element={<BookingContract />} />
+                <Route path="booking/all-ev-booking" element={<AdminGetAllEVBooking />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ admin */}
                 <Route path="*" element={<Navigate to="/admin" replace />} />
               </Routes>

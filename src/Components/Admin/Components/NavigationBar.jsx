@@ -98,8 +98,22 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
           //   icon: <LineChartOutlined />,
           //   component: "./DealerPerformance",
           // },
+        ],
+      },
+      {
+        path: "/admin/bookings",
+        name: "Quản lý đặt xe",
+        icon: <FileTextOutlined />,
+        component: "./BookingList",
+        routes: [
           {
-            path: "/admin/booking-signing",
+            path: "/admin/booking/all-ev-booking",
+            name: "Danh sách đặt xe",
+            icon: <FileTextOutlined />,
+            component: "./BookingList",
+          },
+          {
+            path: "/admin/booking/ready-booking-signing",
             name: "Hợp đồng đặt xe",
             icon: <FileTextOutlined />,
             component: "./BookingContract",
@@ -116,12 +130,6 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             name: "Danh mục xe",
             icon: <DatabaseOutlined />,
             component: "./VehicleCatalog",
-          },
-          {
-            path: "/admin/inventory-management",
-            name: "Kho xe",
-            icon: <DeploymentUnitOutlined />,
-            component: "./InventoryManagement",
           },
           {
             path: "/admin/vehicle/allocation",
@@ -147,6 +155,26 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             name: "Tạo tài khoản nhân viên",
             icon: <UserAddOutlined />,
             component: "./CreateEVMStaff",
+          },
+        ],
+      },
+      {
+        path: "/admin/inventory",
+        name: "Quản lý kho xe",
+        icon: <DatabaseOutlined />,
+        component: "./InventoryManagement",
+        routes: [
+          {
+            path: "/admin/inventory-management",
+            name: "Quản lý kho hãng",
+            icon: <DeploymentUnitOutlined />,
+            component: "./InventoryManagement",
+          },
+          {
+            path: "/admin/inventory/company-inventory",
+            name: "Số lượng xe trong kho",
+            icon: <DatabaseOutlined />,
+            component: "./CompanyInventory",
           },
         ],
       },

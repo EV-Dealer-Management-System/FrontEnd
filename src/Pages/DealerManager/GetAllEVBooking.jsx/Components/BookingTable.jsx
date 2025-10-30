@@ -12,6 +12,9 @@ import {
 } from "@ant-design/icons";
 import EVBookingUpdateStatus from "../../../../App/DealerManager/EVBooking/EVBookingUpdateStatus";
 import BookingReviewModal from "./BookingReviewModal";
+import EContractSuccessModal from "./EContractSuccessModal";
+import CancelBookingModal from "./CancelBookingModal";
+import { EVBookingConfirmEContract } from "../../../../App/DealerManager/EVBooking/EVBookingConfirm";
 
 function BookingTable({
   dataSource,
@@ -22,6 +25,11 @@ function BookingTable({
 }) {
   const [updatingStatus, setUpdatingStatus] = useState({});
   const [reviewModal, setReviewModal] = useState({
+    visible: false,
+    booking: null,
+  });
+  const [eContractModal, setEContractModal] = useState(false);
+  const [cancelModal, setCancelModal] = useState({
     visible: false,
     booking: null,
   });
@@ -42,6 +50,57 @@ function BookingTable({
     });
   };
 
+  // Hiển thị modal hủy đơn
+  const showCancelModal = (booking) => {
+    setCancelModal({
+      visible: true,
+      booking: booking,
+    });
+  };
+
+  // Đóng modal hủy đơn
+  const closeCancelModal = () => {
+    setCancelModal({
+      visible: false,
+      booking: null,
+    });
+  };
+
+  // Xử lý hủy đơn booking
+  const handleCancelBooking = async (bookingId) => {
+    setUpdatingStatus((prev) => ({ ...prev, [bookingId]: true }));
+    closeCancelModal();
+
+    try {
+      await EVBookingUpdateStatus(bookingId, 4); // Status 4 = Cancelled
+      message.success("Đã hủy booking thành công!");
+
+      // Refresh data
+      if (onStatusUpdate) {
+        onStatusUpdate();
+      }
+    } catch (error) {
+      message.error(`Không thể hủy booking: ${error.message}`);
+    } finally {
+      setUpdatingStatus((prev) => ({ ...prev, [bookingId]: false }));
+    }
+  };
+
+  // 
+  const handleEVBookingConfirmEContract = async (bookingId) => {
+    try {
+      const response = await EVBookingConfirmEContract(bookingId);
+      console.log("EV booking confirm e-contract created:", response);
+      message.success("E-Contract xác nhận booking đã được tạo thành công!");
+      return response;
+    } catch (error) {
+      console.error("Error creating EV booking confirm e-contract:", error);
+      message.error(
+        `Không thể tạo E-Contract xác nhận booking: ${error.message}`
+      );
+      throw error;
+    }
+  };
   // Xử lý cập nhật trạng thái booking
   const handleUpdateStatus = async (bookingId, newStatus, statusText) => {
     setUpdatingStatus((prev) => ({ ...prev, [bookingId]: true }));
@@ -143,56 +202,57 @@ function BookingTable({
         <span style={{ fontWeight: 600, color: "#595959" }}>{index + 1}</span>
       ),
     },
-    {
-      title: "Mã Booking",
-      dataIndex: "id",
-      key: "id",
-      width: 100,
-      copyable: true,
-      ellipsis: true,
-      fixed: "left",
-      render: (text) => {
-        const fullId = text || "N/A";
-        const displayId =
-          typeof fullId === "string"
-          ? fullId.slice(0, 8) + "..."
-          : fullId;
+    // {
+    //   title: "Mã Booking",
+    //   dataIndex: "id",
+    //   key: "id",
+    //   width: 100,
+    //   copyable: true,
+    //   ellipsis: true,
+    //   fixed: "left",
+    //   render: (text) => {
+    //     const fullId = text || "N/A";
+    //     const displayId =
+    //       typeof fullId === "string"
+    //         ? fullId.slice(0, 8) + "..."
+    //         : fullId;
 
-        return (
-          <Tooltip title={fullId}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Tag
-                color="blue"
-                style={{
-                  margin: 0,
-                  fontSize: 11,
-                  padding: "2px 8px",
-                  borderRadius: 4,
-                }}
-              >
-                ID
-              </Tag>
-              <span
-                style={{
-                  fontFamily: "monospace",
-                  fontSize: 12,
-                  color: "#1890ff",
-                  fontWeight: 600,
-                }}
-              >
-                {displayId}
-              </span>
-            </div>
-          </Tooltip>
-        );
-      },
-    },
+    //     return (
+    //       <Tooltip title={fullId}>
+    //         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    //           <Tag
+    //             color="blue"
+    //             style={{
+    //               margin: 0,
+    //               fontSize: 11,
+    //               padding: "2px 8px",
+    //               borderRadius: 4,
+    //             }}
+    //           >
+    //             ID
+    //           </Tag>
+    //           <span
+    //             style={{
+    //               fontFamily: "monospace",
+    //               fontSize: 12,
+    //               color: "#1890ff",
+    //               fontWeight: 600,
+    //             }}
+    //           >
+    //             {displayId}
+    //           </span>
+    //         </div>
+    //       </Tooltip>
+    //     );
+    //   },
+    // },
     {
       title: "Ngày Đặt",
       dataIndex: "bookingDate",
       key: "bookingDate",
       width: 150,
       sorter: (a, b) => new Date(a.bookingDate) - new Date(b.bookingDate),
+      defaultSortOrder: "descend",
       render: (text) => (
         <div style={{ fontSize: 13, color: "#595959" }}>
           {formatDateTime(text)}
@@ -244,6 +304,70 @@ function BookingTable({
       ),
     },
     {
+      title: "E-Contract",
+      dataIndex: "eContract",
+      key: "eContract",
+      width: 200,
+      ellipsis: true,
+      render: (eContract) => {
+        if (!eContract) {
+          return (
+            <Tag color="default" style={{ borderRadius: 6 }}>
+              Chưa có hợp đồng
+            </Tag>
+          );
+        }
+
+        // Mapping trạng thái hợp đồng: Draft=0, Pending=1, Approved=2, Rejected=3
+        const contractStatusMap = {
+          0: { color: "default", text: "Bản Nháp" },
+          1: { color: "orange", text: "Chờ Duyệt" },
+          2: { color: "green", text: "Đã Duyệt" },
+          3: { color: "red", text: "Từ Chối" },
+        };
+
+        const statusInfo = contractStatusMap[eContract.status] || {
+          color: "default",
+          text: "Không xác định",
+        };
+
+        return (
+          <Tooltip
+            title={
+              <div className="space-y-1">
+                <div><strong>Tên file:</strong> {eContract.name}</div>
+                <div><strong>Trạng thái:</strong> {statusInfo.text}</div>
+                <div><strong>Người tạo:</strong> {eContract.createdName || "N/A"}</div>
+                <div><strong>Chủ sở hữu:</strong> {eContract.ownerName || "N/A"}</div>
+                <div><strong>Ngày tạo:</strong> {formatDateTime(eContract.createdAt)}</div>
+              </div>
+            }
+          >
+            <div className="flex flex-col gap-1">
+              <Tag
+                color={statusInfo.color}
+                icon={<AuditOutlined />}
+                style={{
+                  borderRadius: 6,
+                  fontSize: 12,
+                  padding: "4px 10px",
+                  fontWeight: 500,
+                }}
+              >
+                {statusInfo.text}
+              </Tag>
+              <div
+                className="text-xs text-gray-500 truncate"
+                style={{ maxWidth: 180 }}
+              >
+                {eContract.name}
+              </div>
+            </div>
+          </Tooltip>
+        );
+      },
+    },
+    {
       title: "Thao Tác",
       key: "actions",
       width: 120,
@@ -252,6 +376,7 @@ function BookingTable({
       render: (_, record) => {
         const isUpdating = updatingStatus[record.id];
         const isDraft = record.status === 0; // Status Draft = 0
+        const isPending = record.status === 1; // Status Pending = 1 (Chờ Duyệt)
 
         return (
           <Space size={8}>
@@ -282,7 +407,23 @@ function BookingTable({
                   fontWeight: 500,
                 }}
               >
-               Xác Nhận
+                Xác Nhận
+              </Button>
+            )}
+
+            {isPending && (
+              <Button
+                danger
+                icon={<CloseCircleOutlined />}
+                onClick={() => showCancelModal(record)}
+                loading={isUpdating}
+                size="middle"
+                style={{
+                  borderRadius: 6,
+                  fontWeight: 500,
+                }}
+              >
+                Hủy đơn
               </Button>
             )}
           </Space>
@@ -354,13 +495,55 @@ function BookingTable({
         visible={reviewModal.visible}
         booking={reviewModal.booking}
         onClose={closeReviewModal}
-        onApprove={() =>
-          handleUpdateStatus(reviewModal.booking?.id, 1, "Đồng Ý")
-        }
+        onApprove={async () => {
+          const bookingId = reviewModal.booking?.id;
+          setUpdatingStatus((prev) => ({ ...prev, [bookingId]: true }));
+          closeReviewModal();
+
+          try {
+            // Gọi đồng thời 2 API
+            const [eContractResponse] = await Promise.all([
+              handleEVBookingConfirmEContract(bookingId),
+              // EVBookingUpdateStatus(bookingId, 1)
+            ]);
+
+            console.log("E-Contract Response:", eContractResponse);
+
+            if (eContractResponse?.status === 201) {
+
+              setEContractModal(true);
+            } else {
+              message.success("Đã cập nhật booking thành công!");
+            }
+
+            // Refresh data
+            if (onStatusUpdate) {
+              onStatusUpdate();
+            }
+          } catch (error) {
+            message.error(`Không thể xử lý booking: ${error.message}`);
+          } finally {
+            setUpdatingStatus((prev) => ({ ...prev, [bookingId]: false }));
+          }
+        }}
         onReject={() =>
           handleUpdateStatus(reviewModal.booking?.id, 4, "Từ chối")
         }
         loading={updatingStatus[reviewModal.booking?.id]}
+      />
+
+      <EContractSuccessModal
+        visible={eContractModal}
+        onClose={() => setEContractModal(false)}
+      />
+
+      {/* Modal Hủy Đơn */}
+      <CancelBookingModal
+        visible={cancelModal.visible}
+        booking={cancelModal.booking}
+        onClose={closeCancelModal}
+        onConfirm={() => handleCancelBooking(cancelModal.booking?.id)}
+        loading={updatingStatus[cancelModal.booking?.id]}
       />
     </>
   );

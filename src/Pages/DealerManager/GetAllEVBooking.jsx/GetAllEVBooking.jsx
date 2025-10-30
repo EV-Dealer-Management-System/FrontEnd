@@ -31,7 +31,7 @@ import BookingTable from "./Components/BookingTable";
 import BookingDetailDrawer from "./Components/BookingDetailDrawer";
 import StatusDistributionChart from "./Components/StatusDistributionChart";
 import TrendChart from "./Components/TrendChart";
-import {ConfigProvider} from "antd";
+import { ConfigProvider } from "antd";
 import viVN from 'antd/lib/locale/vi_VN';
 
 const { Content } = Layout;
@@ -69,7 +69,8 @@ function GetAllEVBooking() {
       const response = await getAllEVBookings();
 
       if (response && response.isSuccess) {
-        const data = response.result || response.data || [];
+        // API trả về: response.result.data (array)
+        const data = response.result?.data || response.result || response.data || [];
         const bookingsList = Array.isArray(data) ? data : [];
 
         // Map data để thêm thông tin từ bookingEVDetails
@@ -495,16 +496,16 @@ function GetAllEVBooking() {
                 title="Danh Sách Booking"
                 bordered
                 headerBordered
-              extra={<Tag color="blue">{filteredBookings.length} booking</Tag>}
-            >
-              <BookingTable
-                dataSource={filteredBookings}
-                loading={loading}
-                onViewDetail={handleViewDetail}
-                formatDateTime={formatDateTime}
-                onStatusUpdate={fetchBookings}
-              />
-            </ProCard>
+                extra={<Tag color="blue">{filteredBookings.length} booking</Tag>}
+              >
+                <BookingTable
+                  dataSource={filteredBookings}
+                  loading={loading}
+                  onViewDetail={handleViewDetail}
+                  formatDateTime={formatDateTime}
+                  onStatusUpdate={fetchBookings}
+                />
+              </ProCard>
             </ConfigProvider>
           </PageContainer>
         </Content>
