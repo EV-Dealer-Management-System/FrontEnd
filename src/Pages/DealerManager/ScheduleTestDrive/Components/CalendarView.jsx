@@ -1,31 +1,32 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import moment from 'moment';
 import 'moment/locale/vi';
-import { 
-  Card, 
-  Typography, 
-  Badge, 
-  Space, 
-  Button, 
+import {
+  Typography,
+  Badge,
+  Space,
+  Button,
   Input,
   Select,
   Row,
   Col,
   Tag,
   Empty,
-  Avatar,
   Tooltip,
   Modal,
   Descriptions
 } from 'antd';
-import { 
+import {
+  ProCard,
+  StatisticCard
+} from '@ant-design/pro-components';
+import {
   LeftOutlined,
   RightOutlined,
   SearchOutlined,
   CalendarOutlined,
   CarOutlined,
   ClockCircleOutlined,
-  PhoneOutlined,
   UserOutlined,
   EyeOutlined
 } from '@ant-design/icons';
@@ -34,6 +35,7 @@ import { useToast } from './ToastContainer';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { Divider } = StatisticCard;
 
 moment.locale('vi');
 
@@ -50,20 +52,21 @@ const CalendarView = () => {
 
   // Time slots from 8:00 to 17:00
   const timeSlots = [
-    '08:00', '09:00', '10:00', '11:00', 
-    '12:00', '13:00', '14:00', '15:00', 
+    '08:00', '09:00', '10:00', '11:00',
+    '12:00', '13:00', '14:00', '15:00',
     '16:00', '17:00'
   ];
 
   useEffect(() => {
     fetchAppointments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAppointments = async () => {
     try {
       setLoading(true);
       const response = await GetAllAppointment.getAllAppointments();
-      
+
       if (response.isSuccess) {
         setAppointments(response.result || []);
       } else {
@@ -120,20 +123,20 @@ const CalendarView = () => {
     return appointments.filter(apt => {
       const aptDate = parseDateTime(apt.startTime);
       if (!aptDate) return false;
-      
+
       const isSameDay = aptDate.isSame(selectedDate, 'day');
-      
+
       // Apply filters
       let matches = isSameDay;
-      
+
       if (statusFilter !== 'all') {
         matches = matches && apt.status === parseInt(statusFilter);
       }
-      
+
       if (modelFilter !== 'all') {
         matches = matches && apt.evTemplate?.modelName === modelFilter;
       }
-      
+
       if (searchText) {
         const search = searchText.toLowerCase();
         matches = matches && (
@@ -143,7 +146,7 @@ const CalendarView = () => {
           apt.evTemplate?.versionName?.toLowerCase().includes(search)
         );
       }
-      
+
       return matches;
     });
   }, [appointments, selectedDate, statusFilter, modelFilter, searchText]);
@@ -187,41 +190,27 @@ const CalendarView = () => {
   };
 
   return (
-    <div style={{ padding: '16px 20px', backgroundColor: '#f0f2f5', minHeight: '100%', width: '100%' }}>
+    <div style={{ padding: 0, backgroundColor: '#f0f2f5', minHeight: '100%', width: '100%' }}>
       {/* Filter Bar */}
-      <Card 
-        style={{ 
-          marginBottom: 12, 
-          borderRadius: 8,
-          backgroundColor: '#ffffff',
-          boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)'
-        }}
-        bodyStyle={{ padding: '12px 16px' }}
+      <ProCard
+        style={{ marginBottom: 16 }}
+        bodyStyle={{ padding: '16px' }}
       >
-        <Row gutter={[16, 16]}>
+        <Row gutter={[12, 12]}>
           <Col xs={24} sm={12} md={6}>
             <Input
-              placeholder="Tên KH / sđt / email / biển"
-              prefix={<SearchOutlined style={{ color: '#666' }} />}
+              placeholder="Tìm kiếm khách hàng, SĐT..."
+              prefix={<SearchOutlined />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              style={{ 
-                backgroundColor: '#fafafa',
-                border: '1px solid #d9d9d9',
-                color: '#262626'
-              }}
+              allowClear
             />
           </Col>
           <Col xs={24} sm={12} md={6}>
             <Input
               value={selectedDate.format('DD/MM/YYYY')}
-              prefix={<CalendarOutlined style={{ color: '#666' }} />}
+              prefix={<CalendarOutlined />}
               readOnly
-              style={{ 
-                backgroundColor: '#fafafa',
-                border: '1px solid #d9d9d9',
-                color: '#262626'
-              }}
             />
           </Col>
           <Col xs={12} sm={8} md={4}>
@@ -262,117 +251,101 @@ const CalendarView = () => {
             </Select>
           </Col>
         </Row>
-      </Card>
+      </ProCard>
 
       {/* Statistics Cards */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
-        <Col xs={12} sm={12} md={6} lg={6}>
-          <Card 
-            style={{ 
-              backgroundColor: '#ffffff',
-              border: '1px solid #f0f0f0',
-              borderRadius: 8,
-              boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03)'
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={12} sm={12} md={6}>
+          <StatisticCard
+            statistic={{
+              title: 'Chờ xác nhận',
+              value: stats.pending,
+              valueStyle: { color: '#F59E0B' },
             }}
-            bodyStyle={{ padding: '10px' }}
-          >
-            <Space direction="vertical" size={0}>
-              <Text style={{ color: '#8c8c8c', fontSize: 12 }}>Chờ xác nhận</Text>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Title level={2} style={{ margin: 0, color: '#262626' }}>{stats.pending}</Title>
-                <div style={{ 
-                  backgroundColor: '#FEF3E2',
-                  padding: '4px 8px',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  color: '#F59E0B'
-                }}>
-                  +0%
-                </div>
+            chart={
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #FEF3E2 0%, #FDE68A 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ClockCircleOutlined style={{ fontSize: 20, color: '#F59E0B' }} />
               </div>
-            </Space>
-          </Card>
+            }
+            chartPlacement="left"
+          />
         </Col>
-        <Col xs={12} sm={12} md={6} lg={6}>
-          <Card 
-            style={{ 
-              backgroundColor: '#ffffff',
-              border: '1px solid #f0f0f0',
-              borderRadius: 8,
-              boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03)'
+        <Col xs={12} sm={12} md={6}>
+          <StatisticCard
+            statistic={{
+              title: 'Đã duyệt',
+              value: stats.approved,
+              valueStyle: { color: '#2563EB' },
             }}
-            bodyStyle={{ padding: '10px' }}
-          >
-            <Space direction="vertical" size={0}>
-              <Text style={{ color: '#8c8c8c', fontSize: 12 }}>Đã duyệt</Text>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Title level={2} style={{ margin: 0, color: '#262626' }}>{stats.approved}</Title>
-                <div style={{ 
-                  backgroundColor: '#E6F0FF',
-                  padding: '4px 8px',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  color: '#2563EB'
-                }}>
-                  +0%
-                </div>
+            chart={
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #E6F0FF 0%, #BFDBFE 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <CalendarOutlined style={{ fontSize: 20, color: '#2563EB' }} />
               </div>
-            </Space>
-          </Card>
+            }
+            chartPlacement="left"
+          />
         </Col>
-        <Col xs={12} sm={12} md={6} lg={6}>
-          <Card 
-            style={{ 
-              backgroundColor: '#ffffff',
-              border: '1px solid #f0f0f0',
-              borderRadius: 8,
-              boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03)'
+        <Col xs={12} sm={12} md={6}>
+          <StatisticCard
+            statistic={{
+              title: 'Hoàn thành',
+              value: stats.completed,
+              valueStyle: { color: '#16A34A' },
             }}
-            bodyStyle={{ padding: '10px' }}
-          >
-            <Space direction="vertical" size={0}>
-              <Text style={{ color: '#8c8c8c', fontSize: 12 }}>Hoàn thành</Text>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Title level={2} style={{ margin: 0, color: '#262626' }}>{stats.completed}</Title>
-                <div style={{ 
-                  backgroundColor: '#E8F5E9',
-                  padding: '4px 8px',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  color: '#16A34A'
-                }}>
-                  +1%
-                </div>
+            chart={
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #E8F5E9 0%, #A7F3D0 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <CarOutlined style={{ fontSize: 20, color: '#16A34A' }} />
               </div>
-            </Space>
-          </Card>
+            }
+            chartPlacement="left"
+          />
         </Col>
-        <Col xs={12} sm={12} md={6} lg={6}>
-          <Card 
-            style={{ 
-              backgroundColor: '#ffffff',
-              border: '1px solid #f0f0f0',
-              borderRadius: 8,
-              boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03)'
+        <Col xs={12} sm={12} md={6}>
+          <StatisticCard
+            statistic={{
+              title: 'Đã hủy',
+              value: stats.cancelled,
+              valueStyle: { color: '#DC2626' },
             }}
-            bodyStyle={{ padding: '10px' }}
-          >
-            <Space direction="vertical" size={0}>
-              <Text style={{ color: '#8c8c8c', fontSize: 12 }}>Đã hủy</Text>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Title level={2} style={{ margin: 0, color: '#262626' }}>{stats.cancelled}</Title>
-                <div style={{ 
-                  backgroundColor: '#FFEBEE',
-                  padding: '4px 8px',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  color: '#DC2626'
-                }}>
-                  +0%
-                </div>
+            chart={
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #FFEBEE 0%, #FECACA 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ClockCircleOutlined style={{ fontSize: 20, color: '#DC2626' }} />
               </div>
-            </Space>
-          </Card>
+            }
+            chartPlacement="left"
+          />
         </Col>
       </Row>
 
@@ -380,219 +353,194 @@ const CalendarView = () => {
       <Row gutter={[16, 16]}>
         {/* Calendar Schedule */}
         <Col xs={24} lg={17} xl={18}>
-          <Card 
-            style={{ 
-              backgroundColor: '#ffffff',
-              border: '1px solid #f0f0f0',
-              borderRadius: 8,
-              height: 'calc(100vh - 280px)',
-              minHeight: 450,
-              boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)'
-            }}
-            bodyStyle={{ padding: '12px 16px', height: '100%', display: 'flex', flexDirection: 'column' }}
+          <ProCard
             title={
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
-                <Space>
-                  <ClockCircleOutlined style={{ color: '#1890ff' }} />
-                  <Text strong style={{ color: '#262626', fontSize: 15 }}>
-                    Lịch theo khung giờ • {selectedDate.format('dddd, DD/MM')}
-                  </Text>
-                </Space>
-                <Space size={4}>
-                  <Button 
-                    icon={<LeftOutlined />} 
-                    onClick={handlePrevDay}
-                    size="small"
-                    style={{ 
-                      backgroundColor: '#1E2330',
-                      border: '1px solid #2A2F3C',
-                      color: '#fff'
-                    }}
-                  />
-                  <Button 
-                    onClick={handleToday}
-                    size="small"
-                    style={{ 
-                      backgroundColor: '#1E2330',
-                      border: '1px solid #2A2F3C',
-                      color: '#fff'
-                    }}
-                  >
-                    Hôm nay
-                  </Button>
-                  <Button 
-                    icon={<RightOutlined />} 
-                    onClick={handleNextDay}
-                    size="small"
-                    style={{ 
-                      backgroundColor: '#1E2330',
-                      border: '1px solid #2A2F3C',
-                      color: '#fff'
-                    }}
-                  />
-                </Space>
-              </div>
+              <Space>
+                <ClockCircleOutlined style={{ color: '#1890ff' }} />
+                <Text strong>
+                  Lịch theo khung giờ • {selectedDate.format('dddd, DD/MM')}
+                </Text>
+              </Space>
             }
+            extra={
+              <Space size={8}>
+                <Button
+                  icon={<LeftOutlined />}
+                  onClick={handlePrevDay}
+                  size="small"
+                />
+                <Button
+                  onClick={handleToday}
+                  size="small"
+                  type="primary"
+                >
+                  Hôm nay
+                </Button>
+                <Button
+                  icon={<RightOutlined />}
+                  onClick={handleNextDay}
+                  size="small"
+                />
+              </Space>
+            }
+            style={{ height: 'calc(100vh - 400px)', minHeight: 500 }}
+            bodyStyle={{ padding: '16px', height: 'calc(100% - 57px)', overflowY: 'auto' }}
           >
-            <div style={{ overflowY: 'auto', flex: 1 }}>
-              {timeSlots.map(timeSlot => {
-                const slotAppointments = getAppointmentsForSlot(timeSlot);
-                return (
-                  <div 
-                    key={timeSlot}
-                    style={{ 
-                      display: 'flex',
-                      borderBottom: '1px solid #f0f0f0',
-                      padding: '8px 0',
-                      minHeight: 50
-                    }}
-                  >
-                    {/* Time */}
-                    <div style={{ 
-                      width: 70,
-                      flexShrink: 0,
-                      color: '#8c8c8c',
-                      fontSize: 13,
-                      paddingTop: 4,
-                      fontWeight: 500
-                    }}>
-                      {timeSlot}
-                    </div>
+            {timeSlots.map(timeSlot => {
+              const slotAppointments = getAppointmentsForSlot(timeSlot);
+              return (
+                <div
+                  key={timeSlot}
+                  style={{
+                    display: 'flex',
+                    borderBottom: '1px solid #f0f0f0',
+                    padding: '12px 0',
+                    minHeight: 60
+                  }}
+                >
+                  {/* Time */}
+                  <div style={{
+                    width: 80,
+                    flexShrink: 0,
+                    color: '#8c8c8c',
+                    fontSize: 14,
+                    paddingTop: 4,
+                    fontWeight: 500
+                  }}>
+                    {timeSlot}
+                  </div>
 
-                    {/* Appointments */}
-                    <div style={{ flex: 1 }}>
-                      {slotAppointments.length === 0 ? (
-                        <div style={{ 
-                          color: '#bfbfbf',
-                          fontSize: 13,
-                          padding: '4px 0'
-                        }}>
-                          -
-                        </div>
-                      ) : (
-                        <Space direction="vertical" style={{ width: '100%' }} size={6}>
-                          {slotAppointments.map(apt => {
-                            const statusInfo = getStatusInfo(apt.status);
-                            return (
-                              <div
-                                key={apt.id}
-                                style={{
-                                  backgroundColor: statusInfo.bgColor,
-                                  padding: '6px 10px',
-                                  borderRadius: 6,
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s'
-                                }}
-                                onClick={() => showDetailModal(apt)}
-                              >
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                  <Space size={6}>
-                                    <CarOutlined style={{ color: statusInfo.color, fontSize: 14 }} />
-                                    <Text strong style={{ color: '#000', fontSize: 13 }}>
+                  {/* Appointments */}
+                  <div style={{ flex: 1 }}>
+                    {slotAppointments.length === 0 ? (
+                      <div style={{
+                        color: '#d9d9d9',
+                        fontSize: 13,
+                        padding: '8px 0',
+                        fontStyle: 'italic'
+                      }}>
+                        Trống
+                      </div>
+                    ) : (
+                      <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                        {slotAppointments.map(apt => {
+                          const statusInfo = getStatusInfo(apt.status);
+                          return (
+                            <ProCard
+                              key={apt.id}
+                              hoverable
+                              bordered
+                              style={{
+                                background: statusInfo.bgColor,
+                                borderLeft: `4px solid ${statusInfo.color}`,
+                                cursor: 'pointer',
+                              }}
+                              bodyStyle={{ padding: '12px' }}
+                              onClick={() => showDetailModal(apt)}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Space size={8}>
+                                  <CarOutlined style={{ color: statusInfo.color, fontSize: 16 }} />
+                                  <div>
+                                    <Text strong style={{ display: 'block', fontSize: 14 }}>
                                       {apt.evTemplate?.versionName || 'N/A'}
                                     </Text>
-                                  </Space>
-                                  <Tag color={statusInfo.color} style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                      <UserOutlined style={{ fontSize: 11 }} /> {apt.customer?.customerName}
+                                    </Text>
+                                  </div>
+                                </Space>
+                                <Space direction="vertical" align="end" size={4}>
+                                  <Tag color={statusInfo.color} style={{ margin: 0 }}>
                                     {statusInfo.text}
                                   </Tag>
-                                </div>
-                                <div style={{ marginTop: 3, fontSize: 11, color: '#555' }}>
-                                  <UserOutlined style={{ fontSize: 10 }} /> {apt.customer?.customerName} • {formatTime(apt.startTime)} - {formatTime(apt.endTime)}
-                                </div>
+                                  <Text type="secondary" style={{ fontSize: 11 }}>
+                                    {formatTime(apt.startTime)} - {formatTime(apt.endTime)}
+                                  </Text>
+                                </Space>
                               </div>
-                            );
-                          })}
-                        </Space>
-                      )}
-                    </div>
+                            </ProCard>
+                          );
+                        })}
+                      </Space>
+                    )}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
 
             {dayAppointments.length === 0 && !loading && (
-              <Empty 
+              <Empty
                 description="Không có lịch hẹn nào trong ngày này"
-                style={{ marginTop: 40 }}
+                style={{ marginTop: 60 }}
               />
             )}
-          </Card>
+          </ProCard>
         </Col>
 
         {/* Vehicle List Sidebar */}
         <Col xs={24} lg={7} xl={6}>
-          <Card 
-            style={{ 
-              backgroundColor: '#ffffff',
-              border: '1px solid #f0f0f0',
-              borderRadius: 8,
-              height: 'calc(100vh - 280px)',
-              minHeight: 450,
-              boxShadow: '0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02)'
-            }}
-            bodyStyle={{ padding: '12px', height: '100%', display: 'flex', flexDirection: 'column' }}
+          <ProCard
             title={
-              <Space style={{ padding: '4px 0' }}>
+              <Space>
                 <CarOutlined style={{ color: '#1890ff' }} />
-                <Text strong style={{ color: '#262626', fontSize: 15 }}>Xế & Tình trạng</Text>
+                <Text strong>Danh sách lịch hẹn</Text>
               </Space>
             }
+            style={{ height: 'calc(100vh - 400px)', minHeight: 500 }}
+            bodyStyle={{ padding: '12px', height: 'calc(100% - 57px)', overflowY: 'auto' }}
           >
-            <div style={{ overflowY: 'auto', flex: 1 }}>
-              <Space direction="vertical" style={{ width: '100%' }} size={8}>
-                {dayAppointments.map(apt => {
-                  const statusInfo = getStatusInfo(apt.status);
-                  return (
-                    <Card
-                      key={apt.id}
-                      size="small"
-                      style={{
-                        backgroundColor: '#fafafa',
-                        border: '1px solid #e8e8e8',
-                        borderRadius: 6,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                      hoverable
-                      onClick={() => showDetailModal(apt)}
-                      bodyStyle={{ padding: '10px' }}
-                    >
-                      <Space direction="vertical" size={3} style={{ width: '100%' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <Space size={4}>
-                            <CarOutlined style={{ color: '#1890ff', fontSize: 13 }} />
-                            <Text strong style={{ color: '#262626', fontSize: 12 }}>
-                              {apt.evTemplate?.versionName || 'N/A'}
-                            </Text>
-                          </Space>
-                          <Tag color={statusInfo.color} style={{ margin: 0, fontSize: 10, padding: '0 4px' }}>
-                            {statusInfo.text}
-                          </Tag>
-                        </div>
-                        <Text style={{ color: '#8c8c8c', fontSize: 10 }}>
-                          {apt.evTemplate?.modelName} • {apt.evTemplate?.colorName}
-                        </Text>
-                        <Text style={{ color: '#8c8c8c', fontSize: 10 }}>
-                          <ClockCircleOutlined style={{ fontSize: 9 }} /> {formatTime(apt.startTime)} - {formatTime(apt.endTime)}
-                        </Text>
-                        <Text style={{ color: '#8c8c8c', fontSize: 10 }}>
-                          <UserOutlined style={{ fontSize: 9 }} /> {apt.customer?.customerName}
-                        </Text>
-                      </Space>
-                    </Card>
-                  );
-                })}
+            <Space direction="vertical" style={{ width: '100%' }} size={12}>
+              {dayAppointments.map(apt => {
+                const statusInfo = getStatusInfo(apt.status);
+                return (
+                  <ProCard
+                    key={apt.id}
+                    hoverable
+                    bordered
+                    size="small"
+                    style={{
+                      borderLeft: `3px solid ${statusInfo.color}`,
+                      cursor: 'pointer',
+                    }}
+                    bodyStyle={{ padding: '12px' }}
+                    onClick={() => showDetailModal(apt)}
+                  >
+                    <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Space size={4}>
+                          <CarOutlined style={{ color: statusInfo.color, fontSize: 14 }} />
+                          <Text strong style={{ fontSize: 13 }}>
+                            {apt.evTemplate?.versionName || 'N/A'}
+                          </Text>
+                        </Space>
+                        <Tag color={statusInfo.color} style={{ margin: 0, fontSize: 11 }}>
+                          {statusInfo.text}
+                        </Tag>
+                      </div>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
+                        {apt.evTemplate?.modelName} • {apt.evTemplate?.colorName}
+                      </Text>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
+                        <ClockCircleOutlined style={{ fontSize: 10 }} /> {formatTime(apt.startTime)} - {formatTime(apt.endTime)}
+                      </Text>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
+                        <UserOutlined style={{ fontSize: 10 }} /> {apt.customer?.customerName}
+                      </Text>
+                    </Space>
+                  </ProCard>
+                );
+              })}
 
-                {dayAppointments.length === 0 && !loading && (
-                  <Empty 
-                    description="Không có lịch hẹn"
-                    style={{ marginTop: 40 }}
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  />
-                )}
-              </Space>
-            </div>
-          </Card>
+              {dayAppointments.length === 0 && !loading && (
+                <Empty
+                  description="Không có lịch hẹn"
+                  style={{ marginTop: 60 }}
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
+              )}
+            </Space>
+          </ProCard>
         </Col>
       </Row>
 

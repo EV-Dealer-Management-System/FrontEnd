@@ -10,42 +10,58 @@ const { Title } = Typography;
 const ScheduleTestDrive = () => {
   return (
     <DealerManagerLayout>
-      <ToastProvider>
-        <div style={{ 
+      <style>{`
+        .schedule-page-container {
+          left: 280px !important;
+          transition: left 0.2s ease;
+        }
+        
+        @media (max-width: 767px) {
+          .schedule-page-container {
+            left: 0 !important;
+          }
+        }
+        
+        /* Khi navbar collapsed (64px) */
+        body:has(.ant-pro-sider[style*="width: 64px"]) .schedule-page-container {
+          left: 64px !important;
+        }
+      `}</style>
+      <div
+        className="schedule-page-container"
+        style={{
           position: 'fixed',
           top: 0,
           left: 280,
           right: 0,
           bottom: 0,
-          width: 'calc(100vw - 280px)',
-          height: '100vh',
-          margin: 0,
-          padding: 0,
-          overflow: 'hidden',
           backgroundColor: '#f0f2f5',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
           zIndex: 1
         }}>
-          <div style={{ 
-            padding: '12px 20px', 
+        <ToastProvider>
+          <div style={{
+            padding: '12px 20px',
             borderBottom: '1px solid #d9d9d9',
-            backgroundColor: '#ffffff'
+            backgroundColor: '#ffffff',
+            flexShrink: 0
           }}>
             <Title level={4} style={{ margin: 0, color: '#262626' }}>
               <ScheduleOutlined style={{ color: '#1890ff', marginRight: 8 }} />
               Quản Lý Lịch Hẹn Lái Thử
             </Title>
           </div>
-          <div style={{ 
-            height: 'calc(100vh - 60px)',
+          <div style={{
+            flex: 1,
             overflow: 'auto',
             backgroundColor: '#f0f2f5'
           }}>
             <ListAppointment />
           </div>
-        </div>
-      </ToastProvider>
+        </ToastProvider>
+      </div>
     </DealerManagerLayout>
   );
-};
-
-export default ScheduleTestDrive;
+}; export default ScheduleTestDrive;
