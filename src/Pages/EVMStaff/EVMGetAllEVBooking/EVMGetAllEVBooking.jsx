@@ -67,7 +67,8 @@ function EVMGetAllEVBooking() {
             const response = await getAllEVBookings();
 
             if (response && response.isSuccess) {
-                const data = response.result || response.data || [];
+                // API trả về: response.result.data (array)
+                const data = response.result?.data || response.result || response.data || [];
                 const bookingsList = Array.isArray(data) ? data : [];
 
                 // Map data để thêm thông tin từ bookingEVDetails

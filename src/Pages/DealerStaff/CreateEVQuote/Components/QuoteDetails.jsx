@@ -9,6 +9,7 @@ import {
   Statistic,
   Space,
   Divider,
+  Table,
 } from "antd";
 import {
   FileTextOutlined,
@@ -21,13 +22,89 @@ const { Text, Title } = Typography;
 const { TextArea } = Input;
 
 function QuoteDetails({
-  quantity,
+  vehicleList,
   note,
   onNoteChange,
-  maxQuantity,
-  selectedVehicle,
-  selectedPromotion,
+  inventory,
+  promotions,
 }) {
+  // Lấy thông tin chi tiết xe từ inventory
+  const getVehicleInfo = (vehicle) => {
+    const inventoryItem = inventory.find(
+      (item) =>
+        item.versionId === vehicle.versionId && item.colorId === vehicle.colorId
+    );
+    return inventoryItem || null;
+  };
+
+  // Lấy thông tin khuyến mãi
+  const getPromotionInfo = (promotionId) => {
+    if (!promotionId) return null;
+    return promotions.find((p) => p.id === promotionId);
+  };
+
+  // Tính tổng số lượng xe
+  const totalQuantity = vehicleList.reduce(
+    (sum, vehicle) => sum + (vehicle.quantity || 0),
+    0
+  );
+
+  // Kiểm tra danh sách xe hợp lệ
+  const hasValidVehicles = vehicleList.some(
+    (v) => v.versionId && v.colorId && v.quantity > 0
+  );
+
+  // Columns cho bảng danh sách xe
+  const columns = [
+    {
+      title: "STT",
+      key: "index",
+      width: 60,
+      align: "center",
+      render: (_, __, index) => index + 1,
+    },
+    {
+      title: "Thông tin xe",
+      key: "vehicle",
+      render: (_, record) => {
+        const info = getVehicleInfo(record);
+        if (!info) return <Text type="secondary">Chưa chọn xe</Text>;
+        return (
+          <Space direction="vertical" size={2}>
+            <Text strong>{info.modelName}</Text>
+            <Text type="secondary" className="text-sm">
+              {info.versionName} - {info.colorName}
+            </Text>
+          </Space>
+        );
+      },
+    },
+    {
+      title: "Số lượng",
+      key: "quantity",
+      width: 100,
+      align: "center",
+      render: (_, record) => (
+        <Text strong className="text-blue-600">
+          {record.quantity || 0} xe
+        </Text>
+      ),
+    },
+    {
+      title: "Khuyến mãi",
+      key: "promotion",
+      render: (_, record) => {
+        const promotion = getPromotionInfo(record.promotionId);
+        if (!promotion) return <Text type="secondary">Không có</Text>;
+        return (
+          <Space direction="vertical" size={2}>
+            <Text className="text-sm">🎁 {promotion.name}</Text>
+          </Space>
+        );
+      },
+    },
+  ];
+
   return (
     <ProCard
       title={
@@ -39,124 +116,63 @@ function QuoteDetails({
       bordered
       headerBordered
     >
-      {selectedVehicle ? (
+      {hasValidVehicles ? (
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
-          {/* Thông tin xe */}
-          <div>
-            <div style={{ marginBottom: 12 }}>
-              <Space>
-                <CarOutlined style={{ color: "#1890ff", fontSize: 16 }} />
-                <Text strong style={{ fontSize: 15 }}>
-                  Thông tin xe
-                </Text>
-              </Space>
-            </div>
-            <Row gutter={[16, 12]}>
-              <Col span={12}>
-                <Space direction="vertical" size={2}>
-                  <Text type="secondary" style={{ fontSize: 13 }}>
-                    Model
-                  </Text>
-                  <Text strong style={{ fontSize: 14 }}>
-                    {selectedVehicle.modelName}
-                  </Text>
-                </Space>
-              </Col>
-              <Col span={12}>
-                <Space direction="vertical" size={2}>
-                  <Text type="secondary" style={{ fontSize: 13 }}>
-                    Phiên bản
-                  </Text>
-                  <Text strong style={{ fontSize: 14 }}>
-                    {selectedVehicle.versionName}
-                  </Text>
-                </Space>
-              </Col>
-              <Col span={12}>
-                <Space direction="vertical" size={2}>
-                  <Text type="secondary" style={{ fontSize: 13 }}>
-                    Màu sắc
-                  </Text>
-                  <Text strong style={{ fontSize: 14 }}>
-                    {selectedVehicle.colorName}
-                  </Text>
-                </Space>
-              </Col>
-              <Col span={12}>
-                <Space direction="vertical" size={2}>
-                  <Text type="secondary" style={{ fontSize: 13 }}>
-                    Số lượng
-                  </Text>
-                  <Text strong style={{ fontSize: 16, color: "#52c41a" }}>
-                    {quantity || 0} xe
-                  </Text>
-                </Space>
-              </Col>
-            </Row>
-          </div>
-
-          {/* Số lượng đặt hàng */}
-          <div
-            style={{
-              padding: "16px",
-              backgroundColor: "#f0f5ff",
-              borderRadius: 8,
-              border: "1px solid #91d5ff",
-            }}
-          >
+          {/* Tổng quan */}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <Row gutter={24} align="middle">
               <Col span={12}>
                 <Statistic
                   title={
-                    <Text strong style={{ fontSize: 14 }}>
-                      Số lượng đặt hàng
+                    <Text strong className="text-base">
+                      Tổng số xe
                     </Text>
                   }
-                  value={quantity || 0}
+                  value={totalQuantity}
                   suffix="xe"
                   valueStyle={{ color: "#1890ff", fontSize: 24 }}
+                  prefix={<CarOutlined />}
                 />
               </Col>
               <Col span={12}>
-                <div style={{ textAlign: "center" }}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    Tối đa có sẵn: {maxQuantity} xe
-                  </Text>
-                </div>
+                <Statistic
+                  title={
+                    <Text strong className="text-base">
+                      Số loại xe
+                    </Text>
+                  }
+                  value={vehicleList.filter((v) => v.versionId && v.colorId).length}
+                  suffix="loại"
+                  valueStyle={{ color: "#52c41a", fontSize: 24 }}
+                />
               </Col>
             </Row>
           </div>
 
           <Divider style={{ margin: 0 }} />
 
-          {/* Khuyến mãi */}
-          {selectedPromotion && (
-            <>
-              <div>
-                <div style={{ marginBottom: 12 }}>
-                  <Space>
-                    <GiftOutlined style={{ color: "#fa8c16", fontSize: 16 }} />
-                    <Text strong style={{ fontSize: 15 }}>
-                      Khuyến mãi áp dụng
-                    </Text>
-                  </Space>
-                </div>
-                <div
-                  style={{
-                    padding: "12px 16px",
-                    backgroundColor: "#fff7e6",
-                    border: "1px solid #ffd591",
-                    borderRadius: 8,
-                  }}
-                >
-                  <Text style={{ fontSize: 14, color: "#d46b08" }}>
-                    🎁 {selectedPromotion.name}
-                  </Text>
-                </div>
-              </div>
-              <Divider style={{ margin: 0 }} />
-            </>
-          )}
+          {/* Bảng danh sách xe */}
+          <div>
+            <div style={{ marginBottom: 12 }}>
+              <Space>
+                <CarOutlined style={{ color: "#1890ff", fontSize: 16 }} />
+                <Text strong style={{ fontSize: 15 }}>
+                  Danh sách xe trong báo giá
+                </Text>
+              </Space>
+            </div>
+            <Table
+              columns={columns}
+              dataSource={vehicleList}
+              rowKey="id"
+              pagination={false}
+              size="small"
+              bordered
+              className="rounded-lg overflow-hidden"
+            />
+          </div>
+
+          <Divider style={{ margin: 0 }} />
 
           {/* Ghi chú */}
           <div>
