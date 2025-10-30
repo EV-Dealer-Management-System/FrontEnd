@@ -223,6 +223,19 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
         ],
       },
       {
+        path: "/dealer-manager/staff-feedback",
+        name: "Lịch Feedback DealerStaff",
+        icon: <CommentOutlined />,
+        routes: [
+          {
+            path: "/dealer-manager/staff-feedback/all",
+            name: "Quản lý lịch Feedback DealerStaff",
+            icon: <CommentOutlined />,
+            component: "./StaffFeedback/FeedbackDealerStaff",
+          },
+        ],
+      },
+      {
         path: "/",
         name: "Đăng Xuất",
         icon: <LogoutOutlined />,

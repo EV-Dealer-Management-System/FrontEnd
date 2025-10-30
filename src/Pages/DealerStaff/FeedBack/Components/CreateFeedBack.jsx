@@ -101,6 +101,8 @@ const CreateFeedBack = ({ onSuccess, onCancel }) => {
     }
   };
 
+  const allUploaded = fileList.every(file => file.status === 'done' && file.response && file.response.attachmentKey);
+
   return (
     <Card>
       <Title level={4}>Tạo Feedback Mới</Title>
@@ -153,7 +155,15 @@ const CreateFeedBack = ({ onSuccess, onCancel }) => {
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" icon={<SendOutlined />} loading={submitting} block>
+          <Button
+            type="primary"
+            htmlType="submit"
+            icon={<SendOutlined />}
+            loading={submitting}
+            block
+            disabled={!allUploaded || submitting}
+            title={!allUploaded ? 'Vui lòng chờ upload ảnh xong!' : ''}
+          >
             Gửi Feedback
           </Button>
         </Form.Item>

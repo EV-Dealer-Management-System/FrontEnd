@@ -54,6 +54,7 @@ import GetAllEVCustomer from "./Pages/DealerStaff/GetAllEVCustomer/GetAllEVCusto
 import PaymentResponse from "./Pages/Payment/PaymentResponse";
 import Createvehicle from "./Pages/EVMStaff/Vehicle/CreateVehicle";
 import TemplateOverview from "./Pages/EVMStaff/Vehicle/TemplateOverview";
+import FeedbackDealerStaff from "./Pages/DealerManager/StaffFeedback/FeedbackDealerStaff";
 
 function App() {
   return (
@@ -204,6 +205,7 @@ function App() {
                   path="staff/create-dealer-staff-account"
                   element={<CreateDealerAccount />}
                 />
+                <Route path="staff-feedback/all" element={<FeedbackDealerStaff />} />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}
                 <Route
                   path="*"
