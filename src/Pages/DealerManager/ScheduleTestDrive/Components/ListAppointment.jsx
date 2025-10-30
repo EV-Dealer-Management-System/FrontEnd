@@ -10,17 +10,22 @@ import {
   Tooltip,
   Modal,
   Descriptions,
-  Select
+  Select,
+  Tabs,
+  Segmented
 } from 'antd';
 import { 
   ScheduleOutlined, 
   EditOutlined, 
   EyeOutlined,
-  PlusOutlined
+  PlusOutlined,
+  CalendarOutlined,
+  UnorderedListOutlined
 } from '@ant-design/icons';
 import { GetAllAppointment } from '../../../../App/DealerManager/ScheduleManagement/GetAllAppointment';
 import { UpdateAppointment } from '../../../../App/DealerManager/ScheduleManagement/UpdateAppointment';
 import CreateAppointmentForm from './CreateAppointment';
+import CalendarView from './CalendarView';
 import { useToast } from './ToastContainer';
 
 const { Title, Text } = Typography;
@@ -36,6 +41,7 @@ const ListAppointment = () => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [newStatus, setNewStatus] = useState(null);
   const [updating, setUpdating] = useState(false);
+  const [viewMode, setViewMode] = useState('calendar'); // 'calendar' or 'list'
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -254,9 +260,47 @@ const ListAppointment = () => {
           word-wrap: break-word !important;
           word-break: break-word !important;
         }
+        .view-mode-segmented .ant-segmented-item {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
       `}</style>
       
-      <div className="text-center mb-4">
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: 16,
+        padding: '0 20px'
+      }}>
+        <Segmented
+          value={viewMode}
+          onChange={setViewMode}
+          options={[
+            {
+              label: (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <CalendarOutlined />
+                  Lịch
+                </span>
+              ),
+              value: 'calendar',
+            },
+            {
+              label: (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <UnorderedListOutlined />
+                  Danh sách
+                </span>
+              ),
+              value: 'list',
+            },
+          ]}
+          size="large"
+          className="view-mode-segmented"
+        />
+        
         <Button 
           type="primary" 
           icon={<PlusOutlined />}
@@ -267,37 +311,41 @@ const ListAppointment = () => {
         </Button>
       </div>
 
-      <Card
-        style={{ width: '100%' }}
-        title={
-          <Title level={4}>
-            <ScheduleOutlined className="mr-2" /> 
-            Danh Sách Lịch Hẹn
-          </Title>
-        }
-        extra={
-          <Text strong>
-            Tổng: {appointments.length} lịch hẹn
-          </Text>
-        }
-        bodyStyle={{ padding: '24px' }}
-      >
-        <Table 
-          columns={columns}
-          dataSource={appointments}
-          loading={loading}
-          rowKey="id"
-          scroll={{ y: 600 }}
-          pagination={{
-            showSizeChanger: true,
-            showQuickJumper: true,
-            pageSizeOptions: [5, 10, 20, 50],
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} lịch hẹn`,
-          }}
-          tableLayout="fixed"
-          className="responsive-table"
-        />
-      </Card>
+      {viewMode === 'calendar' ? (
+        <CalendarView />
+      ) : (
+        <Card
+          style={{ width: '100%' }}
+          title={
+            <Title level={4}>
+              <ScheduleOutlined className="mr-2" /> 
+              Danh Sách Lịch Hẹn
+            </Title>
+          }
+          extra={
+            <Text strong>
+              Tổng: {appointments.length} lịch hẹn
+            </Text>
+          }
+          bodyStyle={{ padding: '24px' }}
+        >
+          <Table 
+            columns={columns}
+            dataSource={appointments}
+            loading={loading}
+            rowKey="id"
+            scroll={{ y: 600 }}
+            pagination={{
+              showSizeChanger: true,
+              showQuickJumper: true,
+              pageSizeOptions: [5, 10, 20, 50],
+              showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} lịch hẹn`,
+            }}
+            tableLayout="fixed"
+            className="responsive-table"
+          />
+        </Card>
+      )}
 
       {/* Modal Tạo Lịch Hẹn */}
       <Modal
