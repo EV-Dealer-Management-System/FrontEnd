@@ -54,6 +54,7 @@ import PaymentResponse from "./Pages/Payment/PaymentResponse";
 import Createvehicle from "./Pages/EVMStaff/Vehicle/CreateVehicle";
 import TemplateOverview from "./Pages/EVMStaff/Vehicle/TemplateOverview";
 import AdminGetAllEVBooking from "./Pages/Admin/GetAllEVBooking/AdminGetAllEVBooking";
+import EVMGetAllInventory from "./Pages/Admin/GetAllEVInventory/EVMGetAllInventory";
 
 function App() {
   return (
@@ -127,6 +128,10 @@ function App() {
                 <Route
                   path="inventory-management"
                   element={<InventoryManagement />}
+                />
+                <Route
+                  path="inventory/company-inventory"
+                  element={<EVMGetAllInventory />}
                 />
                 <Route
                   path="dealer/all-dealers"
