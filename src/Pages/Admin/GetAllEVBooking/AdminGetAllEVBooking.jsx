@@ -23,6 +23,7 @@ import {
 } from "@ant-design/icons";
 import { getAllEVBookingsAdmin, getBookingByIdAdmin } from "../../../App/Admin/EVBooking/GetAllEVBooking";
 import NavigationBar from "../../../Components/Admin/Components/NavigationBar";
+import HeaderBar from "../../../Components/Admin/Components/HeaderBar";
 import BookingFilters from "./Components/BookingFilters";
 import BookingTable from "./Components/BookingTable";
 import BookingDetailDrawer from "./Components/BookingDetailDrawer";
@@ -327,6 +328,7 @@ function AdminGetAllEVBooking() {
 
     return (
         <Layout className="min-h-screen" style={{ background: "#f0f2f5" }}>
+            <HeaderBar collapsed={collapsed} isMobile={isMobile} />
             <NavigationBar
                 collapsed={collapsed}
                 onCollapse={setCollapsed}
@@ -336,6 +338,7 @@ function AdminGetAllEVBooking() {
                 className="transition-all duration-200"
                 style={{
                     marginLeft: isMobile ? 0 : collapsed ? 64 : 280,
+                    paddingTop: '56px'
                 }}
             >
                 <Content style={{ margin: "24px 16px" }}>
