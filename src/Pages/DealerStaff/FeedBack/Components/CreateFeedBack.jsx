@@ -36,7 +36,7 @@ const CreateFeedBack = ({ onSuccess, onCancel }) => {
   const customUpload = async ({ file, onSuccess, onError }) => {
     try {
       const res = await UploadFileFeedback.uploadFileFeedback({
-        fileName: `${file.name.replace(/\.[^/.]+$/, '')}.png`,
+        fileName: `${file.name.replace(/\.[^/.]+$/, '')}.jpg`,
         contentType: 'image/jpeg',
       });
       
