@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 
 function HeaderBar({ collapsed, isMobile }) {
     const navigate = useNavigate();
-    const userFullName = localStorage.getItem("userFullName") || "Admin";
+    const userFullName = localStorage.getItem("userFullName") || "Dealer Manager";
 
     const handleLogout = () => {
         localStorage.removeItem("jwt_token");
@@ -26,13 +26,13 @@ function HeaderBar({ collapsed, isMobile }) {
             key: "profile",
             icon: <UserOutlined />,
             label: "Thông tin cá nhân",
-            onClick: () => navigate("/admin/profile"),
+            onClick: () => navigate("/dealer-manager/profile"),
         },
         {
             key: "settings",
             icon: <SettingOutlined />,
             label: "Cài đặt",
-            onClick: () => navigate("/admin/settings/change-password"),
+            onClick: () => navigate("/dealer-manager/settings/change-password"),
         },
         {
             type: "divider",

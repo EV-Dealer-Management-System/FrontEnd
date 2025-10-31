@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from 'antd';
 import NavigationBar from './Components/NavigationBar';
+import HeaderBar from './Components/HeaderBar';
 
 const { Content } = Layout;
 
@@ -20,22 +21,24 @@ function EVMStaffLayout({ children }) {
 
     handleResize();
     window.addEventListener('resize', handleResize);
-    
+
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavigationBar 
-        collapsed={collapsed} 
+      <HeaderBar collapsed={collapsed} isMobile={isMobile} />
+      <NavigationBar
+        collapsed={collapsed}
         onCollapse={setCollapsed}
         isMobile={isMobile}
       />
-      <div 
-        style={{ 
+      <div
+        style={{
           marginLeft: isMobile ? 0 : (collapsed ? 64 : 280),
           transition: 'margin-left 0.2s ease',
-          minHeight: '100vh'
+          minHeight: '100vh',
+          paddingTop: '56px'
         }}
         className={`${isMobile ? 'pt-16' : ''}`}
       >
@@ -43,7 +46,7 @@ function EVMStaffLayout({ children }) {
           {children}
         </Content>
       </div>
-      
+
       {/* Mobile overlay khi menu mở */}
       {isMobile && !collapsed && (
         <div
