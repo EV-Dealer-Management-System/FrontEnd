@@ -23,17 +23,18 @@ const ManageDealerStaffFeedback = () => {
       setLoading(true);
       const response = await GetStaffFeedback.getStaffFeedback();
       
-      console.log('API Response:', response);
-      
-      if (response.isSuccess) {
-        setData(response.result || []);
-        console.log('Data loaded:', response.result);
+      if (response?.isSuccess) {
+        // Lọc bỏ các item không có id và chỉ lấy những item hợp lệ
+        const validData = (response.result || []).filter(item => item && item.id);
+        setData(validData);
       } else {
-        message.error(response.message || 'Không thể tải danh sách feedback');
+        message.error(response?.message || 'Không thể tải danh sách feedback');
+        setData([]);
       }
     } catch (error) {
       console.error('Error fetching dealer staff feedbacks:', error);
       message.error('Đã xảy ra lỗi khi tải danh sách feedback');
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -82,11 +83,10 @@ const ManageDealerStaffFeedback = () => {
   const columns = [
     {
       title: 'STT',
-      dataIndex: 'index',
       key: 'index',
-      render: (_, __, index) => index + 1,
       align: 'center',
       width: 60,
+      render: (_, __, index) => index + 1,
     },
     {
       title: 'Đại lý',
@@ -166,7 +166,7 @@ const ManageDealerStaffFeedback = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 130,
-      render: (date) => new Date(date).toLocaleDateString('vi-VN'),
+      render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : 'N/A',
     },
   ];
 
@@ -208,4 +208,3 @@ const ManageDealerStaffFeedback = () => {
 };
 
 export default ManageDealerStaffFeedback;
-

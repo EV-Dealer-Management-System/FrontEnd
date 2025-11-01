@@ -1,7 +1,7 @@
 import React from 'react';
 import { Typography } from 'antd';
 import { ScheduleOutlined } from '@ant-design/icons';
-import DealerManagerLayout from '../../../Components/DealerManager/DealerManagerLayout';
+import DealerStaffLayout from '../../../Components/DealerStaff/DealerStaffLayout';
 import ListAppointment from './Components/ListAppointment';
 import { ToastProvider } from './Components/ToastContainer';
 
@@ -9,7 +9,7 @@ const { Title } = Typography;
 
 const ScheduleTestDrive = () => {
   return (
-    <DealerManagerLayout>
+    <DealerStaffLayout>
       <style>{`
         .schedule-page-container {
           left: 280px !important;
@@ -62,6 +62,6 @@ const ScheduleTestDrive = () => {
           </div>
         </ToastProvider>
       </div>
-    </DealerManagerLayout>
+    </DealerStaffLayout>
   );
 }; export default ScheduleTestDrive;
