@@ -8,6 +8,7 @@ import {
 } from "@ant-design/pro-components";
 import { App, Card, Row, Col, Space } from "antd";
 import { createEVBooking } from "../../../App/DealerManager/EVBooking/EVBooking";
+import { EVBookingConfirmEContract } from "../../../App/DealerManager/EVBooking/EVBookingConfirm";
 import DealerManagerLayout from "../../../Components/DealerManager/DealerManagerLayout";
 import getAllEVModels from "../../../App/DealerManager/EVBooking/Layouts/GetAllEVModel";
 import getAllEVVersionByModelID from "../../../App/DealerManager/EVBooking/Layouts/GetAllEVVersionByModelID";
@@ -126,10 +127,9 @@ function EVBooking() {
     ]);
   };
 
-  // Xử lý khi thay đổi version - fetch colors tương ứng
   const handleVersionChange = async (versionId, modelId, index) => {
     try {
-      // Reset colorId
+
       formRef.current?.setFields([
         {
           name: ["bookingDetails", index, "colorId"],
@@ -137,10 +137,8 @@ function EVBooking() {
         },
       ]);
 
-      // Fetch colors cho model và version này
       const cacheKey = `${modelId}_${versionId}`;
 
-      // Kiểm tra cache trước
       if (!colorsCache[cacheKey]) {
         const colorData = await getEVColorbyModelAndVersion(modelId, versionId);
 
@@ -166,14 +164,10 @@ function EVBooking() {
       });
     }
   };
-
-  // Xử lý khi thay đổi color - fetch số lượng có sẵn
   const handleColorChange = async (colorId, modelId, versionId) => {
     try {
-      // Fetch số lượng có sẵn
       const quantityKey = `${modelId}_${versionId}_${colorId}`;
 
-      // Chỉ fetch nếu chưa có trong cache
       if (!availableQuantities[quantityKey]) {
         const quantityData = await getEVAvailableQuantity(
           modelId,
@@ -182,7 +176,6 @@ function EVBooking() {
         );
 
         if (quantityData && quantityData.result !== undefined) {
-          // Lưu vào cache
           setAvailableQuantities((prev) => ({
             ...prev,
             [quantityKey]: quantityData.result,
@@ -198,19 +191,29 @@ function EVBooking() {
     }
   };
 
-  // Xử lý khi submit form
   const handleSubmit = async (values) => {
     try {
-      // Gọi API tạo đơn đặt xe
-      await createEVBooking(values.note, values.bookingDetails);
+      const bookingResponse = await createEVBooking(values.note, values.bookingDetails);
 
-      // Hiển thị modal thành công
+      const bookingId = bookingResponse?.data?.result?.id || bookingResponse?.result?.id;
+
+      if (!bookingId) {
+
+        throw new Error("Không thể lấy bookingId từ response");
+
+      }
+      try {
+        await EVBookingConfirmEContract(bookingId);
+        console.log("E-contract confirmed successfully for booking:", bookingId);
+      } catch (confirmError) {
+        console.error("Lỗi khi confirm e-contract:", confirmError); 
+      }
+
       modal.success({
         title: "Đặt xe thành công!",
-        content: "Đơn đặt xe của bạn đã được tạo thành công.",
+        content: "Đơn đặt xe của bạn đã được tạo thành công và e-contract đã được xác nhận.",
         okText: "Đóng",
         onOk: () => {
-          // Reset form và bookingDetails khi đóng modal
           formRef.current?.resetFields();
           setBookingDetails([]);
         },
@@ -218,7 +221,6 @@ function EVBooking() {
 
       return true;
     } catch (error) {
-      // Hiển thị modal lỗi
       modal.error({
         title: "Đặt xe thất bại",
         content: error.response?.data?.message || error.message,
