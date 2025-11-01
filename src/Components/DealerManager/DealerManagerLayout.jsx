@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Layout, App as AntApp } from "antd";
 import NavigationBar from "../DealerManager/Components/NavigationBar";
+import HeaderBar from "./Components/HeaderBar";
 
 const { Content } = Layout;
 
@@ -24,6 +25,7 @@ function DealerManagerLayout({ children }) {
   return (
     <AntApp>
       <div className="min-h-screen bg-gray-50">
+        <HeaderBar collapsed={collapsed} isMobile={isMobile} />
         <NavigationBar
           collapsed={collapsed}
           onCollapse={setCollapsed}
@@ -35,6 +37,7 @@ function DealerManagerLayout({ children }) {
             marginLeft: isMobile ? 0 : collapsed ? 64 : 280,
             transition: "margin-left 0.2s ease",
             minHeight: "100vh",
+            paddingTop: "56px",
           }}
           className={`${isMobile ? "pt-16" : ""}`}
         >

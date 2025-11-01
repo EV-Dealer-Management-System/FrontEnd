@@ -23,6 +23,7 @@ import {
 } from "@ant-design/icons";
 import { getAllEVBookingsAdmin, getBookingByIdAdmin } from "../../../App/Admin/EVBooking/GetAllEVBooking";
 import NavigationBar from "../../../Components/Admin/Components/NavigationBar";
+import HeaderBar from "../../../Components/Admin/Components/HeaderBar";
 import BookingFilters from "./Components/BookingFilters";
 import BookingTable from "./Components/BookingTable";
 import BookingDetailDrawer from "./Components/BookingDetailDrawer";
@@ -170,12 +171,14 @@ function AdminGetAllEVBooking() {
 
         const stats = {
             total: bookings.length,
-            draft: bookings.filter((b) => getStatus(b) === 0).length,      // Draft = 0
-            pending: bookings.filter((b) => getStatus(b) === 1).length,    // Pending = 1
-            approved: bookings.filter((b) => getStatus(b) === 2).length,   // Approved = 2
-            rejected: bookings.filter((b) => getStatus(b) === 3).length,   // Rejected = 3
-            cancelled: bookings.filter((b) => getStatus(b) === 4).length,  // Cancelled = 4
-            completed: bookings.filter((b) => getStatus(b) === 5).length,  // Completed = 5
+            draft: bookings.filter((b) => getStatus(b) === 0).length,              // Draft = 0
+            waittingDealerSign: bookings.filter((b) => getStatus(b) === 1).length, // WaittingDealerSign = 1
+            pending: bookings.filter((b) => getStatus(b) === 2).length,            // Pending = 2
+            approved: bookings.filter((b) => getStatus(b) === 3).length,           // Approved = 3
+            rejected: bookings.filter((b) => getStatus(b) === 4).length,           // Rejected = 4
+            cancelled: bookings.filter((b) => getStatus(b) === 5).length,          // Cancelled = 5
+            signedByAdmin: bookings.filter((b) => getStatus(b) === 6).length,      // SignedByAdmin = 6
+            completed: bookings.filter((b) => getStatus(b) === 7).length,          // Completed = 7
             totalVehicles: bookings.reduce(
                 (sum, b) => sum + (b.totalQuantity || 0),
                 0
@@ -201,10 +204,13 @@ function AdminGetAllEVBooking() {
     const statusChartData = useMemo(() => {
         return [
             { type: "Bản Nháp", value: statistics.draft, color: "#8c8c8c" },
+            { type: "Chờ Dealer Ký", value: statistics.waittingDealerSign, color: "#faad14" },
             { type: "Chờ Duyệt", value: statistics.pending, color: "#fa8c16" },
             { type: "Đã Duyệt", value: statistics.approved, color: "#52c41a" },
+            { type: "Admin Đã Ký", value: statistics.signedByAdmin, color: "#13c2c2" },
             { type: "Hoàn Thành", value: statistics.completed, color: "#1890ff" },
             { type: "Từ Chối", value: statistics.rejected, color: "#ff4d4f" },
+            { type: "Đã Hủy", value: statistics.cancelled, color: "#8c8c8c" },
         ].filter((item) => item.value > 0);
     }, [statistics]);
 
@@ -261,14 +267,16 @@ function AdminGetAllEVBooking() {
 
     // Hiển thị trạng thái booking
     const getStatusTag = (status) => {
-        // Mapping theo BookingStatus enum: Draft=0, Pending=1, Approved=2, Rejected=3, Cancelled=4, Completed=5
+        // Mapping theo BookingStatus enum: Draft=0, WaittingDealerSign=1, Pending=2, Approved=3, Rejected=4, Cancelled=5, SignedByAdmin=6, Completed=7
         const statusMap = {
             0: { color: "default", text: "Bản Nháp" },
-            1: { color: "orange", text: "Chờ Duyệt" },
-            2: { color: "green", text: "Đã Duyệt" },
-            3: { color: "red", text: "Từ Chối" },
-            4: { color: "default", text: "Đã Hủy" },
-            5: { color: "blue", text: "Hoàn Thành" },
+            1: { color: "gold", text: "Chờ Dealer Ký" },
+            2: { color: "orange", text: "Chờ Duyệt" },
+            3: { color: "green", text: "Đã Duyệt" },
+            4: { color: "red", text: "Từ Chối" },
+            5: { color: "default", text: "Đã Hủy" },
+            6: { color: "cyan", text: "Admin Đã Ký" },
+            7: { color: "blue", text: "Hoàn Thành" },
         };
 
         const statusInfo = statusMap[status] || {
@@ -278,12 +286,12 @@ function AdminGetAllEVBooking() {
         return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
     };
 
-    // Lọc dữ liệu - CHỈ HIỂN THỊ BOOKING ĐÃ DUYỆT (status = 2)
+    // Lọc dữ liệu - CHỈ HIỂN THỊ BOOKING ĐÃ DUYỆT (status = 3)
     const filteredBookings = useMemo(() => {
         return bookings.filter((booking) => {
-            // Chỉ lấy booking có status = 2 (Đã Duyệt)
+            // Chỉ lấy booking có status = 3 (Đã Duyệt - Approved)
             const bookingStatus = typeof booking.status === "number" ? booking.status : 0;
-            if (bookingStatus !== 2) return false;
+            if (bookingStatus !== 3) return false;
 
             // Filter by search text
             if (searchText) {
@@ -320,6 +328,7 @@ function AdminGetAllEVBooking() {
 
     return (
         <Layout className="min-h-screen" style={{ background: "#f0f2f5" }}>
+            <HeaderBar collapsed={collapsed} isMobile={isMobile} />
             <NavigationBar
                 collapsed={collapsed}
                 onCollapse={setCollapsed}
@@ -329,6 +338,7 @@ function AdminGetAllEVBooking() {
                 className="transition-all duration-200"
                 style={{
                     marginLeft: isMobile ? 0 : collapsed ? 64 : 280,
+                    paddingTop: '56px'
                 }}
             >
                 <Content style={{ margin: "24px 16px" }}>

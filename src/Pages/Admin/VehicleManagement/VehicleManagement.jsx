@@ -50,6 +50,7 @@ import {
   ReloadOutlined,
 } from "@ant-design/icons";
 import NavigationBar from "../../../Components/Admin/Components/NavigationBar";
+import HeaderBar from "../../../Components/Admin/Components/HeaderBar";
 import ManageModel from "./Components/ModelManagement";
 import ManageVersion from "./Components/VersionManagement";
 import ColorManagement from "./Components/ColorManagementSimple";
@@ -101,9 +102,16 @@ class ErrorBoundary extends React.Component {
 function VehicleManagement() {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState([]);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Load templates khi vào tab overview
   useEffect(() => {
@@ -179,9 +187,10 @@ function VehicleManagement() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      <HeaderBar collapsed={collapsed} isMobile={isMobile} />
       <NavigationBar collapsed={collapsed} onCollapse={setCollapsed} />
 
-      <div className="flex-1 transition-all duration-200" style={{ marginLeft: collapsed ? 64 : 280 }}>
+      <div className="flex-1 transition-all duration-200" style={{ marginLeft: collapsed ? 64 : 280, paddingTop: '56px' }}>
         <PageContainer
           header={{
             title: "Quản lý xe điện",
