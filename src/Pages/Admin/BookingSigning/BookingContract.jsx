@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   PageContainer
@@ -73,21 +73,26 @@ function BookingContract() {
 
   // Reuse Contract Signing system
   const contractSigning = useContractSigning();
-  const contractService = SignContract();
+  const contractService = useMemo(() => SignContract(), []);
+
+  // Ref để tránh fetch EVC token nhiều lần
+  const hasFetchedToken = useRef(false);
 
   // Lấy EVC AccessToken khi mở trang
   useEffect(() => {
-    const fetchEVCUser = async () => {
-      try {
-        const res = await contractService.getAccessTokenForEVC();
-        setEvcUser(res);
-        console.log('EVC AccessToken + UserId:', res);
-      } catch (err) {
-        console.error('Lỗi lấy EVC token:', err);
-      }
-    };
-    fetchEVCUser();
-  }, [contractService]);
+  if (hasFetchedToken.current) return;
+  hasFetchedToken.current = true;
+
+  const fetchEVCUser = async () => {
+    try {
+      const res = await contractService.getAccessTokenForEVC();
+      setEvcUser(res);
+    } catch (err) {
+      console.error('Lỗi lấy EVC token:', err);
+    }
+  };
+  fetchEVCUser();
+}, []);
 
   // Tự động search khi có bookingId từ URL
   useEffect(() => {
