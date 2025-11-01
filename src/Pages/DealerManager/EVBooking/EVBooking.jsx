@@ -211,7 +211,7 @@ function EVBooking() {
 
       modal.success({
         title: "Đặt xe thành công!",
-        content: "Đơn đặt xe của bạn đã được tạo thành công và e-contract đã được xác nhận.",
+        content: "Đơn đặt xe của bạn đã được tạo thành công và e-contract đã được xác nhận. Vui lòng check mail để tiến hành kí hợp đồng",
         okText: "Đóng",
         onOk: () => {
           formRef.current?.resetFields();
