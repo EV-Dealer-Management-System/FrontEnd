@@ -193,12 +193,13 @@ function BookingContract() {
       message.error('Thiếu thông tin hợp đồng');
       return;
     }
-
+    const positionToSign = detail.positionB || detail.waitingProcess?.position || "50,110,220,180";
+    const pageToSign = detail.pageSign || detail.waitingProcess?.pageSign || 1;
     // Chuẩn bị data cho ký - theo format của EVM Admin
     const waitingProcessData = {
       id: signProcessId,
-      pageSign: detail.processes?.[0]?.pageSign || 1,
-      position: detail.processes?.[0]?.position || "50,110,220,180"
+      pageSign: pageToSign,
+      position: positionToSign
     };
 
     try {
@@ -208,8 +209,9 @@ function BookingContract() {
         signProcessId,
         waitingProcessData,
         detail.downloadUrl,
-        detail.processes?.[0]?.position || "50,110,220,180",
-        detail.processes?.[0]?.pageSign || 1
+        positionToSign,
+        pageToSign,
+        
       );
 
       // Reload contract detail sau khi ký thành công
@@ -281,6 +283,8 @@ function BookingContract() {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+      defaultSortOrder: 'descend',
       render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
     },
     {
@@ -316,7 +320,7 @@ function BookingContract() {
         {/* Filter Section */}
         <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
           <Row gutter={16}>
-            <Col xs={24} sm={12} md={8} lg={6}>
+            <Col >
               <Search
                 placeholder="Tìm theo tên hoặc ID"
                 value={filters.search}
@@ -324,7 +328,25 @@ function BookingContract() {
                 allowClear
               />
             </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
+            <Col >
+              <Select
+                placeholder="Lọc theo trạng thái"
+                value={filters.status}
+                onChange={(value) => updateFilter('status', value)}
+                allowClear
+              >
+                <Option value={1}>Nháp</Option>
+                <Option value={2}>Sẵn sàng</Option>
+                <Option value={3}>Đang thực hiện</Option>
+                <Option value={4}>Hoàn tất</Option>
+                <Option value={5}>Đang chỉnh sửa</Option>
+                <Option value={6}>Đã chấp nhận</Option>
+                <Option value={-1}>Từ chối</Option>
+                <Option value={-2}>Đã xóa</Option>
+                <Option value={-3}>Đã hủy</Option>
+              </Select>
+            </Col>
+            <Col >
               <Select
                 placeholder="Lọc theo ngày tạo"
                 value={filters.dateRange}
@@ -336,7 +358,7 @@ function BookingContract() {
                 <Select.Option value="this_month">Tháng này</Select.Option>
               </Select>
             </Col>
-            <Col xs={24} sm={24} md={8} lg={12} className="flex justify-end">
+            <Col  className="flex justify-end">
               <Button onClick={reload}>
                 Làm mới
               </Button>
@@ -371,7 +393,7 @@ function BookingContract() {
           loading={detailLoading}
           extra={
             <Space>
-              {canSign && selectedSmartCA && (
+              {detail?.status?.value === 3 && canSign && selectedSmartCA && (
                 <Button
                   type="primary"
                   icon={<EditOutlined />}
@@ -381,7 +403,7 @@ function BookingContract() {
                   Ký hợp đồng
                 </Button>
               )}
-              {canSign && !selectedSmartCA && (
+              {detail?.status?.value === 3 && canSign && !selectedSmartCA && (
                 <Button
                   type="default"
                   icon={<SafetyOutlined />}
@@ -390,7 +412,7 @@ function BookingContract() {
                   Chọn SmartCA
                 </Button>
               )}
-              {!canSign && (
+              {detail?.status?.value !== 3 && (
                 <Button
                   type="default"
                   disabled
@@ -400,7 +422,7 @@ function BookingContract() {
               )}
             </Space>
           }
-        >
+          >
           {detail && (
             <Row gutter={16} className="h-full">
               {/* Left Column - Contract Info & SmartCA */}
@@ -418,120 +440,120 @@ function BookingContract() {
                   </div>
 
                   {/* SmartCA Status */}
-                  <div className="border rounded-lg p-4">
-                    <Title level={5}>SmartCA cho Admin</Title>
+                  {/* SmartCA Status - chỉ hiển thị khi trạng thái = 3 */}
+                  {detail?.status?.value === 3 && (
+                    <div className="border rounded-lg p-4">
+                      <Title level={5}>SmartCA cho Admin</Title>
 
-                    {!smartCAInfo && (
-                      <>
-                        <SmartCAStatusChecker
-                          userId={evcUser.userId}
-                          contractService={contractService}
-                          onChecked={handleSmartCAChecked}
-                        />
-                        <Alert
-                          message="Đang kiểm tra SmartCA..."
-                          type="info"
-                          showIcon
-                          className="mb-3"
-                        />
-                      </>
-                    )}
+                      {!smartCAInfo && (
+                        <>
+                          <SmartCAStatusChecker
+                            userId={evcUser.userId}
+                            contractService={contractService}
+                            onChecked={handleSmartCAChecked}
+                          />
+                          <Alert
+                            message="Đang kiểm tra SmartCA..."
+                            type="info"
+                            showIcon
+                            className="mb-3"
+                          />
+                        </>
+                      )}
 
-                    {/* Khi đã có kết quả kiểm tra */}
-                    {smartCAInfo && (() => {
-                      const { hasChoices, hasValidChoices } = getSmartCAChoices(smartCAInfo);
+                      {/* Khi đã có kết quả kiểm tra */}
+                      {smartCAInfo && (() => {
+                        const { hasChoices, hasValidChoices } = getSmartCAChoices(smartCAInfo);
 
-                      // ====== Trường hợp KHÔNG có lựa chọn nào: cho phép Add SmartCA ======
-                      if (!hasChoices) {
+                        if (!hasChoices) {
+                          return (
+                            <>
+                              <Alert
+                                message="Không tìm thấy chứng thư số"
+                                description="Bạn có thể thêm SmartCA mới bằng CCCD/CMND (serial tuỳ chọn)."
+                                type="warning"
+                                showIcon
+                                className="mb-3"
+                              />
+                              <Button type="primary" onClick={() => setShowAddSmartCAModal(true)}>
+                                Thêm SmartCA
+                              </Button>
+
+                              <AddSmartCA
+                                visible={showAddSmartCAModal}
+                                onCancel={() => setShowAddSmartCAModal(false)}
+                                onSuccess={(res) => {
+                                  setSmartCAInfo(prev => ({
+                                    ...(prev || {}),
+                                    userCertificates: [...(prev?.userCertificates || []), res.smartCAData].filter(Boolean),
+                                    defaultSmartCa: (prev?.defaultSmartCa) || null,
+                                  }));
+                                  if (res.hasValidSmartCA && res.smartCAData) {
+                                    setSelectedSmartCA(res.smartCAData);
+                                  }
+                                  setShowAddSmartCAModal(false);
+                                  message.success('SmartCA mới đã được thêm!');
+                                }}
+                                contractInfo={{
+                                  userId: evcUser.userId,
+                                  accessToken: evcUser.accessToken
+                                }}
+                              />
+                            </>
+                          );
+                        }
+
                         return (
-                          <>
-                            <Alert
-                              message="Không tìm thấy chứng thư số"
-                              description="Bạn có thể thêm SmartCA mới bằng CCCD/CMND (serial tuỳ chọn)."
-                              type="warning"
-                              showIcon
-                              className="mb-3"
-                            />
-                            <Button type="primary" onClick={() => setShowAddSmartCAModal(true)}>
-                              Thêm SmartCA
-                            </Button>
-
-                            <AddSmartCA
-                              visible={showAddSmartCAModal}
-                              onCancel={() => setShowAddSmartCAModal(false)}
-                              onSuccess={(res) => {
-                                // Gắn chứng thư mới vào danh sách để ngay lập tức có "lựa chọn"
-                                setSmartCAInfo(prev => ({
-                                  ...(prev || {}),
-                                  userCertificates: [...(prev?.userCertificates || []), res.smartCAData].filter(Boolean),
-                                  defaultSmartCa: (prev?.defaultSmartCa) || null,
-                                }));
-                                // Nếu chứng thư mới hợp lệ thì chọn luôn
-                                if (res.hasValidSmartCA && res.smartCAData) {
-                                  setSelectedSmartCA(res.smartCAData);
+                          <div className="space-y-3">
+                            {selectedSmartCA ? (
+                              <Alert
+                                message="SmartCA đã sẵn sàng"
+                                description={
+                                  <div>
+                                    <div><strong>Chứng thư:</strong> {selectedSmartCA.commonName}</div>
+                                    <div><strong>UID:</strong> {selectedSmartCA.uid}</div>
+                                  </div>
                                 }
-                                setShowAddSmartCAModal(false);
-                                message.success('SmartCA mới đã được thêm!');
-                              }}
-                              contractInfo={{
-                                // có thể truyền thêm accessToken nếu cần
-                                userId: evcUser.userId,
-                                accessToken: evcUser.accessToken
-                              }}
-                            />
-                          </>
+                                type={hasValidChoices ? 'success' : 'warning'}
+                                action={
+                                  <Button size="small" onClick={() => setShowSmartCASelector(true)}>
+                                    Đổi
+                                  </Button>
+                                }
+                              />
+                            ) : (
+                              <Alert
+                                message={hasValidChoices ? 'Chưa chọn SmartCA' : 'Chưa có chứng thư hợp lệ'}
+                                description={hasValidChoices
+                                  ? 'Vui lòng chọn chứng thư số để ký hợp đồng'
+                                  : 'Hệ thống có chứng thư nhưng chưa hợp lệ; bạn có thể thêm chứng thư mới.'}
+                                type="warning"
+                                action={
+                                  <Space>
+                                    {hasValidChoices ? (
+                                      <Button size="small" type="primary" onClick={() => setShowSmartCASelector(true)}>
+                                        Chọn
+                                      </Button>
+                                    ) : (
+                                      <>
+                                        <Button size="small" onClick={() => setShowSmartCASelector(true)}>
+                                          Xem danh sách
+                                        </Button>
+                                        <Button size="small" type="primary" onClick={() => setShowAddSmartCAModal(true)}>
+                                          Thêm SmartCA
+                                        </Button>
+                                      </>
+                                    )}
+                                  </Space>
+                                }
+                              />
+                            )}
+                          </div>
                         );
-                      }
-                      // ====== Có lựa chọn (dù hợp lệ hay chưa) ======
-                      return (
-                        <div className="space-y-3">
-                          {selectedSmartCA ? (
-                            <Alert
-                              message="SmartCA đã sẵn sàng"
-                              description={
-                                <div>
-                                  <div><strong>Chứng thư:</strong> {selectedSmartCA.commonName}</div>
-                                  <div><strong>UID:</strong> {selectedSmartCA.uid}</div>
-                                </div>
-                              }
-                              type={hasValidChoices ? 'success' : 'warning'}
-                              action={
-                                <Button size="small" onClick={() => setShowSmartCASelector(true)}>
-                                  Đổi
-                                </Button>
-                              }
-                            />
-                          ) : (
-                            <Alert
-                              message={hasValidChoices ? 'Chưa chọn SmartCA' : 'Chưa có chứng thư hợp lệ'}
-                              description={hasValidChoices
-                                ? 'Vui lòng chọn chứng thư số để ký hợp đồng'
-                                : 'Hệ thống có chứng thư nhưng chưa hợp lệ; bạn có thể thêm chứng thư mới.'}
-                              type="warning"
-                              action={
-                                <Space>
-                                  {hasValidChoices ? (
-                                    <Button size="small" type="primary" onClick={() => setShowSmartCASelector(true)}>
-                                      Chọn
-                                    </Button>
-                                  ) : (
-                                    <>
-                                      <Button size="small" onClick={() => setShowSmartCASelector(true)}>
-                                        Xem danh sách
-                                      </Button>
-                                      <Button size="small" type="primary" onClick={() => setShowAddSmartCAModal(true)}>
-                                        Thêm SmartCA
-                                      </Button>
-                                    </>
-                                  )}
-                                </Space>
-                              }
-                            />
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
+                      })()}
+                    </div>
+                  )}
+
                 </div>
               </Col>
 
