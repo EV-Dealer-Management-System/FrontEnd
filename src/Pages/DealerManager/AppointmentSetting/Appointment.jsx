@@ -4,6 +4,7 @@ import { ScheduleOutlined, PlusOutlined } from '@ant-design/icons';
 import DealerManagerLayout from '../../../Components/DealerManager/DealerManagerLayout';
 import CreateAppointmentSetting from './Components/CreateAppointmentSetting';
 import GetAvailableAppointment from './Components/GetAvailableAppointment';
+import GetAppointmentSetting from './Components/GetAppointmentSetting';
 
 const { Title } = Typography;
 
@@ -50,6 +51,10 @@ const Appointment = () => {
         </div>
         
         <GetAvailableAppointment ref={getAvailableAppointmentRef} />
+        
+        <div style={{ marginTop: 24 }}>
+          <GetAppointmentSetting />
+        </div>
 
         <Modal
           title={

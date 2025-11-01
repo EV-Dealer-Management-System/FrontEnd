@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { Table, Card, message, Spin, Tag, Input, Button, Space, Statistic, Row, Col, Typography, Modal } from 'antd';
-import { SearchOutlined, ReloadOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, EditOutlined } from '@ant-design/icons';
+import { Table, Card, message, Spin, Tag, Input, Button, Space, Statistic, Row, Col, Typography } from 'antd';
+import { SearchOutlined, ReloadOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { GetAvailableSlot } from '../../../../App/DealerManager/AppointmentSetting/GetAvailableSlot';
-import { GetAllAppointment } from '../../../../App/DealerManager/ScheduleManagement/GetAllAppointment';
-import { GetAppointmentById } from '../../../../App/DealerManager/AppointmentSetting/GetAppointmentById';
-import UpdateAppointmentSettingForm from './UpdateAppointmentSettingForm';
 
 const { Search } = Input;
 const { Title } = Typography;
@@ -14,83 +11,23 @@ const GetAvailableAppointment = forwardRef((props, ref) => {
   const [slots, setSlots] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [filteredSlots, setFilteredSlots] = useState([]);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [editFormLoading, setEditFormLoading] = useState(false);
 
-  // Fetch dữ liệu slot có sẵn và lấy appointment setting IDs từ appointments
+  // Fetch dữ liệu slot có sẵn
   const fetchSlots = async () => {
     setLoading(true);
     try {
-      // Lấy cả available slots và appointments để có appointmentSettingId
-      const [slotsResponse, appointmentsResponse] = await Promise.all([
-        GetAvailableSlot.getAvailableSlot(),
-        GetAllAppointment.getAllAppointments().catch(() => ({ isSuccess: false, result: [] }))
-      ]);
+      const response = await GetAvailableSlot.getAvailableSlot();
       
-      if (slotsResponse.isSuccess) {
-        const slots = slotsResponse.result || [];
-        
-        // Tạo map từ openTime/closeTime đến appointmentSettingId từ appointments
-        let appointmentSettingMap = {};
-        let uniqueAppointmentSettingIds = new Set();
-        
-        if (appointmentsResponse.isSuccess && appointmentsResponse.result) {
-          appointmentsResponse.result.forEach(apt => {
-            // Kiểm tra xem appointment có appointmentSettingId không
-            if (apt.appointmentSettingId) {
-              uniqueAppointmentSettingIds.add(apt.appointmentSettingId);
-              
-              // Map theo thời gian nếu có
-              if (apt.startTime && apt.endTime) {
-                // Extract time từ ISO string: "2025-10-30T08:00:00Z" -> "08:00:00"
-                const startTime = apt.startTime.includes('T') 
-                  ? apt.startTime.substring(apt.startTime.indexOf('T') + 1, apt.startTime.indexOf('T') + 9)
-                  : apt.startTime;
-                const endTime = apt.endTime.includes('T')
-                  ? apt.endTime.substring(apt.endTime.indexOf('T') + 1, apt.endTime.indexOf('T') + 9)
-                  : apt.endTime;
-                
-                if (startTime && endTime) {
-                  const timeKey = `${startTime}-${endTime}`;
-                  appointmentSettingMap[timeKey] = apt.appointmentSettingId;
-                }
-              }
-            }
-          });
-        }
-        
-        // Chuyển Set thành Array để dễ xử lý
-        const appointmentSettingIds = Array.from(uniqueAppointmentSettingIds);
-        
-        const slotsData = slots.map((slot, index) => {
-          // Tìm appointmentSettingId từ map dựa trên openTime và closeTime
-          const timeKey = `${slot.openTime}-${slot.closeTime}`;
-          let appointmentSettingId = appointmentSettingMap[timeKey];
-          
-          // Nếu không tìm thấy trong map, thử lấy từ slot object hoặc dùng index
-          if (!appointmentSettingId) {
-            appointmentSettingId = slot.appointmentSettingId || slot.id;
-            
-            // Nếu vẫn không có, thử dùng appointmentSettingId từ appointments (nếu có)
-            if (!appointmentSettingId && appointmentSettingIds.length > index) {
-              appointmentSettingId = appointmentSettingIds[index];
-            }
-          }
-          
-          return {
-            ...slot,
-            key: appointmentSettingId || `slot-${index}`,
-            id: appointmentSettingId || null,
-            appointmentSettingId: appointmentSettingId || null
-          };
-        });
-        
+      if (response.isSuccess) {
+        const slotsData = (response.result || []).map((slot, index) => ({
+          ...slot,
+          key: index,
+        }));
         setSlots(slotsData);
         setFilteredSlots(slotsData);
         message.success('Tải danh sách slot thành công!');
       } else {
-        message.error(slotsResponse.message || 'Có lỗi xảy ra khi tải dữ liệu');
+        message.error(response.message || 'Có lỗi xảy ra khi tải dữ liệu');
       }
     } catch (error) {
       console.error('Error fetching slots:', error);
@@ -146,10 +83,11 @@ const GetAvailableAppointment = forwardRef((props, ref) => {
   const columns = [
     {
       title: 'STT',
-      dataIndex: 'id',
-      key: 'id',
+      dataIndex: 'key',
+      key: 'key',
       width: 60,
       align: 'center',
+      render: (_, __, index) => index + 1,
       className: 'text-center font-medium',
     },
     {
@@ -228,72 +166,8 @@ const GetAvailableAppointment = forwardRef((props, ref) => {
       ],
       onFilter: (value, record) => record.isAvailable === value,
     },
-    {
-      title: 'Thao Tác',
-      key: 'actions',
-      align: 'center',
-      width: 120,
-      render: (_, record) => {
-        const appointmentSettingId = record.appointmentSettingId || record.id;
-        return (
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            size="small"
-            onClick={() => handleEdit(record)}
-            disabled={!appointmentSettingId}
-          >
-            Sửa
-          </Button>
-        );
-      },
-    },
   ];
 
-  // Xử lý sửa appointment setting
-  const handleEdit = async (record) => {
-    // Lấy appointmentSettingId từ record
-    const appointmentSettingId = record.appointmentSettingId || record.id;
-    
-    if (!appointmentSettingId) {
-      message.error('Slot này không có appointment setting ID để sửa');
-      return;
-    }
-
-    try {
-      setEditFormLoading(true);
-      setIsEditModalVisible(true);
-      
-      // Lấy thông tin chi tiết appointment setting theo ID
-      const response = await GetAppointmentById.getAppointmentById(appointmentSettingId);
-      
-      if (response.isSuccess) {
-        setSelectedAppointment({
-          ...response.result,
-          id: appointmentSettingId
-        });
-      } else {
-        message.error(response.message || 'Không thể tải thông tin appointment setting');
-        setIsEditModalVisible(false);
-      }
-    } catch (error) {
-      console.error('Error fetching appointment setting:', error);
-      message.error('Đã xảy ra lỗi khi tải thông tin appointment setting');
-      setIsEditModalVisible(false);
-    } finally {
-      setEditFormLoading(false);
-    }
-  };
-
-  const handleEditModalClose = () => {
-    setIsEditModalVisible(false);
-    setSelectedAppointment(null);
-  };
-
-  const handleEditSuccess = () => {
-    handleEditModalClose();
-    fetchSlots(); // Refresh danh sách sau khi cập nhật thành công
-  };
 
   return (
     <div>
@@ -397,35 +271,6 @@ const GetAvailableAppointment = forwardRef((props, ref) => {
             </Spin>
           </Card>
         </div>
-
-        {/* Modal Sửa Appointment Setting */}
-        <Modal
-          title={
-            <Space>
-              <EditOutlined style={{ color: '#1890ff' }} />
-              <span style={{ fontWeight: 600, fontSize: 18 }}>
-                Sửa Appointment Setting
-              </span>
-            </Space>
-          }
-          open={isEditModalVisible}
-          onCancel={handleEditModalClose}
-          footer={null}
-          width={800}
-          destroyOnClose
-          centered
-        >
-          <Spin spinning={editFormLoading}>
-            {selectedAppointment && (
-              <UpdateAppointmentSettingForm
-                appointmentId={selectedAppointment.id}
-                initialValues={selectedAppointment}
-                onSuccess={handleEditSuccess}
-                onCancel={handleEditModalClose}
-              />
-            )}
-          </Spin>
-        </Modal>
 
         <style jsx>{`
           .custom-table .ant-table-thead > tr > th {
