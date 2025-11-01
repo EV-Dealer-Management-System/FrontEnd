@@ -11,9 +11,9 @@ export const createAccountApi = {
         dealerName: formData.dealerName || '',
         dealerAddress: formData.dealerAddress || '',
         taxNo: formData.taxNo || '',
+        bankAccount: formData.bankAccount || '',
+        bankName: formData.bankName || '',
         dealerLevel: formData.dealerLevel || 1,
-        additionalTerm: formData.additionalTerm || null,
-        regionDealer: formData.regionDealer || null,
         fullNameManager: formData.fullNameManager || '',
         emailManager: formData.emailManager || '',
         phoneNumberManager: formData.phoneNumberManager || ''
@@ -106,8 +106,16 @@ export const createAccountApi = {
       errors.push('Mã số thuế phải có 10 hoặc 13 chữ số');
     }
 
-    if (!formData.dealerLevel || ![1, 2, 3].includes(formData.dealerLevel)) {
-      errors.push('Cấp độ đại lý phải từ 1 đến 3');
+    if (!formData.dealerLevel || ![1, 2, 3, 4, 5].includes(formData.dealerLevel)) {
+      errors.push('Cấp độ đại lý phải từ 1 đến 5');
+    }
+
+    if (!formData.bankAccount || !/^[0-9]{6,20}$/.test(formData.bankAccount)) {
+      errors.push('Số tài khoản ngân hàng phải có từ 6 đến 20 chữ số');
+    }
+
+    if (!formData.bankName || formData.bankName.trim().length < 2) {
+      errors.push('Vui lòng chọn ngân hàng');
     }
 
     // ✅ Validate tỉnh/thành phố và phường/xã - Những field này bắt buộc cho địa chỉ đại lý
@@ -118,8 +126,6 @@ export const createAccountApi = {
     if (!formData.ward) {
       errors.push('Vui lòng chọn phường/xã');
     }
-
-    // additionalTerm và regionDealer có thể null nên không cần validate
 
     return {
       isValid: errors.length === 0,
@@ -133,9 +139,9 @@ export const createAccountApi = {
       dealerName: formData.dealerName?.trim(),
       dealerAddress: formData.dealerAddress?.trim(),
       taxNo: formData.taxNo?.trim(),
+      bankAccount: formData.bankAccount?.trim(),
+      bankName: formData.bankName?.trim(),
       dealerLevel: formData.dealerLevel || 1,
-      additionalTerm: formData.additionalTerm?.trim() || null,
-      regionDealer: formData.regionDealer?.trim() || null,
       fullNameManager: formData.fullNameManager?.trim(),
       emailManager: formData.emailManager?.trim(),
       phoneNumberManager: formData.phoneNumberManager?.trim()

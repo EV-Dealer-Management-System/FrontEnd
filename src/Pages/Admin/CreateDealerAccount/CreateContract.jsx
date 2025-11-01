@@ -148,7 +148,7 @@ const CreateContract = () => {
   const handleProvinceChange = async (provinceCode) => {
     if (!provinceCode) {
       setWards([]);
-      form.setFieldsValue({ ward: undefined , regionDealer: ''});
+      form.setFieldsValue({ ward: undefined });
       return;
     }
 
@@ -166,14 +166,6 @@ const CreateContract = () => {
       }
 
       form.setFieldsValue({ ward: undefined });
-
-      // Tự động điền regionDealer dựa trên province đã chọn
-      const selectedProvince = provinces.find(p => p.code === provinceCode);
-      if (selectedProvince?.codename) {
-        form.setFieldsValue({ regionDealer: selectedProvince.codename.toUpperCase() });
-      } else {
-        form.setFieldsValue({ regionDealer: '' });
-      }
     } catch (error) {
       message.error('Không thể tải danh sách phường/xã/quận/huyện');
       console.error('Error loading wards/districts:', error);
@@ -208,9 +200,9 @@ const CreateContract = () => {
         dealerName: values.brandName,
         dealerAddress: fullAddress,
         taxNo: values.taxNo,
+        bankAccount: values.bankAccount,
+        bankName: values.bankName,
         dealerLevel: values.dealerLevel,
-        additionalTerm: values.additionalTerm || null,
-        regionDealer: values.regionDealer || null,
         fullNameManager: values.representativeName,
         emailManager: values.email,
         phoneNumberManager: values.phone,
@@ -360,9 +352,9 @@ const CreateContract = () => {
         dealerName: values.brandName,
         dealerAddress: fullAddress,
         taxNo: values.taxNo,
+        bankAccount: values.bankAccount,
+        bankName: values.bankName,
         dealerLevel: values.dealerLevel,
-        additionalTerm: values.additionalTerm || null,
-        regionDealer: values.regionDealer || null,
         fullNameManager: values.representativeName,
         emailManager: values.email,
         phoneNumberManager: values.phone,

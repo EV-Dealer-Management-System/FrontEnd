@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Quill from 'quill';
 
 // === Toolbar & formats (tuỳ bạn chỉnh) ===
 const quillModules = {
@@ -81,6 +82,7 @@ export const useQuillEditor = (initialContent, onContentChange, visible) => {
         // dynamic import tránh vấn đề bundle/SSR
         const { default: Quill } = await import('quill');
 
+        // khởi tạo Quill
         const q = new Quill(quillRef.current, {
           theme: 'snow',
           modules: quillModules,
@@ -203,6 +205,10 @@ export const useQuillEditor = (initialContent, onContentChange, visible) => {
     isUpdatingRef.current = true;
     q.setContents([]);
     q.clipboard.dangerouslyPasteHTML(preprocessHtmlForQuill(html || ''));
+    setTimeout(() => {
+      console.log("=== Quill rendered HTML ===");
+      console.log(q.root.innerHTML);
+    }, 1000);
     isUpdatingRef.current = false;
   };
 
