@@ -22,7 +22,8 @@ import {
   ShoppingCartOutlined,
   DollarOutlined,
   PlusOutlined,
-  ThunderboltOutlined
+  ThunderboltOutlined,
+  ScheduleOutlined
 } from "@ant-design/icons";
 import { CommentOutlined } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -122,6 +123,19 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
             icon: <GlobalOutlined />,
             component: "./EVVersionDetails",
           },
+        ],
+      },
+      {
+        path: "/dealer-staff/schedule",
+        name: "Quản lý Lịch hẹn",
+        icon: <ScheduleOutlined />,
+        routes: [
+          {
+            path: "/dealer-staff/schedule/test-drive",
+            name: "Lịch hẹn lái thử",
+            icon: <ScheduleOutlined />,
+            component: "./ScheduleTestDrive",
+          }
         ],
       },
       {

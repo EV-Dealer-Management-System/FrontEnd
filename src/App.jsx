@@ -18,9 +18,11 @@ import GetAllDealerContractPage from "./Pages/Admin/GetAllDealerContracts/GetAll
 import DealerManager from "./Pages/DealerManager/DealerManager";
 import EVBooking from "./Pages/DealerManager/EVBooking/EVBooking";
 import GetAllEVBooking from "./Pages/DealerManager/GetAllEVBooking.jsx/GetAllEVBooking";
-import ScheduleTestDrive from "./Pages/DealerManager/ScheduleTestDrive/ScheduleTestDrive";
+import ScheduleTestDrive from "./Pages/DealerStaff/ScheduleTestDrive/ScheduleTestDrive";
 import FeedBack from "./Pages/DealerStaff/FeedBack/FeedBack";
 import GetAllEVQuotesDealerManager from "./Pages/DealerManager/GetAllEVQuotes/GetAllEVQuotes";
+import Appointment from "./Pages/DealerManager/AppointmentSetting/Appointment";
+import CreateAppointmentSetting from "./Pages/DealerManager/AppointmentSetting/Components/CreateAppointmentSetting";
 import DealerManagerRoute from "./Router/DealerManagerRoute";
 import AdminRoute from "./Router/AdminRoute";
 import DealerStaffRoute from "./Router/DealerStaffRoute";
@@ -193,14 +195,6 @@ function App() {
                   element={<GetAllEVQuotesDealerManager />}
                 />
                 <Route path="ev/inventory" element={<GetAllEVInventory />} />
-                <Route
-                  path="sales/schedule-test-drive"
-                  element={<ScheduleTestDrive />}
-                />
-                <Route
-                  path="schedule/test-drive"
-                  element={<ScheduleTestDrive />}
-                />
                 
                 <Route path="staff/staff-list" element={<DealerStaffList />} />
                 <Route
@@ -217,6 +211,10 @@ function App() {
                 />
                 <Route path="customer-feedback/all" element={<UpdateStatusCustomerFeedback />} />
                 <Route path="staff-feedback/all" element={<FeedbackDealerStaff />} />
+                <Route
+                  path="appointment"
+                  element={<Appointment />}
+                />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ dealer manager */}
                 <Route
                   path="*"
@@ -304,6 +302,10 @@ function App() {
                 <Route
                   path="customers/get-all-ev-customers"
                   element={<GetAllEVCustomer />}
+                />
+                <Route
+                  path="schedule/test-drive"
+                  element={<ScheduleTestDrive />}
                 />
                 {/* Bắt mọi đường dẫn không hợp lệ và chuyển về trang chủ Dealer Staff */}
                 <Route
