@@ -141,12 +141,12 @@ function NavigationBar({ collapsed: propCollapsed, onCollapse, isMobile }) {
       },
       {
         path: "/evm-staff/dealer-feedback",
-        name: "Feedback DealerStaff",
+        name: "Dealer's Feedback",
         icon: <CommentOutlined />,
         routes: [
           {
             path: "/evm-staff/dealer-feedback/all",
-            name: "Quản lý Feedback DealerStaff",
+            name: "Quản lý Dealer's Feedback",
             icon: <CommentOutlined />,
             component: "./StaffFeedbackManage/UpdateStatusStaffFeedback",
           },

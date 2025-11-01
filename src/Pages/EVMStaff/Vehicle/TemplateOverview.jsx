@@ -63,13 +63,40 @@ function TemplateOverview() {
   };
 
   // Hàm lấy status text và color
-  const getStatusConfig = (status) => {
-    const statusMap = {
-      1: { text: "Có sẵn", color: "success" },
-      2: { text: "Hết hàng", color: "error" },
-      3: { text: "Ngừng sản xuất", color: "default" },
+  const getStatusConfig = (isActive) => {
+    const status = isActive === true || isActive === 1;
+    return {
+      text: status ? "Hoạt động" : "Không hoạt động",
+      color: status ? "success" : "error",
     };
-    return statusMap[status] || { text: "Không xác định", color: "default" };
+  };
+
+  // Hàm lấy màu hex từ tên màu
+  const getColorHexByName = (colorName) => {
+    if (!colorName) return "#cccccc"; // Default gray
+    
+    // Map một số màu phổ biến
+    const colorMap = {
+      'đỏ': '#DC143C',
+      'đen': '#000000',
+      'trắng': '#FFFFFF',
+      'xanh': '#006994',
+      'bạc': '#C0C0C0',
+      'xám': '#808080',
+      'vàng': '#FFD700',
+      'cam': '#FF4500',
+      'tím': '#663399',
+      'hồng': '#FF69B4',
+      'nâu': '#8B4513',
+    };
+    
+    for (const [key, value] of Object.entries(colorMap)) {
+      if (colorName.toLowerCase().includes(key)) {
+        return value;
+      }
+    }
+    
+    return "#cccccc"; // Default gray if not found
   };
 
   return (
@@ -106,7 +133,9 @@ function TemplateOverview() {
         {/* Empty State */}
         {!loading && templates.length === 0 && (
           <Card className="text-center py-20">
-            <Empty description="Chưa có template nào" />
+            <div className="text-center">
+              <Text type="secondary">Chưa có template nào</Text>
+            </div>
           </Card>
         )}
 
@@ -121,19 +150,17 @@ function TemplateOverview() {
 
             <Row gutter={[24, 24]}>
               {templates.map((template) => {
-                // Lấy thông tin từ template
+                // ✅ ĐÚNG: Lấy đúng như trong CreateTemplateVehicle
                 const version = template.version || {};
                 const color = template.color || {};
-                const model = version.model || {};
                 
-                // Debug: Log để kiểm tra structure
                 console.log("Template data:", template);
+                console.log("Version:", version);
                 console.log("Color data:", color);
                 console.log("Color hex:", color.hexCode, color.colorCode);
 
-                const statusConfig = getStatusConfig(template.status);
+                const statusConfig = getStatusConfig(template.isActive);
 
-                // Lấy hình ảnh đầu tiên từ imgUrl array
                 const firstImage =
                   Array.isArray(template.imgUrl) && template.imgUrl.length > 0
                     ? template.imgUrl[0]
@@ -156,7 +183,6 @@ function TemplateOverview() {
                             }}
                             fallback="https://via.placeholder.com/400x300?text=Error"
                           />
-                          {/* Badge trạng thái trên ảnh */}
                           <div className="absolute top-2 right-2">
                             <Badge
                               status={statusConfig.color}
@@ -176,10 +202,10 @@ function TemplateOverview() {
                       {/* Model / Version */}
                       <div className="mb-3">
                         <Text strong className="text-lg block mb-1">
-                          {version.versionName || template.versionName || "N/A"}
+                          {version.versionName || "N/A"}
                         </Text>
                         <Text type="secondary" className="text-sm">
-                          {model.modelName || template.modelName || "N/A"}
+                          {version.modelName || "N/A"}
                         </Text>
                       </div>
 
@@ -188,7 +214,7 @@ function TemplateOverview() {
                       {/* Giá bán */}
                       <div className="mb-3">
                         <Space>
-                          <DollarOutlined className="text-green-600" />
+                          <span className="text-green-600">💰 Giá bán: </span>
                           <Text strong className="text-green-600 text-lg">
                             {template.price
                               ? template.price.toLocaleString("vi-VN") + " ₫"
@@ -207,7 +233,7 @@ function TemplateOverview() {
                               className="inline-block w-5 h-5 rounded-full border-2 border-gray-300"
                               style={{
                                 backgroundColor:
-                                  color.hexCode || color.colorCode || "#ccc",
+                                  color.colorCode || color.hexCode || getColorHexByName(color.colorName),
                               }}
                               title={color.colorName || "N/A"}
                             />
@@ -220,28 +246,28 @@ function TemplateOverview() {
                       {template.description && (
                         <div className="mb-2">
                           <Space align="start">
-                            <InfoCircleOutlined className="text-gray-500 mt-1" />
+                            <span className="text-gray-500 mt-1">ℹ️</span>
                             <div>
                               <Text strong className="block mb-1">
                                 Mô tả:
                               </Text>
-                              <Paragraph
-                                ellipsis={{ rows: 2, expandable: true }}
+                              <Text
                                 className="text-sm text-gray-600 mb-0"
+                                style={{
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden'
+                                }}
                               >
                                 {template.description}
-                              </Paragraph>
+                              </Text>
                             </div>
                           </Space>
                         </div>
                       )}
 
-                      {/* Template ID */}
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <Text type="secondary" className="text-xs block">
-                          ID: <Text code className="text-xs">{template.id}</Text>
-                        </Text>
-                      </div>
+                      
 
                       {/* Số lượng ảnh */}
                       {Array.isArray(template.imgUrl) &&
