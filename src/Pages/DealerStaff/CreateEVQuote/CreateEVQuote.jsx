@@ -308,25 +308,34 @@ function CreateEVQuote() {
       const response = await CreateEVQuotes(quoteData);
 
       if (response && response.isSuccess) {
-        // Hiển thị thông tin tóm tắt từ response
-        const quoteDetails = response.result?.quoteDetails || [];
+        console.log("Quote created successfully:", response.result);
 
-        // Chuẩn bị dữ liệu cho modal - hiển thị tổng quan
+        // Lấy dữ liệu từ response
+        const quoteResult = response.result || {};
+        const quoteDetails = quoteResult.quoteDetails || [];
+
+        // Chuẩn bị dữ liệu cho modal hiển thị
         const successData = {
+          quoteId: quoteResult.id,
+          totalAmount: quoteResult.totalAmount || 0,
           totalVehicles: quoteDetails.length,
           totalQuantity: quoteDetails.reduce((sum, item) => sum + (item.quantity || 0), 0),
-          totalPrice: quoteDetails.reduce((sum, item) => sum + (item.totalPrice || 0), 0),
+          totalPrice: quoteResult.totalAmount || 0, // Lấy từ totalAmount của quote
+          note: quoteResult.note || "",
+          createdAt: quoteResult.createdAt,
           quoteDetails: quoteDetails.map((detail) => ({
             vehicleName: detail.version
               ? `${detail.version.modelName} - ${detail.version.versionName}`
-              : "",
-            colorName: detail.color?.colorName || "",
+              : "N/A",
+            colorName: detail.color?.colorName || "N/A",
             quantity: detail.quantity || 0,
             promotionName: detail.promotion?.promotionName || null,
             unitPrice: detail.unitPrice || 0,
             totalPrice: detail.totalPrice || 0,
           })),
         };
+
+        console.log("Success data prepared:", successData);
 
         setCreatedQuoteData(successData);
         setShowSuccessModal(true);

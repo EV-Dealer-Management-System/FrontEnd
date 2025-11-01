@@ -1,110 +1,207 @@
 import React from "react";
-import { Image, Typography, Tag, Space, Button, Divider } from "antd";
+import { Typography, Tag, Button, Space } from "antd";
 import { ProCard } from "@ant-design/pro-components";
 import {
   CarOutlined,
   EyeOutlined,
-  DollarOutlined,
-  BgColorsOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  InboxOutlined,
+  BgColorsOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
-function VehicleCard({ vehicle, formatPriceShort, onViewDetails }) {
+function VehicleCard({ vehicle, onViewDetails }) {
+  // Format giá VND
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat("vi-VN").format(price);
+  };
+
   return (
     <ProCard
       hoverable
-      className="rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
+      bordered
+      style={{
+        borderRadius: "16px",
+        overflow: "hidden",
+        height: "100%",
+      }}
       bodyStyle={{ padding: 0 }}
     >
-      {/* Ảnh */}
-      <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+      {/* Ảnh xe */}
+      <div
+        style={{
+          position: "relative",
+          height: "200px",
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+        }}
+      >
         {vehicle.imgUrl?.[0] ? (
-          <Image
+          <img
             src={vehicle.imgUrl[0]}
             alt={vehicle.modelName || vehicle.version?.modelName}
-            className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-            preview={{ mask: "Xem ảnh" }}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
           />
         ) : (
-          <div className="h-full flex items-center justify-center">
-            <CarOutlined className="text-6xl text-gray-400" />
-          </div>
+          <CarOutlined style={{ fontSize: "64px", color: "rgba(255,255,255,0.3)" }} />
         )}
 
-        {/* Badges */}
-        <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+        {/* Status badges */}
+        <div
+          style={{
+            position: "absolute",
+            top: "10px",
+            left: "10px",
+            right: "10px",
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "8px",
+          }}
+        >
           <Tag
             icon={vehicle.isActive ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
             color={vehicle.isActive ? "success" : "default"}
-            className="px-2 py-1 text-xs font-medium shadow-sm"
+            style={{
+              padding: "2px 8px",
+              fontSize: "12px",
+              fontWeight: 500,
+              borderRadius: "4px",
+            }}
           >
-            {vehicle.isActive ? "Đang KD" : "Ngừng KD"}
-          </Tag>
-          <Tag
-            color={vehicle.quantity > 0 ? "blue" : "red"}
-            className="px-2 py-1 text-xs font-medium shadow-sm"
-          >
-            {vehicle.quantity > 0 ? `${vehicle.quantity} xe` : "Hết hàng"}
+            {vehicle.isActive ? "Còn Hàng" : "Ngừng Bán"}
           </Tag>
         </div>
       </div>
 
       {/* Nội dung */}
-      <div className="p-4">
+      <div style={{ padding: "16px" }}>
         {/* Tên xe */}
-        <div className="mb-3">
-          <Title level={5} className="mb-1 text-gray-800">
-            Mẫu xe: {vehicle.modelName || vehicle.version?.modelName}
-          </Title>
-          <Text type="secondary" className="text-sm">
-            Phiên Bản: {vehicle.versionName || vehicle.version?.versionName}
+        <Title level={5} style={{ marginBottom: "2px", fontSize: "16px", fontWeight: 600 }}>
+          {vehicle.modelName || vehicle.version?.modelName}
+        </Title>
+        <Text type="secondary" style={{ fontSize: "13px", display: "block", marginBottom: "12px" }}>
+          {vehicle.versionName || vehicle.version?.versionName}
+        </Text>
+
+        {/* Giá bán */}
+        <div
+          style={{
+            textAlign: "center",
+            padding: "8px",
+            background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
+            borderRadius: "8px",
+            marginBottom: "12px",
+            border: "1px solid #bbf7d0",
+          }}
+        >
+          <Text type="secondary" style={{ fontSize: "11px", display: "block", marginBottom: "2px" }}>
+            Giá Bán Lẻ
           </Text>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: "3px" }}>
+            <Text style={{ fontSize: "11px", color: "#059669" }}>₫</Text>
+            <Text
+              strong
+              style={{
+                fontSize: "20px",
+                color: "#059669",
+                fontWeight: 700,
+                lineHeight: 1,
+              }}
+            >
+              {formatPrice(vehicle.price)}
+            </Text>
+            <Text style={{ fontSize: "11px", color: "#059669" }}>₫</Text>
+          </div>
         </div>
 
-        <Divider className="my-3" />
-        {/* Thông tin chi tiết */}
-        <Space direction="vertical" size={8} className="w-full mb-3">
-          {/* Giá bán */}
-          <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg px-3 py-2 border border-green-100">
-            <Space size={6}>
-              <DollarOutlined className="text-green-600 text-base" />
-            </Space>
-            <Text strong className="text-green-600 text-base">
-             Giá Bán: {formatPriceShort(vehicle.price)}
+        {/* Thông tin chi tiết - 2 cột */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "8px",
+            marginBottom: "12px",
+          }}
+        >
+          {/* Màu sắc */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              padding: "8px 6px",
+              border: "1px solid #f0f0f0",
+              borderRadius: "8px",
+              background: "#fafafa",
+            }}
+          >
+            <Text type="secondary" style={{ fontSize: "11px", display: "block", marginBottom: "4px" }}>
+              Màu sắc
+            </Text>
+            <Text strong style={{ fontSize: "12px", display: "block" }}>
+              {vehicle.color?.colorName || vehicle.colorName || "Đen"}
             </Text>
           </div>
 
-          {/* Màu sắc */}
-          <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg px-3 py-2 border border-purple-100">
-            <Space size={6}>
-              <BgColorsOutlined className="text-purple-600 text-base" />
-            </Space>
-            <Space size={6}>
-              <div
-                className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
-                style={{
-                  backgroundColor: vehicle.color?.colorCode || vehicle.colorCode || "#8b5cf6",
-                }}
-              />
-              <Text strong className="text-purple-600 text-sm">
-                Màu sắc: {vehicle.color?.colorName || vehicle.colorName}
-              </Text>
-            </Space>
+          {/* Số lượng */}
+          <div
+            style={{
+              textAlign: "center",
+              padding: "8px 6px",
+              border: "1px solid #f0f0f0",
+              borderRadius: "8px",
+              background: "#fafafa",
+            }}
+          >
+            <Text
+              strong
+              style={{
+                fontSize: "22px",
+                display: "block",
+                color: vehicle.quantity > 0 ? "#1890ff" : "#ff4d4f",
+                lineHeight: 1,
+                marginTop: "6px",
+                marginBottom: "6px",
+              }}
+            >
+              {vehicle.quantity}
+            </Text>
+            <Text type="secondary" style={{ fontSize: "11px", display: "block" }}>
+              Số lượng
+            </Text>
+            <Text strong style={{ fontSize: "12px", display: "block", color: "#666" }}>
+              xe
+            </Text>
           </div>
-        </Space>
+        </div>
 
         {/* Nút xem chi tiết */}
         <Button
           type="primary"
           icon={<EyeOutlined />}
           onClick={() => onViewDetails && onViewDetails(vehicle.versionId)}
-          className="w-full mt-2 h-9 font-medium shadow-sm hover:shadow-md"
+          block
           size="middle"
+          style={{
+            height: "36px",
+            fontSize: "14px",
+            fontWeight: 600,
+            borderRadius: "8px",
+          }}
         >
-          Xem thông số kỹ thuật
+          Xem Thông Số Kỹ Thuật
         </Button>
       </div>
     </ProCard>

@@ -148,7 +148,7 @@ function GetAllEVInventory() {
             },
         },
         {
-            title: "Số Vin",
+            title: "Xem Chi Tiết",
             key: "viNs",
             render: (_, record) => (
                 <Button

@@ -1,5 +1,6 @@
 import React from "react";
-import { Modal, Typography, Space, Button, Row, Col, Divider, Tag } from "antd";
+import { Modal, Typography, Button, Tag, Space } from "antd";
+import { ProCard, StatisticCard, ProTable } from "@ant-design/pro-components";
 import {
   CheckCircleOutlined,
   FileTextOutlined,
@@ -7,7 +8,7 @@ import {
   CarOutlined,
   GiftOutlined,
   PercentageOutlined,
-  DollarOutlined,
+  ShoppingOutlined,
 } from "@ant-design/icons";
 
 const { Text, Title } = Typography;
@@ -23,293 +24,241 @@ function SuccessModal({
     return new Intl.NumberFormat("vi-VN").format(amount) + " VNĐ";
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <Modal
       open={visible}
       onCancel={onClose}
       footer={null}
-      width={560}
+      width={950}
       centered
       destroyOnClose
     >
-      <div style={{ textAlign: "center", padding: "24px 0" }}>
-        {/* Success Icon */}
-        <div
-          style={{
-            marginBottom: 24,
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: "50%",
-              backgroundColor: "#f6ffed",
-              border: "4px solid #52c41a",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <CheckCircleOutlined style={{ fontSize: 48, color: "#52c41a" }} />
-          </div>
-        </div>
-
-        {/* Title */}
-        <Title level={3} style={{ marginBottom: 8, color: "#262626" }}>
-          Tạo báo giá thành công!
-        </Title>
-
-        <Text type="secondary" style={{ fontSize: 14 }}>
-          Báo giá xe điện đã được lưu vào hệ thống
-        </Text>
-
-        {/* Quote Information */}
-        {quoteData && (
-          <div style={{ marginTop: 32, marginBottom: 32 }}>
-            <div
-              style={{
-                padding: "20px",
-                backgroundColor: "#fafafa",
-                borderRadius: 8,
-                border: "1px solid #e8e8e8",
-                textAlign: "left",
-              }}
-            >
-              <Space
-                direction="vertical"
-                size="middle"
-                style={{ width: "100%" }}
-              >
-                {/* Vehicle Info */}
-                <div>
-                  <Space style={{ marginBottom: 8 }}>
-                    <CarOutlined style={{ color: "#1890ff", fontSize: 16 }} />
-                    <Text strong style={{ fontSize: 14 }}>
-                      Thông tin xe điện
-                    </Text>
-                  </Space>
-                  <Row gutter={[8, 8]} style={{ marginLeft: 24 }}>
-                    <Col span={24}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <Text type="secondary" style={{ fontSize: 13 }}>
-                          Model & Phiên bản:
-                        </Text>
-                        <Text strong style={{ fontSize: 13 }}>
-                          {quoteData.vehicleName}
-                        </Text>
-                      </div>
-                    </Col>
-                    <Col span={24}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <Text type="secondary" style={{ fontSize: 13 }}>
-                          Màu sắc:
-                        </Text>
-                        <Text strong style={{ fontSize: 13 }}>
-                          {quoteData.colorName}
-                        </Text>
-                      </div>
-                    </Col>
-                    <Col span={24}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <Text type="secondary" style={{ fontSize: 13 }}>
-                          Số lượng:
-                        </Text>
-                        <Text strong style={{ fontSize: 14, color: "#52c41a" }}>
-                          {quoteData.quantity} xe
-                        </Text>
-                      </div>
-                    </Col>
-                  </Row>
-                </div>
-
-                {/* Promotion Info */}
-                {quoteData.promotionName && (
-                  <>
-                    <Divider style={{ margin: 0 }} />
-                    <div>
-                      <Space style={{ marginBottom: 8 }}>
-                        <GiftOutlined
-                          style={{ color: "#fa8c16", fontSize: 16 }}
-                        />
-                        <Text strong style={{ fontSize: 14 }}>
-                          Khuyến mãi
-                        </Text>
-                      </Space>
-                      <div
-                        style={{
-                          marginLeft: 24,
-                          padding: "12px",
-                          backgroundColor: "#fff7e6",
-                          border: "1px solid #ffd591",
-                          borderRadius: 6,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                          }}
-                        >
-                          <Text
-                            strong
-                            style={{ fontSize: 14, color: "#d46b08" }}
-                          >
-                            🎁 {quoteData.promotionName}
-                          </Text>
-                          {quoteData.promotionValue && (
-                            <div>
-                              {quoteData.promotionType === 1 ? (
-                                <Tag
-                                  color="blue"
-                                  icon={<PercentageOutlined />}
-                                  style={{ fontSize: 13, padding: "4px 12px" }}
-                                >
-                                  Giảm {quoteData.promotionValue}%
-                                </Tag>
-                              ) : (
-                                <Tag
-                                  color="green"
-                                  icon={<DollarOutlined />}
-                                  style={{ fontSize: 13, padding: "4px 12px" }}
-                                >
-                                  Giảm{" "}
-                                  {formatCurrency(quoteData.promotionValue)}
-                                </Tag>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Price Info */}
-                {quoteData.unitPrice && (
-                  <>
-                    <Divider style={{ margin: 0 }} />
-                    <div>
-                      <Space
-                        direction="vertical"
-                        size="small"
-                        style={{ width: "100%" }}
-                      >
-                        {/* Giá gốc */}
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                          }}
-                        >
-                          <Text type="secondary" style={{ fontSize: 13 }}>
-                            Giá gốc:
-                          </Text>
-                          <Text strong style={{ fontSize: 14 }}>
-                            {formatCurrency(
-                              quoteData.unitPrice * quoteData.quantity
-                            )}
-                          </Text>
-                        </div>
-
-                        {/* Giảm giá */}
-                        {quoteData.totalPrice <
-                          quoteData.unitPrice * quoteData.quantity && (
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                            }}
-                          >
-                            <Text type="secondary" style={{ fontSize: 13 }}>
-                              Giảm giá:
-                            </Text>
-                            <Text
-                              strong
-                              style={{ fontSize: 14, color: "#fa8c16" }}
-                            >
-                              -
-                              {formatCurrency(
-                                quoteData.unitPrice * quoteData.quantity -
-                                  quoteData.totalPrice
-                              )}
-                            </Text>
-                          </div>
-                        )}
-
-                        {/* Divider */}
-                        <Divider style={{ margin: "8px 0" }} />
-
-                        {/* Tổng tiền */}
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            padding: "12px",
-                            backgroundColor: "#f6ffed",
-                            border: "1px solid #b7eb8f",
-                            borderRadius: 6,
-                          }}
-                        >
-                          <Text strong style={{ fontSize: 15 }}>
-                            Tổng tiền:
-                          </Text>
-                          <Text
-                            strong
-                            style={{ fontSize: 16, color: "#52c41a" }}
-                          >
-                            {formatCurrency(quoteData.totalPrice)}
-                          </Text>
-                        </div>
-                      </Space>
-                    </div>
-                  </>
-                )}
-              </Space>
+      {quoteData && (
+        <div className="p-6">
+          {/* Header */}
+          <div className="mb-5 text-center">
+            <Title level={3} className="mb-2 text-green-600">
+              Tạo Báo Giá Thành Công!
+            </Title>
+            <Text type="secondary" className="text-sm">
+              Báo giá xe điện đã được lưu vào hệ thống
+            </Text>
+            <div className="mt-2 flex items-center justify-center gap-4">
+              <Text strong>Mã báo giá: #{quoteData.quoteId || "N/A"}</Text>
+              <Text type="secondary">| Tạo vào lúc: </Text>
+              <Text type="secondary">
+                {quoteData?.createdAt && formatDate(quoteData.createdAt)}
+              </Text>
             </div>
           </div>
-        )}
 
-        {/* Action Buttons */}
-        <Space size="middle" style={{ marginTop: 24 }}>
-          <Button
-            size="large"
-            icon={<FileTextOutlined />}
-            onClick={onViewQuotes}
-            style={{ minWidth: 180 }}
-          >
-            Xem danh sách báo giá
-          </Button>
+          {/* Summary Statistics */}
+          <StatisticCard.Group className="mb-6">
+            <StatisticCard
+              statistic={{
+                title: "Loại Xe",
+                value: quoteData.totalVehicles || 0,
+                suffix: "loại",
+              }}
+            />
+            <StatisticCard
+              statistic={{
+                title: "Tổng Số Lượng",
+                value: quoteData.totalQuantity || 0,
+                suffix: "xe",
+              }}
+            />
+            <StatisticCard
+              statistic={{
+                title: "Tổng Giá Trị",
+                value: quoteData.totalAmount || 0,
+                precision: 0,
+                valueStyle: { color: "#52c41a", fontWeight: "bold" },
+                formatter: (value) => formatCurrency(value),
+              }}
+            />
+          </StatisticCard.Group>
 
-          <Button
-            type="primary"
-            size="large"
-            icon={<PlusOutlined />}
-            onClick={onCreateNew}
-            style={{ minWidth: 180 }}
-          >
-            Tạo báo giá mới
-          </Button>
-        </Space>
-      </div>
+          {/* Items Table - ProTable */}
+          <ProTable
+            headerTitle={
+              <Space>
+                <CarOutlined />
+                <span className="font-semibold">Chi Tiết Sản Phẩm</span>
+                <Tag color="blue">{quoteData.quoteDetails?.length || 0} mặt hàng</Tag>
+              </Space>
+            }
+            dataSource={quoteData.quoteDetails?.map((detail, index) => ({
+              ...detail,
+              key: index,
+              stt: index + 1,
+              subtotal: (detail.unitPrice || 0) * (detail.quantity || 0),
+              discount: (detail.unitPrice || 0) * (detail.quantity || 0) - (detail.totalPrice || 0),
+              discountPercent: ((detail.unitPrice || 0) * (detail.quantity || 0) - (detail.totalPrice || 0)) > 0
+                ? ((((detail.unitPrice || 0) * (detail.quantity || 0) - (detail.totalPrice || 0)) / ((detail.unitPrice || 0) * (detail.quantity || 0))) * 100).toFixed(1)
+                : 0,
+            }))}
+            columns={[
+              {
+                title: "STT",
+                dataIndex: "stt",
+                width: 60,
+                align: "center",
+                render: (text) => (
+                  <div className="w-8 h-8 rounded bg-blue-500 flex items-center justify-center mx-auto">
+                    <Text strong className="text-white text-sm">
+                      {text}
+                    </Text>
+                  </div>
+                ),
+              },
+              {
+                title: "Sản Phẩm",
+                dataIndex: "vehicleName",
+                width: 250,
+                render: (text) => (
+                  <Text strong>{text || "N/A"}</Text>
+                ),
+              },
+              {
+                title: "Màu Sắc",
+                dataIndex: "colorName",
+                width: 120,
+                align: "center",
+                render: (text) => (
+                  <Tag icon={<CarOutlined />} color="blue">
+                    {text || "N/A"}
+                  </Tag>
+                ),
+              },
+              {
+                title: "Số Lượng",
+                dataIndex: "quantity",
+                width: 100,
+                align: "center",
+                render: (text) => (
+                  <Tag color="cyan" className="text-sm px-3 py-1">
+                    {text || 0} xe
+                  </Tag>
+                ),
+              },
+              {
+                title: "Khuyến Mãi",
+                dataIndex: "promotionName",
+                width: 180,
+                render: (text) =>
+                  text ? (
+                    <Tag icon={<GiftOutlined />} color="orange" className="text-xs">
+                      {text}
+                    </Tag>
+                  ) : (
+                    <Text type="secondary" className="text-xs">-</Text>
+                  ),
+              },
+              {
+                title: "Đơn Giá",
+                dataIndex: "unitPrice",
+                width: 140,
+                align: "right",
+                render: (text) => <Text>{formatCurrency(text || 0)}</Text>,
+              },
+              {
+                title: "Tạm Tính",
+                dataIndex: "subtotal",
+                width: 140,
+                align: "right",
+                render: (text) => <Text strong>{formatCurrency(text)}</Text>,
+              },
+              {
+                title: "Giảm Giá",
+                dataIndex: "discount",
+                width: 140,
+                align: "right",
+                render: (text, record) =>
+                  text > 0 ? (
+                    <div>
+                      <Tag color="orange" className="mb-1 text-xs">
+                        {record.discountPercent}%
+                      </Tag>
+                      <br />
+                      <Text strong className="text-orange-600 text-sm">
+                        -{formatCurrency(text)}
+                      </Text>
+                    </div>
+                  ) : (
+                    <Text type="secondary">-</Text>
+                  ),
+              },
+              {
+                title: "Thành Tiền",
+                dataIndex: "totalPrice",
+                width: 150,
+                align: "right",
+                render: (text) => (
+                  <Text strong className="text-green-600 text-base">
+                    {formatCurrency(text || 0)}
+                  </Text>
+                ),
+              },
+            ]}
+            pagination={false}
+            search={false}
+            options={false}
+            bordered
+            className="mb-4"
+          />
+
+          {/* Note */}
+          {quoteData.note && (
+            <ProCard
+              size="small"
+              className="mb-4 bg-blue-50 border border-blue-200"
+            >
+              <Space direction="vertical" size="small" className="w-full">
+                <Space>
+                  <FileTextOutlined className="text-blue-500" />
+                  <Text strong className="text-blue-600">
+                    Ghi chú
+                  </Text>
+                </Space>
+                <Text className="text-gray-700">{quoteData.note}</Text>
+              </Space>
+            </ProCard>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex justify-center gap-4 pt-4 border-t border-gray-200">
+            <Button
+              size="large"
+              icon={<FileTextOutlined />}
+              onClick={onViewQuotes}
+              className="h-11 px-6"
+            >
+              Xem Danh Sách
+            </Button>
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={onCreateNew}
+              className="h-11 px-6"
+            >
+              Tạo Mới
+            </Button>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }

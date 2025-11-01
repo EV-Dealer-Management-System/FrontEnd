@@ -185,7 +185,7 @@ function ConfirmationStep({
         )}
 
         {/* Tổng giá */}
-        <div>
+        {/* <div>
           <div style={{ marginBottom: 12 }}>
             <Space>
               <DollarOutlined style={{ color: "#52c41a", fontSize: 16 }} />
@@ -230,7 +230,7 @@ function ConfirmationStep({
               </div>
             </Space>
           </div>
-        </div>
+        </div> */}
       </Space>
     </ProCard>
   );
