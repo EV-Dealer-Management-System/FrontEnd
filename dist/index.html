@@ -5,11 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React</title>
-    <script type="module" crossorigin src="/assets/index-UhJWiKL-.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/antd-B_m6zfHn.js">
-    <link rel="modulepreload" crossorigin href="/assets/utils-ngrFHoWO.js">
-    <link rel="modulepreload" crossorigin href="/assets/react-vendor-DMITyTtZ.js">
-    <link rel="stylesheet" crossorigin href="/assets/index-Co1WLnzZ.css">
+    
+    <!-- Process polyfill - Must be first script to prevent env.mjs errors -->
+    <script>
+      window.process = window.process || {
+        env: {},
+        platform: 'browser', 
+        version: '16.0.0',
+        nextTick: function(cb) { setTimeout(cb, 0); }
+      };
+      globalThis.process = window.process;
+    </script>
+    <script type="module" crossorigin src="/assets/index-CVMJ3KL8.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/antd-BKI0QkSu.js">
+    <link rel="modulepreload" crossorigin href="/assets/utils-CDadTHbl.js">
+    <link rel="modulepreload" crossorigin href="/assets/react-vendor-Dlbcqmke.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-0PmAgjLb.css">
   </head>
   <body>
     <div id="root"></div>

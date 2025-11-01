@@ -22,7 +22,18 @@ import {
   EyeOutlined,
   EditOutlined,
   FilePdfOutlined,
-  SafetyOutlined
+  SafetyOutlined,
+  FileTextOutlined,
+  UserOutlined,
+  CalendarOutlined,
+  CheckCircleOutlined,
+  WarningOutlined,
+  FullscreenOutlined,
+  DownloadOutlined,
+  InfoCircleOutlined,
+  SecurityScanOutlined,
+  IdcardOutlined,
+  PhoneOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import AdminLayout from '../../../Components/Admin/AdminLayout';
@@ -318,7 +329,13 @@ function BookingContract() {
         subTitle="Xem và ký hợp đồng booking từ khách hàng"
       >
         {/* Filter Section */}
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
+        <div style={{
+          background: '#ffffff',
+          padding: '24px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+          marginBottom: '24px'
+        }}>
           <Row gutter={16}>
             <Col >
               <Search
@@ -358,7 +375,7 @@ function BookingContract() {
                 <Select.Option value="this_month">Tháng này</Select.Option>
               </Select>
             </Col>
-            <Col  className="flex justify-end">
+            <Col style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Button onClick={reload}>
                 Làm mới
               </Button>
@@ -367,7 +384,11 @@ function BookingContract() {
         </div>
         <ConfigProvider locale={viVN}>
           {/* Contracts Table */}
-          <div className="bg-white rounded-lg shadow-sm">
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '8px',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+          }}>
             <Table
               columns={columns}
               dataSource={contracts}
@@ -377,30 +398,123 @@ function BookingContract() {
               pagination={{
                 pageSize: 10,
                 showSizeChanger: true,
-                showQuickJumper: true,
                 showTotal: (total) => `Tổng ${total} hợp đồng`,
               }}
               style={{ whiteSpace: 'normal', wordWrap: 'break-word' }}
             />
           </div>
         </ConfigProvider>
-        {/* Contract Detail Drawer */}
+        {/* Contract Detail Drawer - Modern Beautiful Design */}
         <Drawer
-          title="Chi tiết hợp đồng Booking"
-          width={1100}
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ position: 'relative' }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: 'linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)'
+                  }}>
+                    <FileTextOutlined style={{ color: 'white', fontSize: '20px' }} />
+                  </div>
+                  <div style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    right: '-4px',
+                    width: '16px',
+                    height: '16px',
+                    background: '#10b981',
+                    borderRadius: '50%',
+                    border: '2px solid white'
+                  }}></div>
+                </div>
+                <div>
+                  <h3 style={{
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                    color: '#1e293b',
+                    margin: 0,
+                    marginBottom: '4px'
+                  }}>
+                    Chi tiết hợp đồng Booking
+                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      padding: '2px 10px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      background: '#dbeafe',
+                      color: '#1d4ed8'
+                    }}>
+                      ID: {selectedContract?.id?.substring(0, 8) || '...'}
+                    </span>
+                    <span style={{
+                      fontSize: '14px',
+                      color: '#64748b'
+                    }}>
+                      {selectedContract?.name || 'Đang tải thông tin...'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              </div>
+            </div>
+          }
+          width={1400}
           open={detailDrawerVisible}
           onClose={handleCloseDetail}
           loading={detailLoading}
+          className="modern-contract-drawer"
+          styles={{
+            header: {
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              borderBottom: '1px solid #e2e8f0',
+              padding: '20px 24px',
+              borderRadius: '0'
+            },
+            body: {
+              padding: 0,
+              background: 'linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 50%, #f8fafc 100%)',
+              minHeight: '100vh'
+            }
+          }}
           extra={
-            <Space>
+            <Space size="middle">
               {detail?.status?.value === 3 && canSign && selectedSmartCA && (
                 <Button
                   type="primary"
                   icon={<EditOutlined />}
                   onClick={handleOpenSignModal}
                   loading={contractSigning.signingLoading}
+                  size="large"
+                  style={{
+                    height: '48px',
+                    padding: '0 32px',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    borderRadius: '12px',
+                    fontWeight: '600',
+                    boxShadow: '0 8px 16px rgba(16, 185, 129, 0.3)',
+                    border: 'none'
+                  }}
                 >
-                  Ký hợp đồng
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>Ký hợp đồng</span>
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      background: 'white',
+                      borderRadius: '50%',
+                      animation: 'pulse 2s infinite',
+                      marginLeft: '4px'
+                    }}></div>
+                  </span>
                 </Button>
               )}
               {detail?.status?.value === 3 && canSign && !selectedSmartCA && (
@@ -408,6 +522,16 @@ function BookingContract() {
                   type="default"
                   icon={<SafetyOutlined />}
                   onClick={() => setShowSmartCASelector(true)}
+                  size="large"
+                  style={{
+                    height: '48px',
+                    padding: '0 32px',
+                    borderRadius: '12px',
+                    fontWeight: '600',
+                    borderColor: '#f59e0b',
+                    color: '#d97706',
+                    background: 'linear-gradient(135deg, #fef3c7, #fde68a)'
+                  }}
                 >
                   Chọn SmartCA
                 </Button>
@@ -416,188 +540,696 @@ function BookingContract() {
                 <Button
                   type="default"
                   disabled
+                  size="large"
+                  icon={<EditOutlined />}
+                  style={{
+                    height: '48px',
+                    padding: '0 32px',
+                    borderRadius: '12px',
+                    opacity: 0.6
+                  }}
                 >
                   Ký hợp đồng
                 </Button>
               )}
+              
+              <Button
+                type="text"
+                icon={<DownloadOutlined />}
+                size="large"
+                title="Tải xuống"
+                style={{
+                  height: '48px',
+                  width: '48px',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0'
+                }}
+              />
+              
+              <Button
+                type="text"
+                icon={<FullscreenOutlined />}
+                onClick={handleOpenPdfModal}
+                loading={pdfLoading}
+                size="large"
+                title="Mở rộng"
+                style={{
+                  height: '48px',
+                  width: '48px',
+                  borderRadius: '12px',
+                  border: '1px solid #e2e8f0'
+                }}
+              />
             </Space>
           }
           >
           {detail && (
-            <Row gutter={16} className="h-full">
-              {/* Left Column - Contract Info & SmartCA */}
-              <Col span={8}>
-                <div className="space-y-4">
-                  {/* Thông tin cơ bản */}
-                  <div className="border rounded-lg p-4">
-                    <Title level={5}>Thông tin hợp đồng</Title>
-                    <div className="space-y-2 text-sm">
-                      <div><Text strong>Số hợp đồng:</Text> {detail.no}</div>
-                      <div><Text strong>Chủ đề:</Text> {detail.subject}</div>
-                      <div><Text strong>Trạng thái:</Text> <SafeStatus value={detail.status.value} /></div>
-                      <div><Text strong>Ngày tạo:</Text> {dayjs(detail.createdDate).format('DD/MM/YYYY HH:mm')}</div>
+            <div style={{ 
+              padding: '32px', 
+              minHeight: '100vh',
+              paddingBottom: '80px'
+            }}>
+              <Row gutter={32}>
+                {/* Left Sidebar - Contract Info & SmartCA */}
+                <Col span={8}>
+                  {/* Contract Information Card */}
+                  <div style={{
+                    background: 'white',
+                    borderRadius: '16px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
+                    overflow: 'hidden',
+                    marginBottom: '24px',
+                    transition: 'all 0.3s ease'
+                  }}>
+                    <div style={{
+                      padding: '20px 24px',
+                      borderBottom: '1px solid #f0f0f0',
+                      background: 'linear-gradient(135deg, #f8f9fa, #e9ecef)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{
+                          width: '48px',
+                          height: '48px',
+                          background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                        }}>
+                          <InfoCircleOutlined style={{ color: 'white', fontSize: '20px' }} />
+                        </div>
+                        <div>
+                          <h3 style={{
+                            fontSize: '18px',
+                            fontWeight: 'bold',
+                            color: '#1e293b',
+                            margin: 0
+                          }}>
+                            Thông tin hợp đồng
+                          </h3>
+                          <p style={{
+                            fontSize: '14px',
+                            color: '#64748b',
+                            margin: 0,
+                            marginTop: '4px'
+                          }}>
+                            Chi tiết và trạng thái
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div style={{ padding: '24px' }}>
+                      {[
+                        { icon: FileTextOutlined, label: 'Số hợp đồng', value: detail.no, color: '#3b82f6' },
+                        { icon: UserOutlined, label: 'Chủ đề', value: detail.subject, color: '#10b981' },
+                        { icon: CheckCircleOutlined, label: 'Trạng thái', value: <SafeStatus value={detail.status.value} />, color: '#8b5cf6' },
+                        { icon: CalendarOutlined, label: 'Ngày tạo', value: dayjs(detail.createdDate).format('DD/MM/YYYY HH:mm'), color: '#f59e0b' }
+                      ].map((item, index) => (
+                        <div key={index} style={{ marginBottom: index < 3 ? '20px' : 0 }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '16px',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            background: 'linear-gradient(135deg, #f8fafc, #ffffff)',
+                            border: '1px solid #f1f5f9',
+                            transition: 'all 0.3s ease'
+                          }}>
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              background: `linear-gradient(135deg, ${item.color}20, ${item.color}10)`,
+                              borderRadius: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                            }}>
+                              <item.icon style={{ fontSize: '18px', color: item.color }} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                color: '#9ca3af',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                marginBottom: '4px'
+                              }}>
+                                {item.label}
+                              </div>
+                              <div style={{
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                color: '#1e293b',
+                                wordBreak: 'break-words'
+                              }}>
+                                {item.value}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  {/* SmartCA Status */}
-                  {/* SmartCA Status - chỉ hiển thị khi trạng thái = 3 */}
+                  {/* SmartCA Section */}
                   {detail?.status?.value === 3 && (
-                    <div className="border rounded-lg p-4">
-                      <Title level={5}>SmartCA cho Admin</Title>
+                    <div style={{
+                      background: 'white',
+                      borderRadius: '16px',
+                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
+                      overflow: 'hidden',
+                      transition: 'all 0.3s ease'
+                    }}>
+                      <div style={{
+                        padding: '20px 24px',
+                        borderBottom: '1px solid #f0f0f0',
+                        background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <div style={{
+                            width: '48px',
+                            height: '48px',
+                            background: 'linear-gradient(135deg, #10b981, #059669)',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                          }}>
+                            <SecurityScanOutlined style={{ color: 'white', fontSize: '20px' }} />
+                          </div>
+                          <div>
+                            <h3 style={{
+                              fontSize: '18px',
+                              fontWeight: 'bold',
+                              color: '#1e293b',
+                              margin: 0
+                            }}>
+                              SmartCA
+                            </h3>
+                            <p style={{
+                              fontSize: '14px',
+                              color: '#64748b',
+                              margin: 0,
+                              marginTop: '4px'
+                            }}>
+                              Chứng thư số để ký hợp đồng
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div style={{ padding: '24px' }}>
+                        {!smartCAInfo && (
+                          <>
+                            <SmartCAStatusChecker
+                              userId={evcUser.userId}
+                              contractService={contractService}
+                              onChecked={handleSmartCAChecked}
+                            />
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '16px',
+                              padding: '16px',
+                              background: 'linear-gradient(135deg, #dbeafe, #bfdbfe)',
+                              borderRadius: '12px',
+                              border: '1px solid #93c5fd'
+                            }}>
+                              <div style={{
+                                width: '32px',
+                                height: '32px',
+                                background: '#3b82f6',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                <div style={{
+                                  width: '16px',
+                                  height: '16px',
+                                  border: '2px solid white',
+                                  borderTop: '2px solid transparent',
+                                  borderRadius: '50%',
+                                  animation: 'spin 1s linear infinite'
+                                }}></div>
+                              </div>
+                              <div>
+                                <p style={{
+                                  fontSize: '14px',
+                                  fontWeight: '600',
+                                  color: '#1e40af',
+                                  margin: 0
+                                }}>
+                                  Đang kiểm tra SmartCA...
+                                </p>
+                                <p style={{
+                                  fontSize: '12px',
+                                  color: '#2563eb',
+                                  margin: 0,
+                                  marginTop: '4px'
+                                }}>
+                                  Vui lòng đợi trong giây lát
+                                </p>
+                              </div>
+                            </div>
+                          </>
+                        )}
 
-                      {!smartCAInfo && (
-                        <>
-                          <SmartCAStatusChecker
-                            userId={evcUser.userId}
-                            contractService={contractService}
-                            onChecked={handleSmartCAChecked}
-                          />
-                          <Alert
-                            message="Đang kiểm tra SmartCA..."
-                            type="info"
-                            showIcon
-                            className="mb-3"
-                          />
-                        </>
-                      )}
+                        {smartCAInfo && (() => {
+                          const { hasChoices, hasValidChoices } = getSmartCAChoices(smartCAInfo);
 
-                      {/* Khi đã có kết quả kiểm tra */}
-                      {smartCAInfo && (() => {
-                        const { hasChoices, hasValidChoices } = getSmartCAChoices(smartCAInfo);
-
-                        if (!hasChoices) {
-                          return (
-                            <>
-                              <Alert
-                                message="Không tìm thấy chứng thư số"
-                                description="Bạn có thể thêm SmartCA mới bằng CCCD/CMND (serial tuỳ chọn)."
-                                type="warning"
-                                showIcon
-                                className="mb-3"
-                              />
-                              <Button type="primary" onClick={() => setShowAddSmartCAModal(true)}>
-                                Thêm SmartCA
-                              </Button>
-
-                              <AddSmartCA
-                                visible={showAddSmartCAModal}
-                                onCancel={() => setShowAddSmartCAModal(false)}
-                                onSuccess={(res) => {
-                                  setSmartCAInfo(prev => ({
-                                    ...(prev || {}),
-                                    userCertificates: [...(prev?.userCertificates || []), res.smartCAData].filter(Boolean),
-                                    defaultSmartCa: (prev?.defaultSmartCa) || null,
-                                  }));
-                                  if (res.hasValidSmartCA && res.smartCAData) {
-                                    setSelectedSmartCA(res.smartCAData);
-                                  }
-                                  setShowAddSmartCAModal(false);
-                                  message.success('SmartCA mới đã được thêm!');
-                                }}
-                                contractInfo={{
-                                  userId: evcUser.userId,
-                                  accessToken: evcUser.accessToken
-                                }}
-                              />
-                            </>
-                          );
-                        }
-
-                        return (
-                          <div className="space-y-3">
-                            {selectedSmartCA ? (
-                              <Alert
-                                message="SmartCA đã sẵn sàng"
-                                description={
-                                  <div>
-                                    <div><strong>Chứng thư:</strong> {selectedSmartCA.commonName}</div>
-                                    <div><strong>UID:</strong> {selectedSmartCA.uid}</div>
+                          if (!hasChoices) {
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'flex-start',
+                                  gap: '16px',
+                                  padding: '16px',
+                                  background: 'linear-gradient(135deg, #fef3c7, #fecaca)',
+                                  borderRadius: '12px',
+                                  border: '1px solid #fed7aa'
+                                }}>
+                                  <div style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    background: '#f97316',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexShrink: 0
+                                  }}>
+                                    <WarningOutlined style={{ color: 'white', fontSize: '14px' }} />
                                   </div>
-                                }
-                                type={hasValidChoices ? 'success' : 'warning'}
-                                action={
-                                  <Button size="small" onClick={() => setShowSmartCASelector(true)}>
+                                  <div>
+                                    <p style={{
+                                      fontSize: '14px',
+                                      fontWeight: '600',
+                                      color: '#ea580c',
+                                      margin: 0
+                                    }}>
+                                      Không tìm thấy chứng thư số
+                                    </p>
+                                    <p style={{
+                                      fontSize: '12px',
+                                      color: '#ea580c',
+                                      margin: 0,
+                                      marginTop: '4px'
+                                    }}>
+                                      Bạn có thể thêm SmartCA mới bằng CCCD/CMND
+                                    </p>
+                                  </div>
+                                </div>
+                                
+                                <Button 
+                                  type="primary" 
+                                  onClick={() => setShowAddSmartCAModal(true)}
+                                  size="large"
+                                  style={{
+                                    width: '100%',
+                                    height: '48px',
+                                    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    fontWeight: '600',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                  }}
+                                >
+                                  + Thêm SmartCA mới
+                                </Button>
+
+                                <AddSmartCA
+                                  visible={showAddSmartCAModal}
+                                  onCancel={() => setShowAddSmartCAModal(false)}
+                                  onSuccess={(res) => {
+                                    setSmartCAInfo(prev => ({
+                                      ...(prev || {}),
+                                      userCertificates: [...(prev?.userCertificates || []), res.smartCAData].filter(Boolean),
+                                      defaultSmartCa: (prev?.defaultSmartCa) || null,
+                                    }));
+                                    if (res.hasValidSmartCA && res.smartCAData) {
+                                      setSelectedSmartCA(res.smartCAData);
+                                    }
+                                    setShowAddSmartCAModal(false);
+                                    message.success('SmartCA mới đã được thêm!');
+                                  }}
+                                  contractInfo={{
+                                    userId: evcUser.userId,
+                                    accessToken: evcUser.accessToken
+                                  }}
+                                />
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                              {selectedSmartCA ? (
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'flex-start',
+                                  gap: '16px',
+                                  padding: '16px',
+                                  background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
+                                  borderRadius: '12px',
+                                  border: '1px solid #a7f3d0'
+                                }}>
+                                  <div style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    background: '#10b981',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexShrink: 0
+                                  }}>
+                                    <CheckCircleOutlined style={{ color: 'white', fontSize: '14px' }} />
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{
+                                      fontSize: '14px',
+                                      fontWeight: '600',
+                                      color: '#047857',
+                                      margin: 0
+                                    }}>
+                                      SmartCA đã sẵn sàng
+                                    </p>
+                                    <div style={{
+                                      fontSize: '12px',
+                                      color: '#059669',
+                                      marginTop: '8px'
+                                    }}>
+                                      <div style={{ marginBottom: '4px' }}>
+                                        <strong>Chứng thư:</strong> {selectedSmartCA.commonName}
+                                      </div>
+                                      <div>
+                                        <strong>UID:</strong> {selectedSmartCA.uid}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <Button 
+                                    size="small" 
+                                    onClick={() => setShowSmartCASelector(true)}
+                                    style={{
+                                      borderColor: '#10b981',
+                                      color: '#047857',
+                                      borderRadius: '8px'
+                                    }}
+                                  >
                                     Đổi
                                   </Button>
-                                }
-                              />
-                            ) : (
-                              <Alert
-                                message={hasValidChoices ? 'Chưa chọn SmartCA' : 'Chưa có chứng thư hợp lệ'}
-                                description={hasValidChoices
-                                  ? 'Vui lòng chọn chứng thư số để ký hợp đồng'
-                                  : 'Hệ thống có chứng thư nhưng chưa hợp lệ; bạn có thể thêm chứng thư mới.'}
-                                type="warning"
-                                action={
-                                  <Space>
+                                </div>
+                              ) : (
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'flex-start',
+                                  gap: '16px',
+                                  padding: '16px',
+                                  background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                                  borderRadius: '12px',
+                                  border: '1px solid #fbbf24'
+                                }}>
+                                  <div style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    background: '#f59e0b',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexShrink: 0
+                                  }}>
+                                    <WarningOutlined style={{ color: 'white', fontSize: '14px' }} />
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{
+                                      fontSize: '14px',
+                                      fontWeight: '600',
+                                      color: '#d97706',
+                                      margin: 0
+                                    }}>
+                                      {hasValidChoices ? 'Chưa chọn SmartCA' : 'Chưa có chứng thư hợp lệ'}
+                                    </p>
+                                    <p style={{
+                                      fontSize: '12px',
+                                      color: '#d97706',
+                                      margin: 0,
+                                      marginTop: '4px'
+                                    }}>
+                                      {hasValidChoices
+                                        ? 'Vui lòng chọn chứng thư số để ký hợp đồng'
+                                        : 'Hệ thống có chứng thư nhưng chưa hợp lệ'}
+                                    </p>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                                     {hasValidChoices ? (
-                                      <Button size="small" type="primary" onClick={() => setShowSmartCASelector(true)}>
+                                      <Button 
+                                        size="small" 
+                                        type="primary" 
+                                        onClick={() => setShowSmartCASelector(true)}
+                                        style={{
+                                          background: '#3b82f6',
+                                          borderRadius: '8px',
+                                          border: 'none'
+                                        }}
+                                      >
                                         Chọn
                                       </Button>
                                     ) : (
                                       <>
-                                        <Button size="small" onClick={() => setShowSmartCASelector(true)}>
-                                          Xem danh sách
+                                        <Button 
+                                          size="small" 
+                                          onClick={() => setShowSmartCASelector(true)}
+                                          style={{
+                                            borderRadius: '8px'
+                                          }}
+                                        >
+                                          Danh sách
                                         </Button>
-                                        <Button size="small" type="primary" onClick={() => setShowAddSmartCAModal(true)}>
-                                          Thêm SmartCA
+                                        <Button 
+                                          size="small" 
+                                          type="primary" 
+                                          onClick={() => setShowAddSmartCAModal(true)}
+                                          style={{
+                                            background: '#3b82f6',
+                                            borderRadius: '8px',
+                                            border: 'none'
+                                          }}
+                                        >
+                                          Thêm
                                         </Button>
                                       </>
                                     )}
-                                  </Space>
-                                }
-                              />
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
-
-                </div>
-              </Col>
-
-              {/* Right Column - PDF Viewer */}
-              <Col span={16}>
-
-                <div className="border rounded-lg p-4 h-[600px]">
-                  <div className="flex justify-between items-center mb-3">
-                    <Title level={5}>Xem trước hợp đồng</Title>
-                    <Space>
-                      <Button
-                        type="primary"
-                        size="small"
-                        icon={<FilePdfOutlined />}
-                        onClick={handleOpenPdfModal}
-                        loading={pdfLoading}
-                      >
-                        Cửa Sổ Pop-up
-                      </Button>
-                    </Space>
-                  </div>
-
-                  {detail.downloadUrl ? (
-                    <div className="h-[540px] border rounded">
-                      <PDFViewer
-                        contractNo={detail.no || 'Booking'}
-                        pdfUrl={getPreviewUrl() || pdfBlobUrl}
-                        showAllPages={false}
-                        scale={0.8}
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-[540px] flex items-center justify-center bg-gray-50 border rounded">
-                      <div className="text-center text-gray-500">
-                        <FilePdfOutlined className="text-4xl mb-2" />
-                        <div>Không có PDF để hiển thị</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
-                </div>
-              </Col>
-            </Row>
-          )}
+                </Col>
+
+                {/* Right Column - PDF Viewer */}
+                <Col span={16}>
+                  <div style={{
+                    background: 'white',
+                    borderRadius: '16px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
+                    overflow: 'visible',
+                    height: 'auto',
+                    minHeight: '800px'
+                  }}>
+                    <div style={{
+                      padding: '24px',
+                      borderBottom: '1px solid #f0f0f0',
+                      background: 'linear-gradient(135deg, #f8f9fa, #e9ecef)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <div style={{
+                            width: '48px',
+                            height: '48px',
+                            background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
+                          }}>
+                            <FileTextOutlined style={{ color: 'white', fontSize: '20px' }} />
+                          </div>
+                          <div>
+                            <h3 style={{
+                              fontSize: '18px',
+                              fontWeight: 'bold',
+                              color: '#1e293b',
+                              margin: 0
+                            }}>
+                              Xem trước hợp đồng
+                            </h3>
+                            <p style={{
+                              fontSize: '14px',
+                              color: '#64748b',
+                              margin: 0,
+                              marginTop: '4px'
+                            }}>
+                              Tài liệu PDF và vị trí chữ ký
+                            </p>
+                          </div>
+                        </div>
+                        <Space>
+                          <Button
+                            type="default"
+                            size="small"
+                            icon={<DownloadOutlined />}
+                            style={{
+                              borderColor: '#8b5cf6',
+                              color: '#8b5cf6',
+                              borderRadius: '8px'
+                            }}
+                          >
+                            Tải xuống
+                          </Button>
+                          <Button
+                            type="primary"
+                            size="small"
+                            icon={<FullscreenOutlined />}
+                            onClick={handleOpenPdfModal}
+                            loading={pdfLoading}
+                            style={{
+                              background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)',
+                              borderRadius: '8px',
+                              border: 'none',
+                              boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)'
+                            }}
+                          >
+                            Cửa sổ riêng
+                          </Button>
+                        </Space>
+                      </div>
+                    </div>
+                    
+                    <div style={{ padding: '24px' }}>
+                      <div style={{
+                        background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        <div style={{
+                          minHeight: '800px',
+                          maxHeight: '900px',
+                          borderRadius: '8px',
+                          overflow: 'auto',
+                          boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
+                          display: 'flex',
+                          flexDirection: 'column'
+                        }}>
+                          {detail.downloadUrl ? (
+                            <PDFViewer
+                              contractNo={detail.no || 'Booking'}
+                              pdfUrl={getPreviewUrl() || pdfBlobUrl}
+                              showAllPages={false}
+                              scale={0.9}
+                            />
+                          ) : (
+                            <div style={{
+                              height: '120%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: 'linear-gradient(135deg, #f9fafb, #f3f4f6)',
+                              border: '2px dashed #d1d5db',
+                              borderRadius: '8px'
+                              
+                            }}>
+                              <div style={{ textAlign: 'center', color: '#6b7280' }}>
+                                <div style={{
+                                  width: '64px',
+                                  height: '64px',
+                                  margin: '0 auto 16px',
+                                  background: '#e5e7eb',
+                                  borderRadius: '50%',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}>
+                                  <FilePdfOutlined style={{ fontSize: '24px', color: '#9ca3af' }} />
+                                </div>
+                                <div style={{ fontSize: '18px', fontWeight: '500' }}>
+                                  Không có PDF để hiển thị
+                                </div>
+                                <div style={{ fontSize: '14px', marginTop: '4px' }}>
+                                  Hợp đồng chưa có file đính kèm
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            </div>
+        )}
         </Drawer>
+
+        {/* Custom CSS cho drawer */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              .contract-detail-drawer .ant-drawer-body {
+                padding: 0 !important;
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+              }
+              
+              .contract-detail-drawer .ant-drawer-header {
+                background: linear-gradient(135deg, #fafafa 0%, #f0f4f8 100%);
+                border-bottom: 1px solid #e2e8f0;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+              }
+              
+              .contract-detail-drawer .ant-typography h5 {
+                margin-bottom: 0 !important;
+              }
+              
+              /* Smooth transitions */
+              .contract-detail-drawer * {
+                transition: all 0.2s ease-in-out;
+              }
+              
+              /* Custom scrollbar */
+              .contract-detail-drawer .ant-drawer-body::-webkit-scrollbar {
+                width: 6px;
+              }
+              
+              .contract-detail-drawer .ant-drawer-body::-webkit-scrollbar-track {
+                background: #f1f5f9;
+              }
+              
+              .contract-detail-drawer .ant-drawer-body::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 3px;
+              }
+              
+              .contract-detail-drawer .ant-drawer-body::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+              }
+            `
+          }}
+        />
+
 
         {/* Signature Modal - Reuse từ SignContract system */}
         <SignatureModal

@@ -465,29 +465,165 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false, s
     <div className={`w-full ${showAllPages ? 'bg-transparent' : `flex flex-col bg-white ${
       isFullscreen ? 'fixed inset-0 z-50' : 'rounded-lg shadow-lg'
     } ${isMobile ? 'p-2' : 'p-4'}`}`}>
-      {/* Header controls - Chỉ hiển thị khi KHÔNG phải showAllPages và KHÔNG có external scale */}
+      {/* Header controls - Modern Design */}
       {!showAllPages && !externalScale && (
-        <div className={`flex ${isMobile ? 'flex-col gap-2' : 'justify-between items-center'} mb-4 pb-3 border-b`}>
-          <div className="flex items-center">
-            <FilePdfOutlined className="mr-2 text-blue-600" />
-            <span className={`font-semibold text-blue-600 ${isMobile ? 'text-sm' : ''}`}>
+        <div 
+          style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            justifyContent: 'space-between',
+            alignItems: isMobile ? 'stretch' : 'center',
+            marginBottom: '16px',
+            padding: '16px 20px',
+            background: 'linear-gradient(135deg, #f8faff 0%, #ffffff 100%)',
+            borderRadius: '12px',
+            border: '1px solid #e0e7ff',
+            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.08)',
+            gap: isMobile ? '12px' : '16px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FilePdfOutlined 
+              style={{ 
+                color: '#6366f1', 
+                fontSize: '18px',
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }} 
+            />
+            <span 
+              style={{
+                fontWeight: '600',
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                fontSize: isMobile ? '14px' : '16px'
+              }}
+            >
               {contractNo ? `Hợp đồng số: ${contractNo}` : 'Xem hợp đồng PDF'}
             </span>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              padding: '8px 12px',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              borderRadius: '8px',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+            }}
+          >
             <Tooltip title="Thu nhỏ">
-              <Button size="small" icon={<ZoomOutOutlined />} onClick={zoomOut} />
+              <Button 
+                size="small" 
+                icon={<ZoomOutOutlined />} 
+                onClick={zoomOut}
+                style={{
+                  background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#64748b',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
+                  e.target.style.color = '#ffffff';
+                  e.target.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)';
+                  e.target.style.color = '#64748b';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+              />
             </Tooltip>
             
-            <span className="text-sm px-2">{Math.round(currentScale * 100)}%</span>
+            <span 
+              style={{
+                fontSize: '13px',
+                fontWeight: '600',
+                padding: '4px 8px',
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                minWidth: '50px',
+                textAlign: 'center'
+              }}
+            >
+              {Math.round(currentScale * 100)}%
+            </span>
             
             <Tooltip title="Phóng to">
-              <Button size="small" icon={<ZoomInOutlined />} onClick={zoomIn} />
+              <Button 
+                size="small" 
+                icon={<ZoomInOutlined />} 
+                onClick={zoomIn}
+                style={{
+                  background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#64748b',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
+                  e.target.style.color = '#ffffff';
+                  e.target.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)';
+                  e.target.style.color = '#64748b';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+              />
             </Tooltip>
             
             <Tooltip title="Reset zoom">
-              <Button size="small" onClick={resetZoom}>
+              <Button 
+                size="small" 
+                onClick={resetZoom}
+                style={{
+                  background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#64748b',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  padding: '0 8px',
+                  height: '32px',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
+                  e.target.style.color = '#ffffff';
+                  e.target.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)';
+                  e.target.style.color = '#64748b';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+              >
                 100%
               </Button>
             </Tooltip>
@@ -496,7 +632,30 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false, s
               <Button 
                 size="small" 
                 icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />} 
-                onClick={toggleFullscreen} 
+                onClick={toggleFullscreen}
+                style={{
+                  background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#64748b',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)';
+                  e.target.style.color = '#ffffff';
+                  e.target.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)';
+                  e.target.style.color = '#64748b';
+                  e.target.style.transform = 'translateY(0)';
+                }}
               />
             </Tooltip>
           </div>
@@ -593,21 +752,86 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false, s
         )}
       </div>
       
-      {/* Navigation Controls - Ẩn khi hiển thị tất cả trang */}
+      {/* Navigation Controls - Modern Design */}
       {numPages && !showAllPages && (
-        <div className="flex items-center justify-center mt-4 gap-4 pt-3 border-t">
+        <div 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: '16px',
+            gap: '12px',
+            padding: '16px 20px',
+            background: 'linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%)',
+            borderRadius: '12px',
+            border: '1px solid #e0e7ff',
+            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.08)'
+          }}
+        >
           <Button 
             icon={<LeftOutlined />} 
             onClick={goToPrevPage} 
             disabled={pageNumber <= 1}
-            size="small"
+            size="middle"
+            style={{
+              background: pageNumber <= 1 
+                ? 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)' 
+                : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              border: 'none',
+              borderRadius: '8px',
+              color: pageNumber <= 1 ? '#64748b' : '#ffffff',
+              fontWeight: '500',
+              padding: '0 16px',
+              height: '40px',
+              minWidth: '120px',
+              boxShadow: pageNumber <= 1 
+                ? '0 1px 3px rgba(0, 0, 0, 0.1)' 
+                : '0 4px 12px rgba(99, 102, 241, 0.3)',
+              transition: 'all 0.2s ease',
+              cursor: pageNumber <= 1 ? 'not-allowed' : 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              if (pageNumber > 1) {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 6px 16px rgba(99, 102, 241, 0.4)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (pageNumber > 1) {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.3)';
+              }
+            }}
           >
-            Trang trước 
+            Trang trước
           </Button>
           
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">
-              Trang   {pageNumber} / {numPages}
+          <div 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 20px',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              borderRadius: '8px',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+              minWidth: '140px',
+              justifyContent: 'center'
+            }}
+          >
+            <span 
+              style={{
+                fontSize: '15px',
+                fontWeight: '600',
+                color: '#374151',
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}
+            >
+              Trang {pageNumber} / {numPages}
             </span>
           </div>
           
@@ -615,7 +839,36 @@ function PDFViewer({ contractNo, pdfUrl: externalPdfUrl, showAllPages = false, s
             icon={<RightOutlined />} 
             onClick={goToNextPage} 
             disabled={pageNumber >= numPages}
-            size="small"
+            size="middle"
+            style={{
+              background: pageNumber >= numPages 
+                ? 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)' 
+                : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              border: 'none',
+              borderRadius: '8px',
+              color: pageNumber >= numPages ? '#64748b' : '#ffffff',
+              fontWeight: '500',
+              padding: '0 16px',
+              height: '40px',
+              minWidth: '120px',
+              boxShadow: pageNumber >= numPages 
+                ? '0 1px 3px rgba(0, 0, 0, 0.1)' 
+                : '0 4px 12px rgba(99, 102, 241, 0.3)',
+              transition: 'all 0.2s ease',
+              cursor: pageNumber >= numPages ? 'not-allowed' : 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              if (pageNumber < numPages) {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 6px 16px rgba(99, 102, 241, 0.4)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (pageNumber < numPages) {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.3)';
+              }
+            }}
           >
             Trang sau
           </Button>

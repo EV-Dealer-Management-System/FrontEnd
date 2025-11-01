@@ -20,7 +20,9 @@ export const useTemplateActions = (
   contractSubject,
   allStyles,
   signContent,
-  headerContent
+  headerContent,
+  metaContent,
+  footerContent
 ) => {
   const [modal, contextHolder] = Modal.useModal();
   const { message } = App.useApp();
