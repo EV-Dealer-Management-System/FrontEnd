@@ -41,6 +41,13 @@ export const useTemplateEditor = () => {
   const [templates, setTemplates] = useState([]);
   const [total, setTotal] = useState(0);
 
+  // editor
+  const [editableBody, setEditableBody] = useState(null);
+  const [centerBlock, setCenterBlock] = useState("");
+  const [signBlock, setSignBlock] = useState("");
+  const [metaBlock, setMetaBlock] = useState("");
+  const [fullHtml, setFullHtml] = useState("");
+
   // modal/editor
   const [visible, setVisible] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -138,12 +145,26 @@ export const useTemplateEditor = () => {
       console.log('💾 Saving template...');
       
       // lấy body content trực tiếp từ quill
-      const body = typeof getCurrentContent === "function"
+      const curentEditable = typeof getCurrentContent === 'function'
         ? getCurrentContent()
         : htmlContent;
 
-      const fullHtml = rebuildCompleteHtml(body, selectedTemplate.name, parsed);
-      
+      // rebuild full HTML
+      const mergeBody = [
+        centerBlock,
+        metaBlock,
+        curentEditable,
+        signBlock
+      ]
+
+      // dùng rebuildCompleteHtml để ghép các phần
+      const fullHtml = rebuildCompleteHtml(
+        mergeBody,
+        selectedTemplate.name,
+        parsed
+      );
+
+      // gọi API lưu
       const res = await updateTemplate(
         selectedTemplate.code, 
         selectedTemplate.name, 
@@ -166,22 +187,62 @@ export const useTemplateEditor = () => {
     }
   }, [selectedTemplate, htmlContent, parsed, fetchTemplates]);
 
+  const buildMergedBody = useCallback((currentEditable) => {
+    return [
+      centerBlock,
+      metaBlock,
+      currentEditable,
+      signBlock
+    ].filter(Boolean).join("\n");
+  }, [centerBlock, metaBlock, signBlock]);
+
   // ====== INGEST TEMPLATE (for Modal direct load) ======
   const ingestTemplate = useCallback((tpl) => {
+    console.log("===== [ingestTemplate] RAW TEMPLATE HTML =====");
+    console.log(tpl?.contentHtml);
     if (!tpl) return;
-    setSelectedTemplate(tpl);
-    const rawHtml = tpl.contentHtml || "";
-    const parsedResult = parseHtmlFromBE(rawHtml);
+    //parse html và tách các block
+    const parser = new DOMParser();
+    const doc = parser.parseFromString( tpl.contentHtml || "", "text/html");
+
+    //tách riêng các block đặc biệt
+    const signEl = doc.querySelector('.sign');
+    const centerEl = doc.querySelector('.center');
+    const metaEl = doc.querySelector('.meta');
+
+    const signBlock = signEl?.outerHTML || "";
+    const centerBlock = centerEl?.outerHTML || "";
+    const metaBlock = metaEl?.outerHTML || "";
+
+    //Xóa khỏi body
+    signEl?.remove();
+    centerEl?.remove();
+    metaEl?.remove();
+
+    //phần nội dung có thể chỉnh sửa
+    const editableBody = doc.body.innerHTML || "";
+    
+    //cập nhập state
+    setHtmlContent(editableBody);
+    setFullHtml(tpl.contentHtml || "");
+    setSignBlock(signBlock);
+    setCenterBlock(centerBlock);
+    setMetaBlock(metaBlock);
+
+    //lưu các phần parse khác
     setParsed({
-      allStyles: parsedResult.allStyles || "",
-      headContent: parsedResult.headContent || "",
-      htmlAttrs: parsedResult.htmlAttrs || "",
+      allStyles: [...doc.querySelectorAll('style')].map(s => s.outerHTML).join("\n") || "",
+      headContent: doc.head?.innerHTML || "",
+      htmlAttrs: [...doc.documentElement.attributes].map(attr => `${attr.name}="${attr.value}"`).join(" ") || "",
     });
-    setHtmlContent(parsedResult.bodyContent || "");
+    console.log("===== [ingestTemplate] BODY PASSED TO QUILL =====");
+    console.log(editableBody);
+    setSelectedTemplate(tpl);
     setHasUnsavedChanges(false);
     loadedTemplateIdRef.current = tpl.id ?? null;
   }, []);
 
+ 
   return {
     // list
     loading, templates, total, fetchTemplates,
@@ -201,5 +262,12 @@ export const useTemplateEditor = () => {
     saveTemplate,
     rebuildCompleteHtml,
     ingestTemplate,
+    
+    //state
+    signBlock,
+    centerBlock,
+    metaBlock,
+    fullHtml,
+    buildMergedBody,
   };
 };

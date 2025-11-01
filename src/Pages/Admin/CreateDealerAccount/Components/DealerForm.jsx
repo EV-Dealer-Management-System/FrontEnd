@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Form,
   Input,
@@ -7,7 +7,10 @@ import {
   Row,
   Col,
   Space,
-  Spin
+  Spin,
+  Alert,
+  Avatar,
+  message
 } from 'antd';
 import {
   ShopOutlined,
@@ -17,8 +20,11 @@ import {
   MailOutlined,
   PhoneOutlined,
   ApartmentOutlined,
-  GlobalOutlined
+  BankOutlined,
+  CreditCardOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
+import { bankApi } from '../../../../api/bank';
 
 const { Option } = Select;
 
@@ -69,6 +75,33 @@ const DealerForm = ({
   onConfirmEdit,
   updatingEdit
 }) => {
+  // States cho danh sách ngân hàng
+  const [banks, setBanks] = useState([]);
+  const [loadingBanks, setLoadingBanks] = useState(false);
+
+  // Load danh sách ngân hàng khi component mount
+  useEffect(() => {
+    const loadBanks = async () => {
+      setLoadingBanks(true);
+      try {
+        const response = await bankApi.getAllBanks();
+        if (response.success) {
+          setBanks(bankApi.formatBankForSelect(response.data));
+        } else {
+          message.error(response.message || 'Không thể tải danh sách ngân hàng');
+          setBanks([]);
+        }
+      } catch (error) {
+        console.error('Lỗi khi tải danh sách ngân hàng:', error);
+        message.error('Không thể tải danh sách ngân hàng');
+        setBanks([]);
+      } finally {
+        setLoadingBanks(false);
+      }
+    };
+
+    loadBanks();
+  }, []);
   return (
     <>
     {contractLink && (
@@ -271,22 +304,104 @@ const DealerForm = ({
             <Option value={1}>Đại lý cấp 1</Option>
             <Option value={2}>Đại lý cấp 2</Option>
             <Option value={3}>Đại lý cấp 3</Option>
+            <Option value={4}>Đại lý cấp 4</Option>
+            <Option value={5}>Đại lý cấp 5</Option>
           </Select>
         </FormField>
 
         <FormField
-          name="regionDealer"
-          label="Khu Vực Đại Lý"
-          icon={<GlobalOutlined />}
-          required={false}
-          rules={[]}
+          name="bankName"
+          label="Ngân Hàng"
+          icon={<BankOutlined />}
+          rules={[
+            { required: true, message: 'Vui lòng chọn ngân hàng!' }
+          ]}
+          disabledAll={disabledAll}
+        >
+          <Select
+            placeholder="Chọn ngân hàng"
+            className="rounded-lg"
+            loading={loadingBanks}
+            showSearch
+            filterOption={(input, option) => {
+            const label = (option?.label || '').toLowerCase();
+            const fullname = (option?.fullname || '').toLowerCase();
+            const value = (option?.value || '').toLowerCase(); // đây chính là code
+            const code = (option?.children?.props?.children?.[1]?.props?.children || '')
+              .toString()
+              .toLowerCase();
+            const search = input.toLowerCase();
+
+            return (
+              label.includes(search) ||
+              fullname.includes(search) ||
+              value.includes(search) || // cho phép search theo code
+              code.includes(search)
+            );
+          }}
+            notFoundContent={loadingBanks ? <Spin size="small" /> : 'Không tìm thấy ngân hàng'}
+            optionLabelProp="label"
+          >
+            {banks.map(bank => (
+              <Option
+                key={bank.value}
+                value={bank.value}
+                label={bank.fullName}
+                fullname={bank.fullName}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                style={{
+                  width: 32,
+                  height: 24,
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 6,
+                  backgroundColor: '#fff',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <img
+                  src={bank.logo}
+                  alt={bank.code}
+                  style={{
+                    maxWidth: 30,
+                    maxHeight: 35,
+                    objectFit: 'contain',
+                    display: 'block'
+                  }}
+                />
+              </div>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-gray-800 leading-none">{bank.fullName} </span>
+                    <span className="text-xs text-gray-500">- ({bank.code})</span>
+                  </div>
+                </div>
+              </Option>
+
+            ))}
+          </Select>
+        </FormField>
+
+        <FormField
+          name="bankAccount"
+          label="Số Tài Khoản Ngân Hàng"
+          icon={<CreditCardOutlined />}
+          rules={[
+            { required: true, message: 'Vui lòng nhập số tài khoản ngân hàng!' },
+            { 
+              pattern: /^[0-9]{6,20}$/, 
+              message: 'Số tài khoản phải có từ 6 đến 20 chữ số!' 
+            }
+          ]}
+          disabledAll={disabledAll}
         >
           <Input
-            readOnly
-            disabled
-            placeholder="Khu vực đại lý"
-            className="rounded-lg bg-gray-100 cursor-not-allowed"
-            style={{ color: '#000', fontWeight: 500 }}
+            placeholder="Nhập số tài khoản ngân hàng"
+            className="rounded-lg"
+            maxLength={20}
           />
         </FormField>
 
@@ -307,21 +422,30 @@ const DealerForm = ({
           />
         </FormField>
 
-        <FormField
-          name="additionalTerm"
-          label="Điều Khoản Bổ Sung"
-          icon={<FileTextOutlined />}
-          span={24}
-          required={false}
-          rules={[]}
-           disabledAll={disabledAll}
-        >
-          <Input.TextArea
-            placeholder="Nhập điều khoản bổ sung (có thể bỏ trống)"
-            rows={4}
-            className="rounded-lg"
+        {/* Ghi chú quan trọng về tài khoản ngân hàng */}
+        <Col xs={24}>
+          <Alert
+            message="Lưu ý quan trọng"
+            description={
+              <div>
+                <div className="flex items-start gap-2 mb-2">
+                  <WarningOutlined className="text-orange-500 mt-1" />
+                  <span>
+                    Vui lòng <strong>kiểm tra kỹ thông tin ngân hàng và số tài khoản</strong> trước khi tạo hợp đồng.
+                  </span>
+                </div>
+                <div className="text-sm text-gray-600">
+                  • Đảm bảo số tài khoản chính xác và thuộc về đại lý<br />
+                  • Thông tin này sẽ được sử dụng cho các giao dịch tài chính<br />
+                  • Sau khi tạo hợp đồng, việc thay đổi sẽ cần quy trình phức tạp hơn
+                </div>
+              </div>
+            }
+            type="warning"
+            showIcon
+            className="mb-4"
           />
-        </FormField>
+        </Col>
       </Row>
 
       {/* Form Actions */}

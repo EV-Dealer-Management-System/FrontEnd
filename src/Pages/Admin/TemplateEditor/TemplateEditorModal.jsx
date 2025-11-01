@@ -50,6 +50,12 @@ function TemplateEditorModal({ visible, onClose, template }) {
     saveTemplate,
     rebuildCompleteHtml,
     ingestTemplate,
+    fullHtml,
+    setFullHtml,
+    buildMergedBody,
+    centerBlock,
+    metaBlock,
+    signBlock
   } = useTemplateEditor();
 
   const allStyles = parsed?.allStyles || '';
@@ -363,9 +369,13 @@ function TemplateEditorModal({ visible, onClose, template }) {
                         
                         {/* HTML TextArea */}
                         <div className="flex-1 relative">
-                          <TextArea
-                            value={htmlContent}
-                            onChange={handleHtmlContentChange}
+                         <TextArea
+                            value={fullHtml || htmlContent}
+                            onChange={(e) => {
+                              setFullHtml(e.target.value);
+                              setHasUnsavedChanges(true);
+                            }}
+
                             placeholder={`<!-- Chỉnh sửa HTML template trực tiếp -->
                                             <div>
                                             <h1>Tiêu đề hợp đồng</h1>
@@ -382,6 +392,9 @@ function TemplateEditorModal({ visible, onClose, template }) {
                               backgroundColor: '#fafafa'
                             }}
                           />
+
+                        
+
                           
                           {/* Character count overlay */}
                           <div className="absolute bottom-2 right-2 px-2 py-1 bg-white border rounded shadow-sm text-xs text-gray-500">
@@ -425,7 +438,15 @@ function TemplateEditorModal({ visible, onClose, template }) {
         visible={previewVisible}
         onClose={() => setPreviewVisible(false)}
         templateData={selectedTemplate || template}
-        htmlContent={htmlContent}
+        htmlContent={rebuildCompleteHtml([
+          centerBlock,
+          metaBlock,
+          htmlContent,
+          signBlock
+        ].filter(Boolean).join("\n"),
+        selectedTemplate?.name || '',
+        parsed
+        )}
         allStyles={allStyles}
         htmlHead={htmlHead}
         htmlAttributes={htmlAttributes}
